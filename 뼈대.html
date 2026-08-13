@@ -1,8 +1,38 @@
-package com.example.swipekeyboard;
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 5대 판 뼈대 및 전환 코드</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: monospace;
+            padding: 15px;
+        }
+        pre {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        code {
+            color: #4ec9b0;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>[쓸기자판] 5대 판 구조 및 전환 뼈대 코드</h2>
+    <p>메인판, 쌍둥이 빈판, 영문판, 기호판, 설정판을 오가는 기본 혈관 코드입니다.</p>
+
+    <pre><code>package com.example.swipekeyboard;
 
 import android.inputmethodservice.InputMethodService;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 public class SwipeKeyboardService extends InputMethodService {
@@ -46,17 +76,7 @@ public class SwipeKeyboardService extends InputMethodService {
                 break;
         }
     }
-}
+}</code></pre>
 
-/* =====================================================================
- * [참고] XML 레이아웃 뼈대 구조 (res/layout/keyboard_main.xml 등)
- * =====================================================================
- * <?xml version="1.0" encoding="utf-8"?>
- * <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
- *     android:layout_width="match_parent"
- *     android:layout_height="wrap_content"
- *     android:orientation="vertical"
- *     android:background="#222222">
- *     <!-- 메인 자판 및 4개의 판 칸 나누기 뼈대 프레임 -->
- * </LinearLayout>
- * ===================================================================== */
+</body>
+</html>
