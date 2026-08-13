@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 뼈대 v7.1</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .keyboard-box {
+            display: flex;
+            background-color: #000;
+            padding: 6px;
+            gap: 4px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 390px;
+        }
+        .left-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 58px);
+            gap: 4px;
+            flex: 3;
+        }
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+        .key {
+            background-color: #383838;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: #e0e0e0;
+            position: relative;
+        }
+        .small-plate {
+            background-color: #2b2b2b;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            font-size: 18px;
+            color: #fff;
+        }
+        .small-plate.symbol-text {
+            font-size: 11px;
+            line-height: 1.1;
+            text-align: center;
+        }
+        .key.red { color: #ff4444; font-weight: bold; font-size: 20px; }
+        .key.yellow { color: #ffeb3b; font-weight: bold; font-size: 20px; }
+        .key.green { color: #4caf50; font-weight: bold; font-size: 20px; }
+        .key.black-box { border: 2px solid #000; background-color: #333; }
+        .mini-num { position: absolute; top: 2px; right: 4px; font-size: 9px; color: #777; }
+    </style>
+</head>
+<body>
+
+    <div class="keyboard-box">
+        <div class="left-grid">
+            <div class="key red">O<span class="mini-num">1</span></div>
+            <div class="key">ㄱ<span class="mini-num">2</span></div>
+            <div class="key">┃<span class="mini-num">3</span></div>
+
+            <div class="key yellow">ㄴ<span class="mini-num">4</span></div>
+            <div class="key">ㄷ<span class="mini-num">5</span></div>
+            <div class="key">⸩<span class="mini-num">6</span></div>
+
+            <div class="key green">ㅅ<span class="mini-num">7</span></div>
+            <div class="key">ㅈ<span class="mini-num">8</span></div>
+            <div class="key">ㅡ<span class="mini-num">9</span></div>
+
+            <div class="key black-box">□<span class="mini-num">*</span></div>
+            <div class="key">ㅂ<span class="mini-num">0</span></div>
+            <div class="key">📋<span class="mini-num">#</span></div>
+        </div>
+
+        <div class="right-column">
+            <div class="small-plate">⌫</div>
+            <div class="small-plate">⚙</div>
+            <div class="small-plate symbol-text">~^'<br>,.?<br>/!A</div>
+            <div class="small-plate">↵</div>
+        </div>
+    </div>
+
+</body>
+</html>
