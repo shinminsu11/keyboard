@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 뼈대 v7.1.2</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        /* 자판 전체 판넬 */
+        .keyboard-wrapper {
+            display: flex;
+            background-color: #000;
+            padding: 6px;
+            gap: 5px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 390px;
+        }
+        /* 왼쪽 3열 본체 */
+        .main-keys {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 60px);
+            gap: 5px;
+            flex: 3;
+        }
+        /* 우측 4개의 독립된 판 영역 (여기서 완전히 다르게 쪼갭니다) */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1.1;
+        }
+        /* 우측 위쪽 2개 (일반 크기) */
+        .right-btn-top {
+            background-color: #2b2b2b;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            font-size: 20px;
+            color: #fff;
+        }
+        /* 우측 세 번째 (기호판 - 세로로 길쭉하게 확장) */
+        .right-btn-symbol {
+            background-color: #2b2b2b;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            font-size: 11px;
+            line-height: 1.2;
+            text-align: center;
+            color: #fff;
+        }
+        /* 우측 맨 아래 (엔터판 - 널찍하게 자리 잡기) */
+        .right-btn-enter {
+            background-color: #222;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            font-size: 22px;
+            color: #fff;
+        }
+
+        /* 본체 키 공통 */
+        .key {
+            background-color: #383838;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: #e0e0e0;
+            position: relative;
+        }
+        .key.red { color: #ff4444; font-weight: bold; font-size: 20px; }
+        .key.yellow { color: #ffeb3b; font-weight: bold; font-size: 20px; }
+        .key.green { color: #4caf50; font-weight: bold; font-size: 20px; }
+        .key.black-box { border: 2px solid #000; background-color: #333; }
+        .mini-num { position: absolute; top: 3px; right: 5px; font-size: 9px; color: #888; }
+    </style>
+</head>
+<body>
+
+    <div class="keyboard-wrapper">
+        <!-- 왼쪽 4x3 본체 -->
+        <div class="main-keys">
+            <div class="key red">O<span class="mini-num">1</span></div>
+            <div class="key">ㄱ<span class="mini-num">2</span></div>
+            <div class="key">┃<span class="mini-num">3</span></div>
+
+            <div class="key yellow">ㄴ<span class="mini-num">4</span></div>
+            <div class="key">ㄷ<span class="mini-num">5</span></div>
+            <div class="key">⸩<span class="mini-num">6</span></div>
+
+            <div class="key green">ㅅ<span class="mini-num">7</span></div>
+            <div class="key">ㅈ<span class="mini-num">8</span></div>
+            <div class="key">ㅡ<span class="mini-num">9</span></div>
+
+            <div class="key black-box">□<span class="mini-num">*</span></div>
+            <div class="key">ㅂ<span class="mini-num">0</span></div>
+            <div class="key">📋<span class="mini-num">#</span></div>
+        </div>
+
+        <!-- 우측 4개 독립된 판 구역 -->
+        <div class="right-column">
+            <div class="right-btn-top">⌫</div>
+            <div class="right-btn-top">⚙</div>
+            <div class="right-btn-symbol">~ ^ '<br>, . ?<br>/ ! A</div>
+            <div class="right-btn-enter">↵</div>
+        </div>
+    </div>
+
+</body>
+</html>
