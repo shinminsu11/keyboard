@@ -1,0 +1,62 @@
+package com.example.swipekeyboard;
+
+import android.inputmethodservice.InputMethodService;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+
+public class SwipeKeyboardService extends InputMethodService {
+
+    private View mainKeyboardView;       // 1. 메인 자판
+    private View twinKeyboardView;       // 2. 쌍둥이 빈판 (깐띄기판 아래로 밀기)
+    private View englishKeyboardView;    // 3. 영문판 ([A] 키 연동)
+    private View symbolKeyboardView;     // 4. 기호판 (작은 버튼 규격, 2장 체제)
+    private View settingKeyboardView;    // 5. 설정판 (깐띄기판 위로 밀기)
+
+    @Override
+    public View onCreateInputView() {
+        // 5개의 판 레이아웃을 미리 생성해 둡니다.
+        mainKeyboardView = getLayoutInflater().inflate(R.layout.keyboard_main, null);
+        twinKeyboardView = getLayoutInflater().inflate(R.layout.keyboard_twin, null);
+        englishKeyboardView = getLayoutInflater().inflate(R.layout.keyboard_english, null);
+        symbolKeyboardView = getLayoutInflater().inflate(R.layout.keyboard_symbol, null);
+        settingKeyboardView = getLayoutInflater().inflate(R.layout.keyboard_setting, null);
+
+        // 최초 시작은 메인 자판으로 반환
+        return mainKeyboardView;
+    }
+
+    // [혈관 기능] 판 전환 메서드 (원하는 판 이름을 넣으면 즉시 화면이 전환됩니다)
+    public void switchToView(String target) {
+        switch (target) {
+            case "main":
+                setInputView(mainKeyboardView);
+                break;
+            case "twin":
+                setInputView(twinKeyboardView); // 깐띄기판 아래로 밀기
+                break;
+            case "english":
+                setInputView(englishKeyboardView); // [A] 키 연동
+                break;
+            case "symbol":
+                setInputView(symbolKeyboardView); // 기호판 (작은 버튼 규격)
+                break;
+            case "setting":
+                setInputView(settingKeyboardView); // 깐띄기판 위로 밀기
+                break;
+        }
+    }
+}
+
+/* =====================================================================
+ * [참고] XML 레이아웃 뼈대 구조 (res/layout/keyboard_main.xml 등)
+ * =====================================================================
+ * <?xml version="1.0" encoding="utf-8"?>
+ * <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ *     android:layout_width="match_parent"
+ *     android:layout_height="wrap_content"
+ *     android:orientation="vertical"
+ *     android:background="#222222">
+ *     <!-- 메인 자판 및 4개의 판 칸 나누기 뼈대 프레임 -->
+ * </LinearLayout>
+ * ===================================================================== */
