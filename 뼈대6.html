@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 뼈대 v7.1.1</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        /* 4열 그리드 시스템 (우측 구역의 비대칭 완벽 반영) */
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 58px);
+            gap: 4px;
+            background-color: #000;
+            padding: 6px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .key {
+            background-color: #383838;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: #e0e0e0;
+            position: relative;
+        }
+        
+        /* 우측 비대칭 4개 판 배치 설정 */
+        /* 1행 우측: 백스페이스 (일반 크기 1칸) */
+        .key.r-bksp { grid-column: 4; grid-row: 1; background-color: #2b2b2b; font-size: 20px; }
+        
+        /* 2행 우측: 설정판 (일반 크기 1칸) */
+        .key.r-setting { grid-column: 4; grid-row: 2; background-color: #2b2b2b; font-size: 20px; }
+        
+        /* 3행 우측: 기호판 (세로로 길쭉하게 아래 공간과 맞물림) */
+        .key.r-symbol { 
+            grid-column: 4; 
+            grid-row: 3; 
+            background-color: #2b2b2b; 
+            font-size: 11px; 
+            line-height: 1.2; 
+            text-align: center; 
+        }
+        
+        /* 4행 우측: 엔터판 (아래쪽 널찍한 자리 차지) */
+        .key.r-enter { 
+            grid-column: 4; 
+            grid-row: 4; 
+            background-color: #222; 
+            font-size: 22px; 
+        }
+
+        /* 본체 키 스타일 */
+        .key.red { color: #ff4444; font-weight: bold; font-size: 20px; }
+        .key.yellow { color: #ffeb3b; font-weight: bold; font-size: 20px; }
+        .key.green { color: #4caf50; font-weight: bold; font-size: 20px; }
+        .key.black-box { border: 2px solid #000; background-color: #333; }
+        .mini-num { position: absolute; top: 2px; right: 4px; font-size: 9px; color: #777; }
+    </style>
+</head>
+<body>
+
+    <div class="keyboard-grid">
+        <!-- 1행 -->
+        <div class="key red">O<span class="mini-num">1</span></div>
+        <div class="key">ㄱ<span class="mini-num">2</span></div>
+        <div class="key">┃<span class="mini-num">3</span></div>
+        <div class="key r-bksp">⌫</div>
+
+        <!-- 2행 -->
+        <div class="key yellow">ㄴ<span class="mini-num">4</span></div>
+        <div class="key">ㄷ<span class="mini-num">5</span></div>
+        <div class="key">⸩<span class="mini-num">6</span></div>
+        <div class="key r-setting">⚙</div>
+
+        <!-- 3행 -->
+        <div class="key green">ㅅ<span class="mini-num">7</span></div>
+        <div class="key">ㅈ<span class="mini-num">8</span></div>
+        <div class="key">ㅡ<span class="mini-num">9</span></div>
+        <div class="key r-symbol">~ ^ '<br>, . ?<br>/ ! A</div>
+
+        <!-- 4행 -->
+        <div class="key black-box">□<span class="mini-num">*</span></div>
+        <div class="key">ㅂ<span class="mini-num">0</span></div>
+        <div class="key">📋<span class="mini-num">#</span></div>
+        <div class="key r-enter">↵</div>
+    </div>
+
+</body>
+</html>
