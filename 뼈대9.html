@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 뼈대 v7.1.5 - 세로 쪼개기 분할</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        /* 자판 전체를 좌우로 세로 쪼개기(분할)한 마스터 박스 */
+        .split-keyboard-container {
+            display: flex;
+            gap: 8px;
+            background-color: #000;
+            padding: 8px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+        }
+        /* 왼쪽 쪼개진 판 */
+        .keyboard-half-left {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(4, 58px);
+            gap: 4px;
+            flex: 1;
+        }
+        /* 오른쪽 쪼개진 판 */
+        .keyboard-half-right {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(4, 58px);
+            gap: 4px;
+            flex: 1;
+        }
+        /* 공통 키 스타일 */
+        .key {
+            background-color: #383838;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            color: #e0e0e0;
+            position: relative;
+        }
+        .key.red { color: #ff4444; font-weight: bold; font-size: 20px; }
+        .key.yellow { color: #ffeb3b; font-weight: bold; font-size: 20px; }
+        .key.green { color: #4caf50; font-weight: bold; font-size: 20px; }
+        .key.black-box { border: 2px solid #000; background-color: #333; }
+        .key.special-right { background-color: #2b2b2b; font-size: 18px; }
+        .mini-num { position: absolute; top: 2px; right: 4px; font-size: 9px; color: #777; }
+    </style>
+</head>
+<body>
+
+    <div class="split-keyboard-container">
+        <!-- 왼쪽 세로 쪼개진 판 구역 -->
+        <div class="keyboard-half-left">
+            <div class="key red">O<span class="mini-num">1</span></div>
+            <div class="key">ㄱ<span class="mini-num">2</span></div>
+            <div class="key yellow">ㄴ<span class="mini-num">4</span></div>
+            <div class="key">ㄷ<span class="mini-num">5</span></div>
+            <div class="key green">ㅅ<span class="mini-num">7</span></div>
+            <div class="key">ㅈ<span class="mini-num">8</span></div>
+            <div class="key black-box">□<span class="mini-num">*</span></div>
+            <div class="key">ㅂ<span class="mini-num">0</span></div>
+        </div>
+
+        <!-- 오른쪽 세로 쪼개진 판 구역 -->
+        <div class="keyboard-half-right">
+            <div class="key">┃<span class="mini-num">3</span></div>
+            <div class="key special-right">⌫</div>
+            <div class="key">⸩<span class="mini-num">6</span></div>
+            <div class="key special-right">⚙</div>
+            <div class="key">ㅡ<span class="mini-num">9</span></div>
+            <div class="key special-right" style="font-size: 10px; line-height: 1.1; text-align: center;">~^'<br>,.?<br>/!A</div>
+            <div class="key">📋<span class="mini-num">#</span></div>
+            <div class="key special-right" style="background-color: #222;">↵</div>
+        </div>
+    </div>
+
+</body>
+</html>
