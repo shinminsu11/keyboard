@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 기호판 미리보기</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 58px);
+            gap: 4px;
+            background-color: #000;
+            padding: 6px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .key {
+            background-color: #383838;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: #e0e0e0;
+        }
+        .key.symbol-main {
+            font-size: 15px;
+            font-weight: bold;
+            color: #4ec9b0;
+        }
+        .key.special {
+            background-color: #2b2b2b;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="keyboard-grid">
+        <!-- 기호판 1장 예시 뼈대 -->
+        <div class="key symbol-main">!</div>
+        <div class="key symbol-main">@</div>
+        <div class="key symbol-main">#</div>
+        <div class="key special">⌫</div>
+
+        <div class="key symbol-main">$</div>
+        <div class="key symbol-main">%</div>
+        <div class="key symbol-main">^</div>
+        <div class="key special">⚙</div>
+
+        <div class="key symbol-main">&</div>
+        <div class="key symbol-main">*</div>
+        <div class="key symbol-main">(</div>
+        <div class="key symbol-main">)</div>
+
+        <div class="key special">-</div>
+        <div class="key symbol-main">+</div>
+        <div class="key special">1/2</div>
+        <div class="key special" style="background-color: #222;">↵</div>
+    </div>
+
+</body>
+</html>
