@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>쓸기자판 v8.44 - 기호판 도안 변경 ($ -> ?)</title>
+<title>쓸기자판 v8.44 - 쌍둥이판 통합 완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -211,9 +211,62 @@ gap: 5px;
 width: 100%;
 height: 100%;
 }
-.label { font-size: 12px; font-weight: bold; margin-bottom: 1px; }
+.label { font-size: 11px; font-weight: bold; margin-bottom: 1px; color: #555; }
 .icon { font-size: 18px; line-height: 1.1; }
-.plus { font-size: 14px; font-weight: normal; color: #555; margin-top: 0px; }
+.plus { font-size: 14px; font-weight: normal; color: #888; margin-top: 0px; }
+.content-text {
+  font-size: 12px;
+  font-weight: bold;
+  color: #1a73e8;
+  word-break: break-all;
+  margin-top: 2px;
+}
+
+/* 모달창 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+.modal-box {
+  background: #fff;
+  width: 90%;
+  max-width: 320px;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-close {
+  cursor: pointer;
+  font-size: 18px;
+  color: #777;
+}
+.modal-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
 </style>
 </head>
 <body>
@@ -276,9 +329,9 @@ height: 100%;
 <div class="key func" id="topSymbolKey" style="font-size:12px; font-weight:normal; line-height:1.15; text-align:center; justify-content:center;">~ ^ '<br>. ,<br>/ ? !</div>
 <div class="key func" id="toAlphaBtn" style="font-size:19px; font-weight:bold; color:#333; justify-content:center;">A</div>
 <div class="key func" id="symbolKey" style="font-size:11px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 6px; padding-bottom: 2px;" onclick="switchToBoard('symbolBoard1')">
-    <div style="font-size:11px; margin-bottom:1px; position:relative; top:3px;">(♥)</div>
-    <div style="font-size:17px; font-weight:bold; margin-bottom:1px; position:relative; top:1px;">1※</div>
-    <div style="font-size:12px; margin-top:auto; position:relative; top:-7px;">→</div>
+<div style="font-size:11px; margin-bottom:1px; position:relative; top:3px;">(♥)</div>
+<div style="font-size:17px; font-weight:bold; margin-bottom:1px; position:relative; top:1px;">1※</div>
+<div style="font-size:12px; margin-top:auto; position:relative; top:-7px;">→</div>
 </div>
 <div class="key dark" onclick="appendSpecial('\n')" style="background-color:#9aa8b2; justify-content:center;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
@@ -327,18 +380,16 @@ height: 100%;
 <div class="eng-key" onclick="appendSpecial('8')">8</div>
 <div class="eng-key" onclick="appendSpecial('9')">9</div>
 <div class="eng-key" onclick="appendSpecial('0')">0</div>
-
 <div class="eng-key eng-long" data-char="q" data-long="%"><span class="eng-sub">%</span><span class="key-text">q</span></div>
 <div class="eng-key eng-long" data-char="w" data-long="₩"><span class="eng-sub">₩</span><span class="key-text">w</span></div>
 <div class="eng-key eng-long" data-char="e" data-long="="><span class="eng-sub">=</span><span class="key-text">e</span></div>
-<div class="eng-key eng-long" data-char="r" data-long="&amp;"><span class="eng-sub">&amp;</span><span class="key-text">r</span></div>
+<div class="eng-key eng-long" data-char="r" data-long="&"><span class="eng-sub">&</span><span class="key-text">r</span></div>
 <div class="eng-key eng-long" data-char="t" data-long="·"><span class="eng-sub">·</span><span class="key-text">t</span></div>
 <div class="eng-key eng-long" data-char="y" data-long="*"><span class="eng-sub">*</span><span class="key-text">y</span></div>
 <div class="eng-key eng-long" data-char="u" data-long="-"><span class="eng-sub">-</span><span class="key-text">u</span></div>
 <div class="eng-key eng-long" data-char="i" data-long="+"><span class="eng-sub">+</span><span class="key-text">i</span></div>
-<div class="eng-key eng-long" data-char="o" data-long="&lt;"><span class="eng-sub">&lt;</span><span class="key-text">o</span></div>
-<div class="eng-key eng-long" data-char="p" data-long="&gt;"><span class="eng-sub">&gt;</span><span class="key-text">p</span></div>
-
+<div class="eng-key eng-long" data-char="o" data-long="<"><span class="eng-sub"><</span><span class="key-text">o</span></div>
+<div class="eng-key eng-long" data-char="p" data-long=">"><span class="eng-sub">></span><span class="key-text">p</span></div>
 <div class="eng-key eng-long" data-char="a" data-long="@"><span class="eng-sub">@</span><span class="key-text">a</span></div>
 <div class="eng-key eng-long" data-char="s" data-long="#"><span class="eng-sub">#</span><span class="key-text">s</span></div>
 <div class="eng-key eng-long" data-char="d" data-long=":"><span class="eng-sub">:</span><span class="key-text">d</span></div>
@@ -349,7 +400,6 @@ height: 100%;
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
 <div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
-
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:16px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
 <div class="eng-key eng-long" data-char="x" data-long='"''><span class="eng-sub">"</span><span class="key-text">x</span></div>
@@ -359,7 +409,6 @@ height: 100%;
 <div class="eng-key eng-long" data-char="n" data-long="!"><span class="eng-sub">!</span><span class="key-text">n</span></div>
 <div class="eng-key eng-long" data-char="m" data-long="?"><span class="eng-sub">?</span><span class="key-text">m</span></div>
 <div class="eng-key func" style="grid-column: span 2; font-size: 22px;" onpointerdown="startBsSwipe(event)" onpointerup="endBsSwipe(event)" onpointerleave="stopBackspace()">⌫</div>
-
 <div class="brand-btn" style="grid-column: span 2;" id="engHomeBtn">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
@@ -373,7 +422,7 @@ height: 100%;
 </div>
 
 <!-- =========================================================
-3. 기호판 1 (수학 및 특수기호) - 도안 변경 ($ -> ?)
+3. 기호판 1
 ========================================================= -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
@@ -387,7 +436,6 @@ height: 100%;
 <div class="sym-key" onclick="appendSpecial('8')">8</div>
 <div class="sym-key" onclick="appendSpecial('9')">9</div>
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
-
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
 <div class="sym-key" onclick="appendSpecial('`')">`</div>
 <div class="sym-key" onclick="appendSpecial('|')">|</div>
@@ -398,19 +446,16 @@ height: 100%;
 <div class="sym-key" onclick="appendSpecial('×')">×</div>
 <div class="sym-key" onclick="appendSpecial('§')">§</div>
 <div class="sym-key" onclick="appendSpecial('Δ')">Δ</div>
-
-<!-- 3번째 줄: $ 대신 ? 디자인 적용 -->
 <div class="sym-key" onclick="appendSpecial('!')">!</div>
 <div class="sym-key" onclick="appendSpecial('@')">@</div>
 <div class="sym-key" onclick="appendSpecial('#')">#</div>
 <div class="sym-key" onclick="appendSpecial('?')">?</div>
 <div class="sym-key" onclick="appendSpecial('%')">%</div>
 <div class="sym-key" onclick="appendSpecial('^')">^</div>
-<div class="sym-key" onclick="appendSpecial('&')">&amp;</div>
+<div class="sym-key" onclick="appendSpecial('&')">&</div>
 <div class="sym-key" onclick="appendSpecial('*')">*</div>
 <div class="sym-key" onclick="appendSpecial('(')">(</div>
 <div class="sym-key" onclick="appendSpecial(')')">)</div>
-
 <div class="sym-key func" onclick="switchToBoard('alphaBoard')">ABC</div>
 <div class="sym-key" onclick="appendSpecial('-')">-</div>
 <div class="sym-key" onclick="appendSpecial('_')">_</div>
@@ -421,7 +466,6 @@ height: 100%;
 <div class="sym-key" onclick="appendSpecial('{')">{</div>
 <div class="sym-key" onclick="appendSpecial('}')">}</div>
 <div class="sym-key func" onpointerdown="startBsSwipe(event)" onpointerup="endBsSwipe(event)" onpointerleave="stopBackspace()">⌫</div>
-
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
@@ -434,7 +478,7 @@ height: 100%;
 </div>
 
 <!-- =========================================================
-4. 기호판 2 (맨 윗줄 10개 커스텀 사용자 정의판)
+4. 기호판 2
 ========================================================= -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
@@ -448,7 +492,6 @@ height: 100%;
 <div class="sym-key custom-key" data-index="7" style="color:#1a73e8; font-weight:bold;">∵</div>
 <div class="sym-key custom-key" data-index="8" style="color:#1a73e8; font-weight:bold;">∫</div>
 <div class="sym-key custom-key" data-index="9" style="color:#1a73e8; font-weight:bold;">ϕ</div>
-
 <div class="sym-key" onclick="appendSpecial('∂')">∂</div>
 <div class="sym-key" onclick="appendSpecial('∇')">∇</div>
 <div class="sym-key" onclick="appendSpecial('∈')">∈</div>
@@ -459,7 +502,6 @@ height: 100%;
 <div class="sym-key" onclick="appendSpecial('⊇')">⊇</div>
 <div class="sym-key" onclick="appendSpecial('⊈')">⊈</div>
 <div class="sym-key" onclick="appendSpecial('∠')">∠</div>
-
 <div class="sym-key" onclick="appendSpecial('¢')">¢</div>
 <div class="sym-key" onclick="appendSpecial('£')">£</div>
 <div class="sym-key" onclick="appendSpecial('¥')">¥</div>
@@ -470,7 +512,6 @@ height: 100%;
 <div class="sym-key" onclick="appendSpecial('°')">°</div>
 <div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial('·')">·</div>
-
 <div class="sym-key func" onclick="switchToBoard('alphaBoard')">ABC</div>
 <div class="sym-key" onclick="appendSpecial('“')">“</div>
 <div class="sym-key" onclick="appendSpecial('”')">”</div>
@@ -478,10 +519,9 @@ height: 100%;
 <div class="sym-key" onclick="appendSpecial('’')">’</div>
 <div class="sym-key" onclick="appendSpecial('«')">«</div>
 <div class="sym-key" onclick="appendSpecial('»')">»</div>
-<div class="sym-key" onclick="appendSpecial('&lt;')">&lt;</div>
-<div class="sym-key" onclick="appendSpecial('&gt;')">&gt;</div>
+<div class="sym-key" onclick="appendSpecial('<')"><</div>
+<div class="sym-key" onclick="appendSpecial('>')">></div>
 <div class="sym-key func" onpointerdown="startBsSwipe(event)" onpointerup="endBsSwipe(event)" onpointerleave="stopBackspace()">⌫</div>
-
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
@@ -494,37 +534,109 @@ height: 100%;
 </div>
 
 <!-- =========================================================
-5. 쌍둥이판
+5. 쌍둥이판 (통합 완성본)
 ========================================================= -->
 <div id="twinBoard" class="keyboard-frame">
 <div class="grid-container">
-<div class="key"><span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span></div>
-<div class="key"><span class="label">앱</span><span class="icon">🔲</span><span class="plus">+</span></div>
-<div class="key"><span class="label">계산기</span><span class="icon">🧮</span></div>
-<div class="key blue-tint" style="grid-column:4 / 5; grid-row:1 / 2; height:100%; padding-top:2px;">
-<span class="label" style="color:#1a73e8;">상용구</span><span class="icon">💬</span><span class="plus" style="color:#1a73e8;">+</span>
+<!-- 1행 -->
+<div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
+  <span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>
 </div>
+<div class="key" onclick="alert('앱 실행 기능입니다.')">
+  <span class="label">앱</span><span class="icon">🔲</span><span class="plus">+</span>
+</div>
+<div class="key" id="calcBtn" style="cursor:pointer;">
+  <span class="label">계산기</span><span class="icon">🧮</span>
+</div>
+<div class="key blue-tint slot-key" data-slot="snippet_3" data-type="snippet" data-default='<span class="label" style="color:#1a73e8;">상용구</span><span class="plus" style="color:#1a73e8;">+</span>' style="grid-column:4 / 5; grid-row:1 / 2; height:100%;">
+  <span class="label" style="color:#1a73e8;">상용구</span><span class="plus" style="color:#1a73e8;">+</span>
+</div>
+
+<!-- 2행 -->
+<div class="key slot-key" data-slot="url_4" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key"><span class="plus">+</span></div>
+<div class="key" id="weatherBtn" style="cursor:pointer;">
+  <span class="label">날씨</span><span class="icon">⛅</span>
+</div>
+<div class="key blue-tint slot-key" data-slot="snippet_7" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>' style="grid-column:4 / 5; grid-row:2 / 3; height:100%;">
+  <span class="plus" style="color:#1a73e8;">+</span>
+</div>
+
+<!-- 3행 -->
+<div class="key slot-key" data-slot="url_8" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key"><span class="plus">+</span></div>
-<div class="key"><span class="label">날씨</span><span class="icon">⛅</span></div>
-<div class="key blue-tint" style="grid-column:4 / 5; grid-row:2 / 3; height:100%;"><span class="plus" style="color:#1a73e8;">+</span></div>
+<div class="key">
+  <span class="label">갤러리</span><span class="icon">🖼️</span>
+</div>
+
+<!-- 4행 -->
+<div class="key slot-key" data-slot="url_12" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key"><span class="plus">+</span></div>
-<div class="key"><span class="plus">+</span></div>
-<div class="key"><span class="label">갤러리</span><span class="icon">🖼️</span></div>
-<div class="key"><span class="plus">+</span></div>
-<div class="key"><span class="plus">+</span></div>
-<div class="key"><span class="label">카메라</span><span class="icon">📷</span></div>
+<div class="key">
+  <span class="label">카메라</span><span class="icon">📷</span>
+</div>
+
+<!-- 우측 하단 분할 영역 -->
 <div class="right-split-area">
-<div class="key blue-tint"><span class="plus" style="color:#1a73e8;">+</span></div>
-<div class="key blue-tint"><span class="plus" style="color:#1a73e8;">+</span></div>
-<div class="key blue-tint"><span class="plus" style="color:#1a73e8;">+</span></div>
-<div class="key" id="homeBtn" style="background-color:#ffffff; justify-content:center; align-items:center; padding-top:0;">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="#4285f4"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+  <div class="key blue-tint slot-key" data-slot="snippet_13" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+  <div class="key blue-tint slot-key" data-slot="snippet_14" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+  <div class="key blue-tint slot-key" data-slot="snippet_15" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+  <div class="key" id="homeBtn" style="background-color:#ffffff; justify-content:center; align-items:center;" onclick="switchToBoard('mainBoard')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="#4285f4"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+  </div>
 </div>
-</div>
+
 </div>
 </div>
 
+</div>
+
+<!-- 설정 모달창 -->
+<div id="slotModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span id="modalTitle">설정</span>
+      <span class="modal-close" onclick="closeModal()">×</span>
+    </div>
+    <input type="text" id="snippetInput" class="modal-input" placeholder="상용구 입력...">
+    <div id="urlFields" style="display:none;">
+      <input type="text" id="urlTitle" class="modal-input" placeholder="표시할 제목 (예: 깃허브)">
+      <input type="text" id="urlAddr" class="modal-input" placeholder="이동할 주소 (예: github.com)">
+    </div>
+    <div style="display:flex; gap:6px; margin-top:4px;">
+      <button onclick="saveData()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
+      <button onclick="deleteData()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 미니 계산기 모달창 -->
+<div id="calcModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:280px;">
+    <div class="modal-header">
+      <span>미니 계산기</span>
+      <span class="modal-close" onclick="closeCalcModal()">×</span>
+    </div>
+    <input type="text" id="calcScreen" class="modal-input" style="font-size:18px; text-align:right;" readonly>
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
+      <button onclick="calcInput('7')" style="padding:12px; font-weight:bold;">7</button>
+      <button onclick="calcInput('8')" style="padding:12px; font-weight:bold;">8</button>
+      <button onclick="calcInput('9')" style="padding:12px; font-weight:bold;">9</button>
+      <button onclick="calcInput('/')" style="padding:12px; font-weight:bold; background:#eee;">÷</button>
+      <button onclick="calcInput('4')" style="padding:12px; font-weight:bold;">4</button>
+      <button onclick="calcInput('5')" style="padding:12px; font-weight:bold;">5</button>
+      <button onclick="calcInput('6')" style="padding:12px; font-weight:bold;">6</button>
+      <button onclick="calcInput('*')" style="padding:12px; font-weight:bold; background:#eee;">×</button>
+      <button onclick="calcInput('1')" style="padding:12px; font-weight:bold;">1</button>
+      <button onclick="calcInput('2')" style="padding:12px; font-weight:bold;">2</button>
+      <button onclick="calcInput('3')" style="padding:12px; font-weight:bold;">3</button>
+      <button onclick="calcInput('-')" style="padding:12px; font-weight:bold; background:#eee;">-</button>
+      <button onclick="calcClear()" style="padding:12px; font-weight:bold; background:#ffdddd;">C</button>
+      <button onclick="calcInput('0')" style="padding:12px; font-weight:bold;">0</button>
+      <button onclick="calcResult()" style="padding:12px; font-weight:bold; background:#4285f4; color:#fff;">=</button>
+      <button onclick="calcInput('+')" style="padding:12px; font-weight:bold; background:#eee;">+</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -544,40 +656,38 @@ const euKey = document.getElementById('euKey');
 const symbolKey = document.getElementById('symbolKey');
 const topSymbolKey = document.getElementById('topSymbolKey');
 const shiftBtn = document.getElementById('shiftBtn');
-
 let isShiftActive = false;
 
 function switchToBoard(boardId) {
-[mainBoard, alphaBoard, symbolBoard1, symbolBoard2, twinBoard].forEach(board => {
-if (board) board.classList.remove('active');
-});
-const target = document.getElementById(boardId);
-if (target) target.classList.add('active');
+  [mainBoard, alphaBoard, symbolBoard1, symbolBoard2, twinBoard].forEach(board => {
+    if (board) board.classList.remove('active');
+  });
+  const target = document.getElementById(boardId);
+  if (target) target.classList.add('active');
 }
 
 toAlphaBtn.addEventListener('click', () => { switchToBoard('alphaBoard'); });
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
 function toggleShift(e) {
-if(e) e.preventDefault();
-isShiftActive = !isShiftActive;
-if (isShiftActive) {
-shiftBtn.classList.add('active-shift');
-} else {
-shiftBtn.classList.remove('active-shift');
+  if(e) e.preventDefault();
+  isShiftActive = !isShiftActive;
+  if (isShiftActive) {
+    shiftBtn.classList.add('active-shift');
+  } else {
+    shiftBtn.classList.remove('active-shift');
+  }
+  document.querySelectorAll('.eng-long').forEach(key => {
+    let charSpan = key.querySelector('.key-text');
+    let baseChar = key.getAttribute('data-char');
+    if (charSpan) {
+      charSpan.textContent = isShiftActive ? baseChar.toUpperCase() : baseChar;
+    }
+  });
 }
-document.querySelectorAll('.eng-long').forEach(key => {
-let charSpan = key.querySelector('.key-text');
-let baseChar = key.getAttribute('data-char');
-if (charSpan) {
-charSpan.textContent = isShiftActive ? baseChar.toUpperCase() : baseChar;
-}
-});
-}
-
 if (shiftBtn) {
-shiftBtn.addEventListener('touchend', toggleShift);
-shiftBtn.addEventListener('click', toggleShift);
+  shiftBtn.addEventListener('touchend', toggleShift);
+  shiftBtn.addEventListener('click', toggleShift);
 }
 
 const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -585,361 +695,324 @@ const JUNGSUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ',
 const JONGSUNG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const SINGLE_JONGSUNG = {'ㄳ':'ㄱ', 'ㄵ':'ㄴ', 'ㄶ':'ㄴ', 'ㄺ':'ㄹ', 'ㄻ':'ㄹ', 'ㄼ':'ㄹ', 'ㄽ':'ㄹ', 'ㄾ':'ㄹ', 'ㄿ':'ㄹ', 'ㅀ':'ㄹ', 'ㅄ':'ㅂ'};
 const VOWEL_COMBINE = {
-'ㅗ+ㅏ':'ㅘ', 'ㅗ+ㅐ':'ㅙ', 'ㅗ+ㅣ':'ㅚ',
-'ㅜ+ㅓ':'ㅝ', 'ㅜ+ㅔ':'ㅞ', 'ㅜ+ㅣ':'ㅟ',
-'ㅡ+ㅣ':'ㅢ',
-'ㅏ+ㅣ':'ㅐ', 'ㅓ+ㅣ':'ㅔ', 'ㅑ+ㅣ':'ㅒ', 'ㅕ+ㅣ':'ㅖ',
-'ㅘ+ㅣ':'ㅙ', 'ㅝ+ㅣ':'ㅞ'
+  'ㅗ+ㅏ':'ㅘ', 'ㅗ+ㅐ':'ㅙ', 'ㅗ+ㅣ':'ㅚ',
+  'ㅜ+ㅓ':'ㅝ', 'ㅜ+ㅔ':'ㅞ', 'ㅜ+ㅣ':'ㅟ',
+  'ㅡ+ㅣ':'ㅢ',
+  'ㅏ+ㅣ':'ㅐ', 'ㅓ+ㅣ':'ㅔ', 'ㅑ+ㅣ':'ㅒ', 'ㅕ+ㅣ':'ㅖ',
+  'ㅘ+ㅣ':'ㅙ', 'ㅝ+ㅣ':'ㅞ'
 };
 const CONSONANT_COMBINE = {
-'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ', 
-'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㄿ':'ㄿ', 'ㄹ+ㅎ':'ㅀ', 
-'ㅂ+ㅅ':'ㅄ'
+  'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ', 
+  'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㄿ':'ㄿ', 'ㄹ+ㅎ':'ㅀ', 
+  'ㅂ+ㅅ':'ㅄ'
 };
 
 let hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 let committedText = '';
 let lastSlideDir = '';
 let lastSlideTime = 0;
-
 let cursorPos = 0;
 
-function getTextLength(text) {
-return Array.from(text).length;
-}
+function getTextLength(text) { return Array.from(text).length; }
 
 function updateScreen() {
-screen.value = committedText + assembleCurrent();
-
-let currentLength = getTextLength(assembleCurrent());
-let position = cursorPos + currentLength;
-
-try {
-screen.setSelectionRange(position, position);
-} catch(e) {}
-
-screen.scrollLeft = screen.scrollWidth;
+  screen.value = committedText + assembleCurrent();
+  let currentLength = getTextLength(assembleCurrent());
+  let position = cursorPos + currentLength;
+  try {
+    screen.setSelectionRange(position, position);
+  } catch(e) {}
+  screen.scrollLeft = screen.scrollWidth;
 }
 
 function assembleCurrent() {
-let { cho, jung, jong } = hangulBuffer;
-if (cho === -1 && jung === -1 && jong === -1) return '';
-let c = cho !== -1 ? cho : 0;
-let j = jung !== -1 ? jung : 0;
-let o = jong !== -1 ? jong : 0;
-if (cho !== -1 && jung === -1 && jong === -1) return CHOSUNG[cho];
-if (cho === -1 && jung !== -1 && jong === -1) return JUNGSUNG[jung];
-return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
+  let { cho, jung, jong } = hangulBuffer;
+  if (cho === -1 && jung === -1 && jong === -1) return '';
+  let c = cho !== -1 ? cho : 0;
+  let j = jung !== -1 ? jung : 0;
+  let o = jong !== -1 ? jong : 0;
+  if (cho !== -1 && jung === -1 && jong === -1) return CHOSUNG[cho];
+  if (cho === -1 && jung !== -1 && jong === -1) return JUNGSUNG[jung];
+  return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 }
 
 function commitCurrent() {
-let current = assembleCurrent();
-
-if (current) {
-committedText =
-committedText.slice(0, cursorPos) +
-current +
-committedText.slice(cursorPos);
-
-cursorPos += getTextLength(current);
-}
-
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+  let current = assembleCurrent();
+  if (current) {
+    committedText = committedText.slice(0, cursorPos) + current + committedText.slice(cursorPos);
+    cursorPos += getTextLength(current);
+  }
+  hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 }
 
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
-let choIdx = CHOSUNG.indexOf(inputChar);
-let jungIdx = JUNGSUNG.indexOf(inputChar);
-if (choIdx !== -1 && jungIdx === -1) {
-lastSlideDir = '';
-if (hangulBuffer.cho === -1) { 
-hangulBuffer.cho = choIdx; 
-} else if (hangulBuffer.jung === -1) { 
-commitCurrent(); 
-hangulBuffer.cho = choIdx; 
-} else if (hangulBuffer.jong === -1) {
-let jongTry = getJongIndex(inputChar);
-if (jongTry !== -1) { hangulBuffer.jong = jongTry; } 
-else { commitCurrent(); hangulBuffer.cho = choIdx; }
-} else {
-let prevChar = JONGSUNG[hangulBuffer.jong];
-let combined = CONSONANT_COMBINE[prevChar + '+' + inputChar];
-if (combined) { hangulBuffer.jong = getJongIndex(combined); } 
-else { commitCurrent(); hangulBuffer.cho = choIdx; }
-}
-} else if (jungIdx !== -1) {
-if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong !== -1) {
-let jongChar = JONGSUNG[hangulBuffer.jong];
-let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
-let remainingJong = '';
-for (let key in CONSONANT_COMBINE) {
-if (CONSONANT_COMBINE[key] === jongChar) {
-let parts = key.split('+');
-remainingJong = parts[0];
-splitCho = parts[1];
-break;
-}
-}
-hangulBuffer.jong = remainingJong ? getJongIndex(remainingJong) : -1;
-commitCurrent();
-hangulBuffer.cho = CHOSUNG.indexOf(splitCho);
-hangulBuffer.jung = jungIdx;
-hangulBuffer.jong = -1;
-lastSlideDir = '';
-} else {
-let prevVowel = hangulBuffer.jung !== -1 ? JUNGSUNG[hangulBuffer.jung] : '';
-let combinedVowel = prevVowel ? VOWEL_COMBINE[prevVowel + '+' + inputChar] : null;
-if (combinedVowel) {
-hangulBuffer.jung = JUNGSUNG.indexOf(combinedVowel);
-lastSlideDir = '';
-} else {
-if (hangulBuffer.jung !== -1) commitCurrent();
-hangulBuffer.jung = jungIdx;
-}
-}
-}
-updateScreen();
+  let choIdx = CHOSUNG.indexOf(inputChar);
+  let jungIdx = JUNGSUNG.indexOf(inputChar);
+  if (choIdx !== -1 && jungIdx === -1) {
+    lastSlideDir = '';
+    if (hangulBuffer.cho === -1) { 
+      hangulBuffer.cho = choIdx; 
+    } else if (hangulBuffer.jung === -1) { 
+      commitCurrent(); 
+      hangulBuffer.cho = choIdx; 
+    } else if (hangulBuffer.jong === -1) {
+      let jongTry = getJongIndex(inputChar);
+      if (jongTry !== -1) { hangulBuffer.jong = jongTry; } 
+      else { commitCurrent(); hangulBuffer.cho = choIdx; }
+    } else {
+      let prevChar = JONGSUNG[hangulBuffer.jong];
+      let combined = CONSONANT_COMBINE[prevChar + '+' + inputChar];
+      if (combined) { hangulBuffer.jong = getJongIndex(combined); } 
+      else { commitCurrent(); hangulBuffer.cho = choIdx; }
+    }
+  } else if (jungIdx !== -1) {
+    if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong !== -1) {
+      let jongChar = JONGSUNG[hangulBuffer.jong];
+      let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
+      let remainingJong = '';
+      for (let key in CONSONANT_COMBINE) {
+        if (CONSONANT_COMBINE[key] === jongChar) {
+          let parts = key.split('+');
+          remainingJong = parts[0];
+          splitCho = parts[1];
+          break;
+        }
+      }
+      hangulBuffer.jong = remainingJong ? getJongIndex(remainingJong) : -1;
+      commitCurrent();
+      hangulBuffer.cho = CHOSUNG.indexOf(splitCho);
+      hangulBuffer.jung = jungIdx;
+      hangulBuffer.jong = -1;
+      lastSlideDir = '';
+    } else {
+      let prevVowel = hangulBuffer.jung !== -1 ? JUNGSUNG[hangulBuffer.jung] : '';
+      let combinedVowel = prevVowel ? VOWEL_COMBINE[prevVowel + '+' + inputChar] : null;
+      if (combinedVowel) {
+        hangulBuffer.jung = JUNGSUNG.indexOf(combinedVowel);
+        lastSlideDir = '';
+      } else {
+        if (hangulBuffer.jung !== -1) commitCurrent();
+        hangulBuffer.jung = jungIdx;
+      }
+    }
+  }
+  updateScreen();
 }
 
 function replaceLastVowel(newVowel) {
-if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
-hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
-updateScreen();
-} else if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
-hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
-updateScreen();
-} else {
-commitCurrent();
-appendHangul(newVowel);
-}
+  if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
+    hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
+    updateScreen();
+  } else if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
+    hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
+    updateScreen();
+  } else {
+    commitCurrent();
+    appendHangul(newVowel);
+  }
 }
 
 function backspaceHangul() {
-if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
-else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
-else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
-else if (cursorPos > 0) {
-let chars = Array.from(committedText);
-chars.splice(cursorPos - 1, 1);
-committedText = chars.join('');
-cursorPos--;
-}
-lastSlideDir = '';
-updateScreen();
+  if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
+  else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
+  else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
+  else if (cursorPos > 0) {
+    let chars = Array.from(committedText);
+    chars.splice(cursorPos - 1, 1);
+    committedText = chars.join('');
+    cursorPos--;
+  }
+  lastSlideDir = '';
+  updateScreen();
 }
 
 let bsTimer = null;
 let bsStartX = 0;
-
 function startBsSwipe(e) {
-bsStartX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-backspaceHangul();
-bsTimer = setInterval(() => {
-backspaceHangul();
-}, 150);
+  bsStartX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+  backspaceHangul();
+  bsTimer = setInterval(() => { backspaceHangul(); }, 150);
 }
-
 function endBsSwipe(e) {
-clearInterval(bsTimer);
-let endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
-if (endX - bsStartX < -30) {
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-committedText = '';
-cursorPos = 0;
-updateScreen();
+  clearInterval(bsTimer);
+  let endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
+  if (endX - bsStartX < -30) {
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    committedText = '';
+    cursorPos = 0;
+    updateScreen();
+  }
 }
-}
-
-function stopBackspace() {
-clearInterval(bsTimer);
-}
+function stopBackspace() { clearInterval(bsTimer); }
 
 function appendSpecial(char) {
-commitCurrent();
-lastSlideDir = '';
-committedText =
-committedText.slice(0, cursorPos) +
-char +
-committedText.slice(cursorPos);
-cursorPos += getTextLength(char);
-updateScreen();
+  commitCurrent();
+  lastSlideDir = '';
+  committedText = committedText.slice(0, cursorPos) + char + committedText.slice(cursorPos);
+  cursorPos += getTextLength(char);
+  updateScreen();
 }
 
 const defaultCustomSymbols = ['±', '≤', '≥', '≠', '≈', '∞', '∴', '∵', '∫', 'ϕ'];
 function loadCustomSymbols() {
-let saved = localStorage.getItem('custom_symbols_v844');
-return saved ? JSON.parse(saved) : defaultCustomSymbols;
+  let saved = localStorage.getItem('custom_symbols_v844');
+  return saved ? JSON.parse(saved) : defaultCustomSymbols;
 }
-function saveCustomSymbols(arr) {
-localStorage.setItem('custom_symbols_v844', JSON.stringify(arr));
-}
+function saveCustomSymbols(arr) { localStorage.setItem('custom_symbols_v844', JSON.stringify(arr)); }
 
 function initCustomKeys() {
-let symbols = loadCustomSymbols();
-document.querySelectorAll('.custom-key').forEach((key, idx) => {
-key.textContent = symbols[idx] || '';
-
-let timer = null;
-let isLong = false;
-
-key.addEventListener('touchstart', (e) => {
-isLong = false;
-timer = setTimeout(() => {
-isLong = true;
-let newVal = prompt((idx + 1) + '번째 사용자 정의 기호를 입력하세요:', symbols[idx]);
-if (newVal !== null) {
-symbols[idx] = newVal;
-saveCustomSymbols(symbols);
-initCustomKeys();
-}
-if (navigator.vibrate) navigator.vibrate(40);
-}, 600);
-}, { passive: true });
-
-key.addEventListener('touchend', (e) => {
-if (timer) { clearTimeout(timer); timer = null; }
-if (!isLong) {
-appendSpecial(symbols[idx]);
-}
-});
-
-key.addEventListener('touchcancel', () => {
-if (timer) { clearTimeout(timer); timer = null; }
-isLong = false;
-});
-});
+  let symbols = loadCustomSymbols();
+  document.querySelectorAll('.custom-key').forEach((key, idx) => {
+    key.textContent = symbols[idx] || '';
+    let timer = null;
+    let isLong = false;
+    key.addEventListener('touchstart', (e) => {
+      isLong = false;
+      timer = setTimeout(() => {
+        isLong = true;
+        let newVal = prompt((idx + 1) + '번째 사용자 정의 기호를 입력하세요:', symbols[idx]);
+        if (newVal !== null) {
+          symbols[idx] = newVal;
+          saveCustomSymbols(symbols);
+          initCustomKeys();
+        }
+        if (navigator.vibrate) navigator.vibrate(40);
+      }, 600);
+    }, { passive: true });
+    key.addEventListener('touchend', (e) => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      if (!isLong) { appendSpecial(symbols[idx]); }
+    });
+    key.addEventListener('touchcancel', () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      isLong = false;
+    });
+  });
 }
 initCustomKeys();
 
 document.querySelectorAll('.eng-long').forEach(key => {
-let timer = null;
-let isLong = false;
-let char = key.getAttribute('data-char');
-let longChar = key.getAttribute('data-long');
-
-key.addEventListener('touchstart', (e) => {
-isLong = false;
-timer = setTimeout(() => {
-isLong = true;
-appendSpecial(longChar);
-if (navigator.vibrate) navigator.vibrate(40);
-}, 500);
-}, { passive: true });
-
-key.addEventListener('touchend', (e) => {
-if (timer) { clearTimeout(timer); timer = null; }
-if (!isLong) {
-let outputChar = isShiftActive ? char.toUpperCase() : char;
-appendSpecial(outputChar);
-if (isShiftActive) {
-isShiftActive = false;
-shiftBtn.classList.remove('active-shift');
-document.querySelectorAll('.eng-long').forEach(k => {
-let cs = k.querySelector('.key-text');
-let bc = k.getAttribute('data-char');
-if (cs) cs.textContent = bc;
-});
-}
-}
-});
-
-key.addEventListener('touchcancel', () => {
-if (timer) { clearTimeout(timer); timer = null; }
-isLong = false;
-});
+  let timer = null;
+  let isLong = false;
+  let char = key.getAttribute('data-char');
+  let longChar = key.getAttribute('data-long');
+  key.addEventListener('touchstart', (e) => {
+    isLong = false;
+    timer = setTimeout(() => {
+      isLong = true;
+      appendSpecial(longChar);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 500);
+  }, { passive: true });
+  key.addEventListener('touchend', (e) => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (!isLong) {
+      let outputChar = isShiftActive ? char.toUpperCase() : char;
+      appendSpecial(outputChar);
+      if (isShiftActive) {
+        isShiftActive = false;
+        shiftBtn.classList.remove('active-shift');
+        document.querySelectorAll('.eng-long').forEach(k => {
+          let cs = k.querySelector('.key-text');
+          let bc = k.getAttribute('data-char');
+          if (cs) cs.textContent = bc;
+        });
+      }
+    }
+  });
+  key.addEventListener('touchcancel', () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    isLong = false;
+  });
 });
 
 function setupLongPressKey(keyElement, onShortAction) {
-let timer = null;
-let isLongPressed = false;
-let longChar = keyElement.getAttribute('data-long');
-keyElement.addEventListener('touchstart', (e) => {
-isLongPressed = false;
-if (!longChar) return;
-timer = setTimeout(() => {
-isLongPressed = true;
-appendSpecial(longChar);
-if (navigator.vibrate) navigator.vibrate(40);
-}, 500);
-}, { passive: true });
-keyElement.addEventListener('touchend', (e) => {
-if (timer) { clearTimeout(timer); timer = null; }
-if (!isLongPressed) { onShortAction(e); }
-});
-keyElement.addEventListener('touchcancel', () => {
-if (timer) { clearTimeout(timer); timer = null; }
-isLongPressed = false;
-});
+  let timer = null;
+  let isLongPressed = false;
+  let longChar = keyElement.getAttribute('data-long');
+  keyElement.addEventListener('touchstart', (e) => {
+    isLongPressed = false;
+    if (!longChar) return;
+    timer = setTimeout(() => {
+      isLongPressed = true;
+      appendSpecial(longChar);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 500);
+  }, { passive: true });
+  keyElement.addEventListener('touchend', (e) => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (!isLongPressed) { onShortAction(e); }
+  });
+  keyElement.addEventListener('touchcancel', () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    isLongPressed = false;
+  });
 }
 
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => { iStartX = e.touches[0].clientX; iStartY = e.touches[0].clientY; }, { passive: true });
 setupLongPressKey(iKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
-if (t.clientY - iStartY > 12 || Math.abs(t.clientX - iStartX) < 15) { appendHangul('ㅣ'); }
+  let t = e.changedTouches ? e.changedTouches[0] : e;
+  if (t.clientY - iStartY > 12 || Math.abs(t.clientX - iStartX) < 15) { appendHangul('ㅣ'); }
 });
 
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => { euStartX = e.touches[0].clientX; euStartY = e.touches[0].clientY; }, { passive: true });
 setupLongPressKey(euKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
-if (Math.abs(t.clientX - euStartX) > 12 && Math.abs(t.clientX - euStartX) > Math.abs(t.clientX - euStartY)) appendHangul('ㅡ');
+  let t = e.changedTouches ? e.changedTouches[0] : e;
+  if (Math.abs(t.clientX - euStartX) > 12 && Math.abs(t.clientX - euStartX) > Math.abs(t.clientX - euStartY)) appendHangul('ㅡ');
 });
 
 document.querySelectorAll('.slide-con').forEach(key => {
-let startX = 0, startY = 0;
-key.addEventListener('touchstart', (e) => {
-startX = e.touches[0].clientX;
-startY = e.touches[0].clientY;
-}, { passive: true });
-
-setupLongPressKey(key, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
-let diffX = t.clientX - startX;
-let diffY = t.clientY - startY;
-let base = key.getAttribute('data-base');
-let up = key.getAttribute('data-up');
-let right = key.getAttribute('data-right');
-
-if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 18 && right && diffX > 0) {
-appendHangul(right);
-return;
-}
-
-if (up && diffY < -8 && Math.abs(diffX) <= Math.abs(diffY) * 2.5) {
-appendHangul(up);
-return;
-}
-
-appendHangul(base);
-});
+  let startX = 0, startY = 0;
+  key.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  setupLongPressKey(key, (e) => {
+    let t = e.changedTouches ? e.changedTouches[0] : e;
+    let diffX = t.clientX - startX;
+    let diffY = t.clientY - startY;
+    let base = key.getAttribute('data-base');
+    let up = key.getAttribute('data-up');
+    let right = key.getAttribute('data-right');
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 18 && right && diffX > 0) {
+      appendHangul(right);
+      return;
+    }
+    if (up && diffY < -8 && Math.abs(diffX) <= Math.abs(diffY) * 2.5) {
+      appendHangul(up);
+      return;
+    }
+    appendHangul(base);
+  });
 });
 
 let touchStartX = 0, touchStartY = 0;
 slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
 setupLongPressKey(slideKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
-let diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
-if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
-let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
-let now = Date.now();
-let isDouble = (lastSlideDir === dir && now - lastSlideTime < 600);
-let target = '';
-if (!isDouble) {
-if (dir === 'right') target = 'ㅏ'; 
-else if (dir === 'left') target = 'ㅓ'; 
-else if (dir === 'up') target = 'ㅗ'; 
-else if (dir === 'down') target = 'ㅜ';
-if (target) { appendHangul(target); lastSlideDir = dir; lastSlideTime = now; }
-} else {
-if (dir === 'right') target = 'ㅑ'; 
-else if (dir === 'left') target = 'ㅕ'; 
-else if (dir === 'up') target = 'ㅛ'; 
-else if (dir === 'down') target = 'ㅠ';
-if (target) { replaceLastVowel(target); lastSlideDir = ''; lastSlideTime = 0; }
-}
+  let t = e.changedTouches ? e.changedTouches[0] : e;
+  let diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
+  if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
+  let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
+  let now = Date.now();
+  let isDouble = (lastSlideDir === dir && now - lastSlideTime < 600);
+  let target = '';
+  if (!isDouble) {
+    if (dir === 'right') target = 'ㅏ'; 
+    else if (dir === 'left') target = 'ㅓ'; 
+    else if (dir === 'up') target = 'ㅗ'; 
+    else if (dir === 'down') target = 'ㅜ';
+    if (target) { appendHangul(target); lastSlideDir = dir; lastSlideTime = now; }
+  } else {
+    if (dir === 'right') target = 'ㅑ'; 
+    else if (dir === 'left') target = 'ㅕ'; 
+    else if (dir === 'up') target = 'ㅛ'; 
+    else if (dir === 'down') target = 'ㅠ';
+    if (target) { replaceLastVowel(target); lastSlideDir = ''; lastSlideTime = 0; }
+  }
 });
 
 let globeKey = document.querySelector('.key[data-long="#"]');
@@ -947,83 +1020,275 @@ if (globeKey) setupLongPressKey(globeKey, () => { appendSpecial('🌐'); });
 
 let topX = 0, topY = 0, topTimer = null, topLong = false;
 topSymbolKey.addEventListener('touchstart', (e) => {
-topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
-topTimer = setTimeout(() => { topLong = true; appendSpecial('•'); if (navigator.vibrate) navigator.vibrate(40); }, 500);
+  topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
+  topTimer = setTimeout(() => { topLong = true; appendSpecial('•'); if (navigator.vibrate) navigator.vibrate(40); }, 500);
 }, { passive: true });
 topSymbolKey.addEventListener('touchend', (e) => {
-if (topTimer) { clearTimeout(topTimer); topTimer = null; }
-if (topLong) return;
-let t = e.changedTouches[0], dx = t.clientX - topX, dy = t.clientY - topY;
-if (Math.hypot(dx, dy) < 15) { appendSpecial('.'); return; }
-let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-if (angle >= -22.5 && angle < 22.5) appendSpecial(',');
-else if (angle >= 22.5 && angle < 67.5) appendSpecial('!');
-else if (angle >= 67.5 && angle < 112.5) appendSpecial('?');
-else if (angle >= 112.5 && angle < 157.5) appendSpecial('/');
-else if (angle >= 157.5 || angle < -157.5) appendSpecial(':');
-else if (angle >= -157.5 && angle < -112.5) appendSpecial('~');
-else if (angle >= -112.5 && angle < -67.5) appendSpecial('^');
-else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
+  if (topTimer) { clearTimeout(topTimer); topTimer = null; }
+  if (topLong) return;
+  let t = e.changedTouches[0], dx = t.clientX - topX, dy = t.clientY - topY;
+  if (Math.hypot(dx, dy) < 15) { appendSpecial('.'); return; }
+  let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  if (angle >= -22.5 && angle < 22.5) appendSpecial(',');
+  else if (angle >= 22.5 && angle < 67.5) appendSpecial('!');
+  else if (angle >= 67.5 && angle < 112.5) appendSpecial('?');
+  else if (angle >= 112.5 && angle < 157.5) appendSpecial('/');
+  else if (angle >= 157.5 || angle < -157.5) appendSpecial(':');
+  else if (angle >= -157.5 && angle < -112.5) appendSpecial('~');
+  else if (angle >= -112.5 && angle < -67.5) appendSpecial('^');
+  else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
 });
 
 let symX = 0, symY = 0, symTimer = null, symLong = false;
 symbolKey.addEventListener('touchstart', (e) => {
-symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
-symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); if (navigator.vibrate) navigator.vibrate(40); }, 500);
+  symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
+  symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); if (navigator.vibrate) navigator.vibrate(40); }, 500);
 }, { passive: true });
 symbolKey.addEventListener('touchend', (e) => {
-if (symTimer) { clearTimeout(symTimer); symTimer = null; }
-if (symLong) return;
-let t = e.changedTouches[0], dx = t.clientX - symX, dy = t.clientY - symY;
-if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
-appendSpecial(dx > 0 ? ')' : '(');
-} else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) {
-appendSpecial(dy < 0 ? '♡' : '→');
-} else {
-appendSpecial('(♥)');
-}
+  if (symTimer) { clearTimeout(symTimer); symTimer = null; }
+  if (symLong) return;
+  let t = e.changedTouches[0], dx = t.clientX - symX, dy = t.clientY - symY;
+  if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) {
+    appendSpecial(dx > 0 ? ')' : '(');
+  } else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) {
+    appendSpecial(dy < 0 ? '♡' : '→');
+  } else {
+    appendSpecial('(♥)');
+  }
 });
 
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => {
-sX = e.touches[0].clientX;
-sY = e.touches[0].clientY;
+  sX = e.touches[0].clientX;
+  sY = e.touches[0].clientY;
 }, { passive: true });
 
 settingBtn.addEventListener('touchend', (e) => {
-let t = e.changedTouches[0];
-let dx = t.clientX - sX;
-let dy = t.clientY - sY;
-
-if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
-commitCurrent();
-if (cursorPos > 0) { cursorPos--; }
-updateScreen();
-if (navigator.vibrate) navigator.vibrate(25);
-return;
-}
-
-if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
-commitCurrent();
-if (cursorPos < getTextLength(committedText)) { cursorPos++; }
-updateScreen();
-if (navigator.vibrate) navigator.vibrate(25);
-return;
-}
-
-if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
-mainBoard.classList.remove('active');
-twinBoard.classList.add('active');
-} else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
-commitCurrent();
-committedText = committedText.slice(0, cursorPos) + ' ' + committedText.slice(cursorPos);
-cursorPos++;
-updateScreen();
-}
+  let t = e.changedTouches[0];
+  let dx = t.clientX - sX;
+  let dy = t.clientY - sY;
+  if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
+    commitCurrent();
+    if (cursorPos > 0) { cursorPos--; }
+    updateScreen();
+    if (navigator.vibrate) navigator.vibrate(25);
+    return;
+  }
+  if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
+    commitCurrent();
+    if (cursorPos < getTextLength(committedText)) { cursorPos++; }
+    updateScreen();
+    if (navigator.vibrate) navigator.vibrate(25);
+    return;
+  }
+  if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
+    mainBoard.classList.remove('active');
+    twinBoard.classList.add('active');
+  } else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+    commitCurrent();
+    committedText = committedText.slice(0, cursorPos) + ' ' + committedText.slice(cursorPos);
+    cursorPos++;
+    updateScreen();
+  }
 });
 
-homeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
+// 설정판(쌍둥이판)에서 아래로 밀면 메인 자판으로 돌아오는 기능 구현
+let twinStartX = 0, twinStartY = 0;
+twinBoard.addEventListener('touchstart', (e) => {
+  twinStartX = e.touches[0].clientX;
+  twinStartY = e.touches[0].clientY;
+}, { passive: true });
 
+twinBoard.addEventListener('touchend', (e) => {
+  let t = e.changedTouches[0];
+  let dx = t.clientX - twinStartX;
+  let dy = t.clientY - twinStartY;
+  // 아래로 쓸어내렸을 때 (dy가 양수이면서 수평 이동보다 클 때)
+  if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
+    twinBoard.classList.remove('active');
+    mainBoard.classList.add('active');
+    if (navigator.vibrate) navigator.vibrate(25);
+  }
+});
+
+/* ==========================================================
+   쌍둥이판 1열 URL 및 4열 상용구 + 계산기/날씨 기능 스크립트
+   ========================================================== */
+let currentSlot = null;
+let currentType = 'url';
+
+function getDB() {
+  let data = localStorage.getItem('fresh_design_db_v1');
+  return data ? JSON.parse(data) : {};
+}
+function saveDB(db) {
+  localStorage.setItem('fresh_design_db_v1', JSON.stringify(db));
+}
+
+function renderSlots() {
+  let db = getDB();
+  document.querySelectorAll('.slot-key').forEach(el => {
+    let slotKey = el.getAttribute('data-slot');
+    let defaultHtml = el.getAttribute('data-default');
+    let val = db[slotKey];
+    if (val) {
+      let temp = document.createElement('div');
+      temp.innerHTML = defaultHtml;
+      let staticHtml = '';
+      let lbl = temp.querySelector('.label');
+      let ico = temp.querySelector('.icon');
+      if (lbl) staticHtml += lbl.outerHTML;
+      if (ico) staticHtml += ico.outerHTML;
+      let labelText = (typeof val === 'object' && val.title) ? val.title : val;
+      el.innerHTML = staticHtml + `<span class="content-text">${labelText}</span>`;
+    } else {
+      el.innerHTML = defaultHtml;
+    }
+  });
+}
+
+document.querySelectorAll('.slot-key').forEach(el => {
+  let slotKey = el.getAttribute('data-slot');
+  let type = el.getAttribute('data-type');
+  let pressTimer = null;
+  let isLongPress = false;
+
+  el.addEventListener('touchstart', (e) => {
+    isLongPress = false;
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+      isLongPress = true;
+      openModal(slotKey, type);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 550);
+  }, { passive: true });
+
+  el.addEventListener('touchend', (e) => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+    if (isLongPress) {
+      isLongPress = false;
+      return;
+    }
+    let db = getDB();
+    let val = db[slotKey];
+
+    if (type === 'url') {
+      if (val && typeof val === 'object' && val.url) {
+        let targetUrl = val.url;
+        window.open(targetUrl.startsWith('http') ? targetUrl : 'https://' + targetUrl, '_blank');
+      }
+      return;
+    }
+    if (type === 'snippet') {
+      if (val) {
+        document.getElementById('screen').value = val;
+      }
+      return;
+    }
+  });
+
+  el.addEventListener('touchcancel', () => {
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = null;
+    isLongPress = false;
+  });
+});
+
+/* 계산기 연동 */
+document.getElementById('calcBtn').addEventListener('click', () => {
+  document.getElementById('calcScreen').value = '';
+  document.getElementById('calcModal').style.display = 'flex';
+});
+function closeCalcModal() {
+  document.getElementById('calcModal').style.display = 'none';
+}
+function calcInput(val) {
+  let screenInput = document.getElementById('calcScreen');
+  screenInput.value += val;
+}
+function calcClear() {
+  document.getElementById('calcScreen').value = '';
+}
+function calcResult() {
+  let screenInput = document.getElementById('calcScreen');
+  try {
+    let result = eval(screenInput.value);
+    screenInput.value = result;
+    document.getElementById('screen').value = result;
+  } catch (e) {
+    screenInput.value = '오류';
+  }
+}
+
+/* 날씨 기능 연동 */
+document.getElementById('weatherBtn').addEventListener('click', () => {
+  window.open('https://search.naver.com/search.naver?query=날씨', '_blank');
+});
+
+function openModal(slotKey, type) {
+  currentSlot = slotKey;
+  currentType = type;
+  let db = getDB();
+  let val = db[slotKey] || {};
+  let sInput = document.getElementById('snippetInput');
+  let uFields = document.getElementById('urlFields');
+  let uTitle = document.getElementById('urlTitle');
+  let uAddr = document.getElementById('urlAddr');
+
+  if (type === 'url') {
+    sInput.style.display = 'none';
+    uFields.style.display = 'block';
+    uTitle.value = val.title || '';
+    uAddr.value = val.url || '';
+    document.getElementById('modalTitle').textContent = '1열 URL 설정';
+  } else {
+    sInput.style.display = 'block';
+    uFields.style.display = 'none';
+    sInput.value = (typeof val === 'string') ? val : '';
+    document.getElementById('modalTitle').textContent = '4열 상용구 설정';
+  }
+  document.getElementById('slotModal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('slotModal').style.display = 'none';
+  currentSlot = null;
+}
+function saveData() {
+  if (!currentSlot) return;
+  let db = getDB();
+  if (currentType === 'url') {
+    let title = document.getElementById('urlTitle').value.trim();
+    let url = document.getElementById('urlAddr').value.trim();
+    if (title && url) {
+      db[currentSlot] = { title: title, url: url };
+    } else {
+      delete db[currentSlot];
+    }
+  } else {
+    let text = document.getElementById('snippetInput').value.trim();
+    if (text) {
+      db[currentSlot] = text;
+    } else {
+      delete db[currentSlot];
+    }
+  }
+  saveDB(db);
+  renderSlots();
+  closeModal();
+}
+function deleteData() {
+  if (!currentSlot) return;
+  let db = getDB();
+  delete db[currentSlot];
+  saveDB(db);
+  renderSlots();
+  closeModal();
+}
+
+renderSlots();
 updateScreen();
 </script>
 </body>
