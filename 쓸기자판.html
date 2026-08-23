@@ -2,11 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>쓸기자판 v8.46 - 한자 대량 확장 통합본</title>
+<title>쓸기자판 v8.48 - 이모티콘 터치 스크롤 강화</title>
 <style>
 * {
 box-sizing: border-box;
-touch-action: none;
 }
 body {
 background-color: #2b3137;
@@ -20,6 +19,7 @@ justify-content: center;
 min-height: 100vh;
 overflow: hidden;
 user-select: none;
+touch-action: none;
 }
 .output-screen {
 background-color: #1e2227;
@@ -213,8 +213,7 @@ color: #1a73e8;
 word-break: break-all;
 margin-top: 2px;
 }
-
-/* 모달창 스타일 */
+/* 모달창 스타일 (완전한 터치 스크롤 개방) */
 .modal-overlay {
 position: fixed;
 top: 0;
@@ -226,6 +225,7 @@ display: none;
 justify-content: center;
 align-items: center;
 z-index: 100;
+touch-action: auto;
 }
 .modal-box {
 background: #fff;
@@ -238,6 +238,7 @@ display: flex;
 flex-direction: column;
 color: #333;
 box-sizing: border-box;
+touch-action: auto;
 }
 .modal-header {
 font-weight: bold;
@@ -263,7 +264,6 @@ border: 1px solid #ccc;
 border-radius: 6px;
 margin-bottom: 8px;
 }
-
 /* 클립보드 목록 스타일 */
 .clipboard-list {
 display: flex;
@@ -271,6 +271,8 @@ flex-direction: column;
 gap: 6px;
 max-height: 50vh;
 overflow-y: auto;
+touch-action: pan-y;
+-webkit-overflow-scrolling: touch;
 }
 .clipboard-item {
 padding: 12px 10px;
@@ -285,7 +287,6 @@ color: #333;
 .clipboard-item:active {
 background: #e2e8f0;
 }
-
 /* 이모티콘 100선판 스타일 */
 .emoji-list {
 display: grid;
@@ -295,6 +296,8 @@ max-height: 60vh;
 overflow-y: auto;
 padding-right: 4px;
 box-sizing: border-box;
+touch-action: pan-y;
+-webkit-overflow-scrolling: touch;
 }
 .emoji-item {
 height: 52px;
@@ -306,11 +309,11 @@ align-items: center;
 font-size: 32px;
 cursor: pointer;
 user-select: none;
+touch-action: manipulation;
 }
 .emoji-item:active {
 background: #e2e8f0;
 }
-
 /* 한자 변환 창 스타일 */
 .hanja-grid {
 display: grid;
@@ -318,6 +321,8 @@ grid-template-columns: repeat(2, 1fr);
 gap: 8px;
 max-height: 50vh;
 overflow-y: auto;
+touch-action: pan-y;
+-webkit-overflow-scrolling: touch;
 }
 .hanja-item {
 padding: 10px;
@@ -329,6 +334,7 @@ display: flex;
 align-items: center;
 gap: 8px;
 color: #333;
+touch-action: manipulation;
 }
 .hanja-item:active {
 background: #e2e8f0;
@@ -338,22 +344,18 @@ font-size: 22px;
 font-weight: bold;
 color: #1a73e8;
 }
-
-.emoji-list::-webkit-scrollbar, .hanja-grid::-webkit-scrollbar {
+.emoji-list::-webkit-scrollbar, .hanja-grid::-webkit-scrollbar, .clipboard-list::-webkit-scrollbar {
 width: 6px;
 }
-.emoji-list::-webkit-scrollbar-thumb, .hanja-grid::-webkit-scrollbar-thumb {
+.emoji-list::-webkit-scrollbar-thumb, .hanja-grid::-webkit-scrollbar-thumb, .clipboard-list::-webkit-scrollbar-thumb {
 background: #bbb;
 border-radius: 5px;
 }
 </style>
 </head>
 <body>
-
 <input type="text" id="screen" class="output-screen" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-
 <div class="keyboard-container">
-
 <!-- =========================================================
 1. 메인 자판 (한글 기본판)
 ========================================================= -->
@@ -371,7 +373,6 @@ border-radius: 5px;
 <div class="key func" id="backspaceBtn" onpointerdown="startBsSwipe(event)" onpointerup="endBsSwipe(event)" onpointerleave="stopBackspace()">
 <svg width="32" height="24" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
 </div>
-
 <div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
 <div class="key slide-con" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
 <div class="key" id="slideKey" data-long="6">
@@ -399,22 +400,18 @@ border-radius: 5px;
 <polyline points="19 30.5 21.5 33 24 30.5" stroke-width="1.8" fill="none"></polyline>
 </svg>
 </div>
-
 <div class="key green slide-con" data-base="ㅅ" data-up="ㅆ" data-long="7">ㅅ<span class="sub-top">7</span></div>
 <div class="key slide-con" data-base="ㅈ" data-up="ㅉ" data-right="ㅊ" data-long="8">ㅈ<span class="sub-top">8</span></div>
 <div class="key slide-eu" id="euKey" data-long="9">
 <svg width="24" height="12" viewBox="0 0 20 10"><rect x="0" y="3.5" width="20" height="3" fill="#222"/></svg>
 <span class="sub-top">9</span>
 </div>
-
 <div class="right-split-area">
 <div class="key func" id="topSymbolKey" style="font-size:12px; font-weight:normal; line-height:1.15; text-align:center; justify-content:center; display:flex; flex-direction:column; align-items:center;">
-  <div style="position:relative; top:1px;">~ ^ '</div>
-  <div style="position:relative; top:-3px;">. ,</div>
-  <div style="position:relative; top:0px;"><span style="font-size:9px; position:relative; top:-0.5px;">/</span> ? !</div>
+<div style="position:relative; top:1px;">~ ^ '</div>
+<div style="position:relative; top:-3px;"><span style="font-weight:bold;">.</span> <span style="font-weight:bold;">,</span></div>
+<div style="position:relative; top:0px;"><span style="font-size:9px; position:relative; top:-0.5px;">/</span> ? !</div>
 </div>
-
-
 <div class="key func" id="toAlphaBtn" style="font-size:19px; font-weight:bold; color:#333; justify-content:center;">A</div>
 <div class="key func" id="symbolKey" style="font-size:11px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 6px; padding-bottom: 2px;" onclick="switchToBoard('symbolBoard1')">
 <div style="font-size:11px; margin-bottom:1px; position:relative; top:3px;">(♥)</div>
@@ -425,14 +422,11 @@ border-radius: 5px;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
-
 <div class="key slide-con" data-base="ㅁ" data-long="*">
 <svg width="20" height="14" viewBox="0 0 24 18" fill="none" stroke="#222" stroke-width="3.8" stroke-linecap="square" stroke-linejoin="miter" style="position: relative; top: -0.6px;"><rect x="3" y="3" width="18" height="12"></rect></svg>
-
 <span class="sub-top">*</span>
 </div>
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
-
 <!-- 클립보드 / 한자(좌측밀기) / 이모티콘(우측밀기) / 길게누름(#) 키 -->
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
@@ -442,10 +436,8 @@ border-radius: 5px;
 <span class="sub-top" style="top:2px; right:4px;">#</span>
 </div>
 </div>
-
 </div>
 </div>
-
 <!-- =========================================================
 2. 영문판
 ========================================================= -->
@@ -501,7 +493,6 @@ border-radius: 5px;
 </div>
 </div>
 </div>
-
 <!-- =========================================================
 3. 기호판 1
 ========================================================= -->
@@ -557,7 +548,6 @@ border-radius: 5px;
 </div>
 </div>
 </div>
-
 <!-- =========================================================
 4. 기호판 2
 ========================================================= -->
@@ -607,13 +597,12 @@ border-radius: 5px;
 <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn" style="grid-column: span 2;" onclick="appendSpecial('\n')">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 </div>
-
 <!-- =========================================================
 5. 쌍둥이판 (통합 완성본)
 ========================================================= -->
@@ -631,7 +620,6 @@ border-radius: 5px;
 <div class="key blue-tint slot-key" data-slot="snippet_3" data-type="snippet" data-default='<span class="label" style="color:#1a73e8;">상용구</span><span class="plus" style="color:#1a73e8;">+</span>' style="grid-column:4 / 5; grid-row:1 / 2; height:100%;">
 <span class="label" style="color:#1a73e8;">상용구</span><span class="plus" style="color:#1a73e8;">+</span>
 </div>
-
 <div class="key slot-key" data-slot="url_4" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key"><span class="plus">+</span></div>
 <div class="key" id="weatherBtn" style="cursor:pointer;">
@@ -640,15 +628,12 @@ border-radius: 5px;
 <div class="key blue-tint slot-key" data-slot="snippet_7" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>' style="grid-column:4 / 5; grid-row:2 / 3; height:100%;">
 <span class="plus" style="color:#1a73e8;">+</span>
 </div>
-
 <div class="key slot-key" data-slot="url_8" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key"><span class="plus">+</span></div>
 <div class="key"><span class="label">갤러리</span><span class="icon">🖼️</span></div>
-
 <div class="key slot-key" data-slot="url_12" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key"><span class="plus">+</span></div>
 <div class="key"><span class="label">카메라</span><span class="icon">📷</span></div>
-
 <div class="right-split-area">
 <div class="key blue-tint slot-key" data-slot="snippet_13" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key blue-tint slot-key" data-slot="snippet_14" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
@@ -659,13 +644,10 @@ border-radius: 5px;
 </div>
 </div>
 </div>
-
 </div>
-
 <!-- =========================================================
 6. 모달 창들 (설정, 계산기, 클립보드, 이모티콘 100선, 한자 변환)
 ========================================================= -->
-
 <!-- 설정 모달창 -->
 <div id="slotModal" class="modal-overlay">
 <div class="modal-box">
@@ -684,7 +666,6 @@ border-radius: 5px;
 </div>
 </div>
 </div>
-
 <!-- 미니 계산기 모달창 -->
 <div id="calcModal" class="modal-overlay">
 <div class="modal-box" style="max-width:280px;">
@@ -713,7 +694,6 @@ border-radius: 5px;
 </div>
 </div>
 </div>
-
 <!-- 클립보드 모달창 -->
 <div id="clipboardModal" class="modal-overlay">
 <div class="modal-box">
@@ -724,12 +704,11 @@ border-radius: 5px;
 <div class="clipboard-list" id="clipboardListContainer"></div>
 </div>
 </div>
-
-<!-- 이모티콘 100선 모달창 -->
+<!-- 이모티콘 모달창 -->
 <div id="emojiModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>이모티콘 (100선)</span>
+<span>이모티콘</span>
 <span class="modal-close" onclick="closeEmojiModal()">×</span>
 </div>
 <div class="emoji-list">
@@ -753,7 +732,6 @@ border-radius: 5px;
 <div class="emoji-item" onclick="selectEmoji('😗')">😗</div>
 <div class="emoji-item" onclick="selectEmoji('😚')">😚</div>
 <div class="emoji-item" onclick="selectEmoji('😋')">😋</div>
-
 <div class="emoji-item" onclick="selectEmoji('😛')">😛</div>
 <div class="emoji-item" onclick="selectEmoji('😜')">😜</div>
 <div class="emoji-item" onclick="selectEmoji('🤪')">🤪</div>
@@ -765,17 +743,16 @@ border-radius: 5px;
 <div class="emoji-item" onclick="selectEmoji('🤔')">🤔</div>
 <div class="emoji-item" onclick="selectEmoji('🤐')">🤐</div>
 <div class="emoji-item" onclick="selectEmoji('🤨')">🤨</div>
-<div class="emoji-item" onclick="selectEmoji('😐')">😐</div>
-<div class="emoji-item" onclick="selectEmoji('😑')">😑</div>
-<div class="emoji-item" onclick="selectEmoji('😶')">😶</div>
+<div class="emoji-item" onclick="selectEmoji('😡')">😡</div>
+<div class="emoji-item" onclick="selectEmoji('🫣')">🫣</div>
+<div class="emoji-item" onclick="selectEmoji('🥱')">🥱</div>
 <div class="emoji-item" onclick="selectEmoji('😏')">😏</div>
 <div class="emoji-item" onclick="selectEmoji('😒')">😒</div>
 <div class="emoji-item" onclick="selectEmoji('🙄')">🙄</div>
 <div class="emoji-item" onclick="selectEmoji('😬')">😬</div>
 <div class="emoji-item" onclick="selectEmoji('🤥')">🤥</div>
 <div class="emoji-item" onclick="selectEmoji('😌')">😌</div>
-
-<div class="emoji-item" onclick="selectEmoji('😔')">😔</div>
+<div class="emoji-item" onclick="selectEmoji('😱')">😱</div>
 <div class="emoji-item" onclick="selectEmoji('😪')">😪</div>
 <div class="emoji-item" onclick="selectEmoji('🤤')">🤤</div>
 <div class="emoji-item" onclick="selectEmoji('😴')">😴</div>
@@ -790,40 +767,38 @@ border-radius: 5px;
 <div class="emoji-item" onclick="selectEmoji('🥴')">🥴</div>
 <div class="emoji-item" onclick="selectEmoji('😵')">😵</div>
 <div class="emoji-item" onclick="selectEmoji('🤯')">🤯</div>
-<div class="emoji-item" onclick="selectEmoji('🤠')">🤠</div>
+<div class="emoji-item" onclick="selectEmoji('😭')">😭</div>
 <div class="emoji-item" onclick="selectEmoji('🥳')">🥳</div>
 <div class="emoji-item" onclick="selectEmoji('😎')">😎</div>
-<div class="emoji-item" onclick="selectEmoji('🤓')">🤓</div>
-<div class="emoji-item" onclick="selectEmoji('🧐')">🧐</div>
-
+<div class="emoji-item" onclick="selectEmoji('👊')">👊</div>
+<div class="emoji-item" onclick="selectEmoji('👍')">👍</div>
 <div class="emoji-item" onclick="selectEmoji('👋')">👋</div>
 <div class="emoji-item" onclick="selectEmoji('🤚')">🤚</div>
 <div class="emoji-item" onclick="selectEmoji('🖐️')">🖐️</div>
 <div class="emoji-item" onclick="selectEmoji('✋')">✋</div>
-<div class="emoji-item" onclick="selectEmoji('🖖')">🖖</div>
+<div class="emoji-item" onclick="selectEmoji('🫶')">🫶</div>
 <div class="emoji-item" onclick="selectEmoji('👌')">👌</div>
 <div class="emoji-item" onclick="selectEmoji('🤏')">🤏</div>
 <div class="emoji-item" onclick="selectEmoji('✌️')">✌️</div>
-<div class="emoji-item" onclick="selectEmoji('🤞')">🤞</div>
+<div class="emoji-item" onclick="selectEmoji('👏')">👏</div>
+<div class="emoji-item" onclick="selectEmoji('🤝')">🤝</div>
 <div class="emoji-item" onclick="selectEmoji('❤️')">❤️</div>
-<div class="emoji-item" onclick="selectEmoji('🧡')">🧡</div>
+<div class="emoji-item" onclick="selectEmoji('💔')">💔</div>
 <div class="emoji-item" onclick="selectEmoji('💛')">💛</div>
-<div class="emoji-item" onclick="selectEmoji('💚')">💚</div>
-<div class="emoji-item" onclick="selectEmoji('💙')">💙</div>
-<div class="emoji-item" onclick="selectEmoji('💜')">💜</div>
+<div class="emoji-item" onclick="selectEmoji('💋')">💋</div>
+<div class="emoji-item" onclick="selectEmoji('🫂')">🫂</div>
 <div class="emoji-item" onclick="selectEmoji('🖤')">🖤</div>
 <div class="emoji-item" onclick="selectEmoji('🤍')">🤍</div>
-<div class="emoji-item" onclick="selectEmoji('🤎')">🤎</div>
-<div class="emoji-item" onclick="selectEmoji('💔')">💔</div>
-
-<div class="emoji-item" onclick="selectEmoji('💕')">💕</div>
-<div class="emoji-item" onclick="selectEmoji('💞')">💞</div>
-<div class="emoji-item" onclick="selectEmoji('💓')">💓</div>
-<div class="emoji-item" onclick="selectEmoji('💗')">💗</div>
+<div class="emoji-item" onclick="selectEmoji('👅')">👅</div>
+<div class="emoji-item" onclick="selectEmoji('🔪')">🔪</div>
+<div class="emoji-item" onclick="selectEmoji('🎧')">🎧</div>
+<div class="emoji-item" onclick="selectEmoji('🚫')">🚫</div>
+<div class="emoji-item" onclick="selectEmoji('🌐')">🌐</div>
+<div class="emoji-item" onclick="selectEmoji('🌍')">🌍</div>
 <div class="emoji-item" onclick="selectEmoji('🎵')">🎵</div>
 <div class="emoji-item" onclick="selectEmoji('✨')">✨</div>
 <div class="emoji-item" onclick="selectEmoji('⭐')">⭐</div>
-<div class="emoji-item" onclick="selectEmoji('🌟')">🌟</div>
+<div class="emoji-item" onclick="selectEmoji('🍉')">🍉</div>
 <div class="emoji-item" onclick="selectEmoji('🔥')">🔥</div>
 <div class="emoji-item" onclick="selectEmoji('💥')">💥</div>
 <div class="emoji-item" onclick="selectEmoji('🎉')">🎉</div>
@@ -831,15 +806,21 @@ border-radius: 5px;
 <div class="emoji-item" onclick="selectEmoji('💯')">💯</div>
 <div class="emoji-item" onclick="selectEmoji('🐶')">🐶</div>
 <div class="emoji-item" onclick="selectEmoji('🐱')">🐱</div>
-<div class="emoji-item" onclick="selectEmoji('🦊')">🦊</div>
-<div class="emoji-item" onclick="selectEmoji('🦁')">🦁</div>
+<div class="emoji-item" onclick="selectEmoji('🍇')">🍇</div>
+<div class="emoji-item" onclick="selectEmoji('🍌')">🍌</div>
 <div class="emoji-item" onclick="selectEmoji('🍎')">🍎</div>
 <div class="emoji-item" onclick="selectEmoji('☕')">☕</div>
 <div class="emoji-item" onclick="selectEmoji('🚀')">🚀</div>
-</div>
-</div>
-</div>
+<div class="emoji-item" onclick="selectEmoji('🦴')">🦴</div>
+<div class="emoji-item" onclick="selectEmoji('🚑')">🚑</div>
+<div class="emoji-item" onclick="selectEmoji('🇰🇷')">🇰🇷</div>
+<div class="emoji-item" onclick="selectEmoji('🧊')">🧊</div>
+<div class="emoji-item" onclick="selectEmoji('☂️')">☂️️</div>
 
+
+</div>
+</div>
+</div>
 <!-- 한자 변환 모달창 -->
 <div id="hanjaModal" class="modal-overlay">
 <div class="modal-box">
@@ -852,7 +833,6 @@ border-radius: 5px;
 </div>
 </div>
 </div>
-
 <script>
 const screen = document.getElementById('screen');
 const mainBoard = document.getElementById('mainBoard');
@@ -877,9 +857,7 @@ const hanjaModal = document.getElementById('hanjaModal');
 const clipboardListContainer = document.getElementById('clipboardListContainer');
 const hanjaGridContainer = document.getElementById('hanjaGridContainer');
 const hanjaModalTitle = document.getElementById('hanjaModalTitle');
-
 let isShiftActive = false;
-
 function switchToBoard(boardId) {
 [mainBoard, alphaBoard, symbolBoard1, symbolBoard2, twinBoard].forEach(board => {
 if (board) board.classList.remove('active');
@@ -887,10 +865,8 @@ if (board) board.classList.remove('active');
 const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
-
 toAlphaBtn.addEventListener('click', () => { switchToBoard('alphaBoard'); });
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
-
 function toggleShift(e) {
 if(e) e.preventDefault();
 isShiftActive = !isShiftActive;
@@ -907,12 +883,10 @@ charSpan.textContent = isShiftActive ? baseChar.toUpperCase() : baseChar;
 }
 });
 }
-
 if (shiftBtn) {
 shiftBtn.addEventListener('touchend', toggleShift);
 shiftBtn.addEventListener('click', toggleShift);
 }
-
 const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const JUNGSUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
 const JONGSUNG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -929,37 +903,28 @@ const CONSONANT_COMBINE = {
 'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㅍ':'ㄿ', 'ㄹ+ㅎ':'ㅀ',
 'ㅂ+ㅅ':'ㅄ'
 };
-
 let hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 let committedText = '';
 let lastSlideDir = '';
 let lastSlideTime = 0;
 let cursorPos = 0;
-
 function getCharLen(str) {
 return Array.from(str).length;
 }
-
 function updateScreen() {
 screen.value = committedText + assembleCurrent();
-
 let currentAssembled = assembleCurrent();
 let totalChars = Array.from(committedText);
-
 let targetIndex = cursorPos;
 if (targetIndex > totalChars.length) targetIndex = totalChars.length;
-
 let stringBeforeCursor = totalChars.slice(0, targetIndex).join('');
 let stringAfterCursor = totalChars.slice(targetIndex).join('');
-
 try {
 let posBeforeLen = Array.from(stringBeforeCursor + currentAssembled).length;
 screen.setSelectionRange(posBeforeLen, posBeforeLen);
 } catch(e) {}
-
 screen.scrollLeft = screen.scrollWidth;
 }
-
 function assembleCurrent() {
 let { cho, jung, jong } = hangulBuffer;
 if (cho === -1 && jung === -1 && jong === -1) return '';
@@ -970,7 +935,6 @@ if (cho !== -1 && jung === -1 && jong === -1) return CHOSUNG[cho];
 if (cho === -1 && jung !== -1 && jong === -1) return JUNGSUNG[jung];
 return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 }
-
 function commitCurrent() {
 let current = assembleCurrent();
 if (current) {
@@ -981,9 +945,7 @@ cursorPos += getCharLen(current);
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 }
-
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
-
 function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
@@ -1037,7 +999,6 @@ hangulBuffer.jung = jungIdx;
 }
 updateScreen();
 }
-
 function replaceLastVowel(newVowel) {
 if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
 hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
@@ -1050,7 +1011,6 @@ commitCurrent();
 appendHangul(newVowel);
 }
 }
-
 function backspaceHangul() {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
 else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
@@ -1064,16 +1024,13 @@ cursorPos--;
 lastSlideDir = '';
 updateScreen();
 }
-
 let bsTimer = null;
 let bsStartX = 0;
-
 function startBsSwipe(e) {
 bsStartX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
 backspaceHangul();
 bsTimer = setInterval(() => { backspaceHangul(); }, 150);
 }
-
 function endBsSwipe(e) {
 clearInterval(bsTimer);
 let endX = e.clientX || (e.changedTouches ? e.changedTouches[0].clientX : 0);
@@ -1084,9 +1041,7 @@ cursorPos = 0;
 updateScreen();
 }
 }
-
 function stopBackspace() { clearInterval(bsTimer); }
-
 function appendSpecial(char) {
 commitCurrent();
 lastSlideDir = '';
@@ -1096,16 +1051,12 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 }
-
 const defaultCustomSymbols = ['±', '≤', '≥', '≠', '≈', '∞', '∴', '∵', '∫', 'ϕ'];
-
 function loadCustomSymbols() {
 let saved = localStorage.getItem('custom_symbols_v844');
 return saved ? JSON.parse(saved) : defaultCustomSymbols;
 }
-
 function saveCustomSymbols(arr) { localStorage.setItem('custom_symbols_v844', JSON.stringify(arr)); }
-
 function initCustomKeys() {
 let symbols = loadCustomSymbols();
 document.querySelectorAll('.custom-key').forEach((key, idx) => {
@@ -1135,9 +1086,7 @@ isLong = false;
 });
 });
 }
-
 initCustomKeys();
-
 document.querySelectorAll('.eng-long').forEach(key => {
 let timer = null;
 let isLong = false;
@@ -1172,7 +1121,6 @@ if (timer) { clearTimeout(timer); timer = null; }
 isLong = false;
 });
 });
-
 function setupLongPressKey(keyElement, onShortAction) {
 let timer = null;
 let isLongPressed = false;
@@ -1195,14 +1143,12 @@ if (timer) { clearTimeout(timer); timer = null; }
 isLongPressed = false;
 });
 }
-
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => { iStartX = e.touches[0].clientX; iStartY = e.touches[0].clientY; }, { passive: true });
 setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 if (t.clientY - iStartY > 12 || Math.abs(t.clientX - iStartX) < 15) { appendHangul('ㅣ'); }
 });
-
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 euStartX = e.touches[0].clientX;
@@ -1218,7 +1164,6 @@ return;
 }
 appendHangul('ㅡ');
 });
-
 document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
 key.addEventListener('touchstart', (e) => {
@@ -1243,7 +1188,6 @@ return;
 appendHangul(base);
 });
 });
-
 let touchStartX = 0, touchStartY = 0;
 slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
 setupLongPressKey(slideKey, (e) => {
@@ -1268,41 +1212,34 @@ else if (dir === 'down') target = 'ㅠ';
 if (target) { replaceLastVowel(target); lastSlideDir = ''; lastSlideTime = 0; }
 }
 });
-
 let cbStartX = 0, cbStartY = 0;
 let cbTimer = null;
 let isCbLong = false;
 let isSwiping = false;
-
 let clipHistory = JSON.parse(localStorage.getItem('my_clip_history_v2')) || [
 "집필 중 참고할 첫 번째 문단 예시입니다.",
 "두 번째로 복사해 둔 핵심 문장입니다.",
 "세 번째 참고 자료 링크 또는 메모입니다."
 ];
-
 function saveClipHistory() {
 localStorage.setItem('my_clip_history_v2', JSON.stringify(clipHistory));
 }
-
 clipboardKey.addEventListener('touchstart', function(e) {
 const touch = e.touches[0];
 cbStartX = touch.clientX;
 cbStartY = touch.clientY;
 isSwiping = false;
 isCbLong = false;
-
 cbTimer = setTimeout(function() {
 isCbLong = true;
 appendSpecial('#');
 if (navigator.vibrate) navigator.vibrate(40);
 }, 500);
 }, { passive: true });
-
 clipboardKey.addEventListener('touchmove', function(e) {
 const touch = e.touches[0];
 const diffX = touch.clientX - cbStartX;
 const diffY = touch.clientY - cbStartY;
-
 if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
 if (cbTimer) {
 clearTimeout(cbTimer);
@@ -1310,38 +1247,32 @@ cbTimer = null;
 }
 }
 }, { passive: true });
-
 clipboardKey.addEventListener('touchend', function(e) {
 if (cbTimer) {
 clearTimeout(cbTimer);
 cbTimer = null;
 }
 if (isCbLong) return;
-
 const touch = e.changedTouches[0];
 const diffX = touch.clientX - cbStartX;
 const diffY = touch.clientY - cbStartY;
-
 if (diffX > 40 && Math.abs(diffX) > Math.abs(diffY)) {
 isSwiping = true;
 openEmojiModal();
 return;
 }
-
 if (diffX < -40 && Math.abs(diffX) > Math.abs(diffY)) {
 isSwiping = true;
 openHanjaModal();
 return;
 }
 }, { passive: true });
-
 clipboardKey.addEventListener('click', async function() {
 if (isSwiping || isCbLong) {
 isSwiping = false;
 isCbLong = false;
 return;
 }
-
 try {
 if (navigator.clipboard && navigator.clipboard.readText) {
 let clipboardText = await navigator.clipboard.readText();
@@ -1352,11 +1283,9 @@ saveClipHistory();
 }
 }
 } catch (err) {}
-
 renderClipHistory();
 openClipboardModal();
 });
-
 function renderClipHistory() {
 clipboardListContainer.innerHTML = "";
 if (clipHistory.length === 0) {
@@ -1374,13 +1303,10 @@ closeClipboardModal();
 clipboardListContainer.appendChild(div);
 });
 }
-
 function openClipboardModal() { clipboardModal.style.display = 'flex'; }
 function closeClipboardModal() { clipboardModal.style.display = 'none'; }
-
 function openEmojiModal() { emojiModal.style.display = 'flex'; }
 function closeEmojiModal() { emojiModal.style.display = 'none'; }
-
 function selectEmoji(emoji) {
 commitCurrent();
 lastSlideDir = '';
@@ -1391,7 +1317,6 @@ cursorPos += getCharLen(emoji);
 updateScreen();
 closeEmojiModal();
 }
-
 /* =========================================================
 ★ 대량 확장된 한자 사전 데이터 (HANJA_DICT)
 ========================================================= */
@@ -1659,14 +1584,11 @@ const HANJA_DICT = {
 '책': [{c:'冊', m:'책 책'}, {c:'策', m:'대책 책'}],
 '울': [{c:'鬱', m:'답답할 울'}, {c:'蔚', m:'우거질 울'}]
 };
-
 function openHanjaModal() {
 commitCurrent();
 let chars = Array.from(committedText);
 let lastChar = chars[cursorPos - 1] || '';
-
 hanjaGridContainer.innerHTML = "";
-
 let list = HANJA_DICT[lastChar];
 if (!list || list.length === 0) {
 hanjaModalTitle.textContent = `한자 변환 ('${lastChar}' 변환 없음)`;
@@ -1686,9 +1608,7 @@ hanjaGridContainer.appendChild(div);
 }
 hanjaModal.style.display = 'flex';
 }
-
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
-
 function replaceLastCharWithHanja(hanjaChar) {
 if (cursorPos > 0) {
 let chars = Array.from(committedText);
@@ -1697,11 +1617,9 @@ committedText = chars.join('');
 updateScreen();
 }
 }
-
 clipboardModal.addEventListener('click', function(e) { if (e.target === clipboardModal) closeClipboardModal(); });
 emojiModal.addEventListener('click', function(e) { if (e.target === emojiModal) closeEmojiModal(); });
 hanjaModal.addEventListener('click', function(e) { if (e.target === hanjaModal) closeHanjaModal(); });
-
 let topX = 0, topY = 0, topTimer = null, topLong = false;
 topSymbolKey.addEventListener('touchstart', (e) => {
 topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
@@ -1722,7 +1640,6 @@ else if (angle >= -157.5 && angle < -112.5) appendSpecial('~');
 else if (angle >= -112.5 && angle < -67.5) appendSpecial('^');
 else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
 });
-
 let symX = 0, symY = 0, symTimer = null, symLong = false;
 symbolKey.addEventListener('touchstart', (e) => {
 symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
@@ -1740,7 +1657,6 @@ appendSpecial(dy < 0 ? '♡' : '→');
 appendSpecial('(♥)');
 }
 });
-
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => {
 sX = e.touches[0].clientX;
@@ -1776,7 +1692,6 @@ cursorPos++;
 updateScreen();
 }
 });
-
 let twinStartX = 0, twinStartY = 0;
 twinBoard.addEventListener('touchstart', (e) => {
 twinStartX = e.touches[0].clientX;
@@ -1792,7 +1707,6 @@ mainBoard.classList.add('active');
 if (navigator.vibrate) navigator.vibrate(25);
 }
 });
-
 let currentSlot = null;
 let currentType = 'url';
 function getDB() {
@@ -1823,7 +1737,6 @@ el.innerHTML = defaultHtml;
 }
 });
 }
-
 document.querySelectorAll('.slot-key').forEach(el => {
 let slotKey = el.getAttribute('data-slot');
 let type = el.getAttribute('data-type');
@@ -1869,7 +1782,6 @@ pressTimer = null;
 isLongPress = false;
 });
 });
-
 document.getElementById('calcBtn').addEventListener('click', () => {
 document.getElementById('calcScreen').value = '';
 document.getElementById('calcModal').style.display = 'flex';
@@ -1894,11 +1806,9 @@ document.getElementById('screen').value = result;
 screenInput.value = '오류';
 }
 }
-
 document.getElementById('weatherBtn').addEventListener('click', () => {
 window.open('https://search.naver.com/search.naver?query=날씨', '_blank');
 });
-
 function openModal(slotKey, type) {
 currentSlot = slotKey;
 currentType = type;
@@ -1957,10 +1867,8 @@ saveDB(db);
 renderSlots();
 closeModal();
 }
-
 renderSlots();
 updateScreen();
 </script>
-
 </body>
 </html>
