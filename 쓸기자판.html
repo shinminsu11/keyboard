@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>쓸기자판 v8.60 - 엔터 왼쪽 한자/사용자 한자 추가 기능 완성</title>
+<title>쓸기자판 v8.64 - 사용자 이모티콘 순서 수정</title>
 <style>
 * {
 box-sizing: border-box;
@@ -221,7 +221,6 @@ align-items: center;
 justify-content: center;
 }
 
-/* 안내 토스트 팝업 스타일 */
 #toastMessage {
 position: fixed;
 top: 20%;
@@ -243,7 +242,6 @@ transition: opacity 0.4s ease;
 opacity: 1;
 }
 
-/* 모달창 스타일 */
 .modal-overlay {
 position: fixed;
 top: 0;
@@ -371,7 +369,6 @@ background: #e2e8f0;
 <body>
 <input type="text" id="screen" class="output-screen" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 
-<!-- 토스트 안내 메시지 영역 -->
 <div id="toastMessage">길게 누르세요</div>
 
 <div class="keyboard-container">
@@ -446,7 +443,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:10px; color:#555; margin-right:1px;">天</span><span style="font-size:10px; color:#555;">←</span>
+<span style="font-size:10px; color:#555; margin-right:1px;">천</span><span style="font-size:10px; color:#555;">←</span>
 <span style="font-size:16px; margin:1px 4px;">📋</span>
 <span style="font-size:10px; color:#555;">→</span><span style="font-size:8.5px; position:relative; top:1px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -723,111 +720,22 @@ background: #e2e8f0;
 <span>이모티콘</span>
 <span class="modal-close" onclick="closeEmojiModal()">×</span>
 </div>
-<div class="emoji-list">
-<div class="emoji-item" onclick="selectEmoji('😀')">😀</div>
-<div class="emoji-item" onclick="selectEmoji('😃')">😃</div>
-<div class="emoji-item" onclick="selectEmoji('😄')">😄</div>
-<div class="emoji-item" onclick="selectEmoji('😁')">😁</div>
-<div class="emoji-item" onclick="selectEmoji('😆')">😆</div>
-<div class="emoji-item" onclick="selectEmoji('😅')">😅</div>
-<div class="emoji-item" onclick="selectEmoji('🤣')">🤣</div>
-<div class="emoji-item" onclick="selectEmoji('😂')">😂</div>
-<div class="emoji-item" onclick="selectEmoji('🙂')">🙂</div>
-<div class="emoji-item" onclick="selectEmoji('🙃')">🙃</div>
-<div class="emoji-item" onclick="selectEmoji('😉')">😉</div>
-<div class="emoji-item" onclick="selectEmoji('😊')">😊</div>
-<div class="emoji-item" onclick="selectEmoji('😇')">😇</div>
-<div class="emoji-item" onclick="selectEmoji('🥰')">🥰</div>
-<div class="emoji-item" onclick="selectEmoji('😍')">😍</div>
-<div class="emoji-item" onclick="selectEmoji('🤩')">🤩</div>
-<div class="emoji-item" onclick="selectEmoji('😘')">😘</div>
-<div class="emoji-item" onclick="selectEmoji('😗')">😗</div>
-<div class="emoji-item" onclick="selectEmoji('😚')">😚</div>
-<div class="emoji-item" onclick="selectEmoji('😋')">😋</div>
-<div class="emoji-item" onclick="selectEmoji('😛')">😛</div>
-<div class="emoji-item" onclick="selectEmoji('😜')">😜</div>
-<div class="emoji-item" onclick="selectEmoji('🤪')">🤪</div>
-<div class="emoji-item" onclick="selectEmoji('😝')">😝</div>
-<div class="emoji-item" onclick="selectEmoji('🤑')">🤑</div>
-<div class="emoji-item" onclick="selectEmoji('🤗')">🤗</div>
-<div class="emoji-item" onclick="selectEmoji('🤭')">🤭</div>
-<div class="emoji-item" onclick="selectEmoji('🤫')">🤫</div>
-<div class="emoji-item" onclick="selectEmoji('🤔')">🤔</div>
-<div class="emoji-item" onclick="selectEmoji('🤐')">🤐</div>
-<div class="emoji-item" onclick="selectEmoji('🤨')">🤨</div>
-<div class="emoji-item" onclick="selectEmoji('😡')">😡</div>
-<div class="emoji-item" onclick="selectEmoji('🫣')">🫣</div>
-<div class="emoji-item" onclick="selectEmoji('🥱')">🥱</div>
-<div class="emoji-item" onclick="selectEmoji('😏')">😏</div>
-<div class="emoji-item" onclick="selectEmoji('😒')">😒</div>
-<div class="emoji-item" onclick="selectEmoji('🙄')">🙄</div>
-<div class="emoji-item" onclick="selectEmoji('😬')">😬</div>
-<div class="emoji-item" onclick="selectEmoji('🤥')">🤥</div>
-<div class="emoji-item" onclick="selectEmoji('😌')">😌</div>
-<div class="emoji-item" onclick="selectEmoji('😱')">😱</div>
-<div class="emoji-item" onclick="selectEmoji('😪')">😪</div>
-<div class="emoji-item" onclick="selectEmoji('🤤')">🤤</div>
-<div class="emoji-item" onclick="selectEmoji('😴')">😴</div>
-<div class="emoji-item" onclick="selectEmoji('😷')">😷</div>
-<div class="emoji-item" onclick="selectEmoji('🤒')">🤒</div>
-<div class="emoji-item" onclick="selectEmoji('🤕')">🤕</div>
-<div class="emoji-item" onclick="selectEmoji('🤢')">🤢</div>
-<div class="emoji-item" onclick="selectEmoji('🤮')">🤮</div>
-<div class="emoji-item" onclick="selectEmoji('🤧')">🤧</div>
-<div class="emoji-item" onclick="selectEmoji('🥵')">🥵</div>
-<div class="emoji-item" onclick="selectEmoji('🥶')">🥶</div>
-<div class="emoji-item" onclick="selectEmoji('🥴')">🥴</div>
-<div class="emoji-item" onclick="selectEmoji('😵')">😵</div>
-<div class="emoji-item" onclick="selectEmoji('🤯')">🤯</div>
-<div class="emoji-item" onclick="selectEmoji('😭')">😭</div>
-<div class="emoji-item" onclick="selectEmoji('🥳')">🥳</div>
-<div class="emoji-item" onclick="selectEmoji('😎')">😎</div>
-<div class="emoji-item" onclick="selectEmoji('👊')">👊</div>
-<div class="emoji-item" onclick="selectEmoji('👍')">👍</div>
-<div class="emoji-item" onclick="selectEmoji('👋')">👋</div>
-<div class="emoji-item" onclick="selectEmoji('🤚')">🤚</div>
-<div class="emoji-item" onclick="selectEmoji('🖐️')">🖐️</div>
-<div class="emoji-item" onclick="selectEmoji('✋')">✋</div>
-<div class="emoji-item" onclick="selectEmoji('🫶')">🫶</div>
-<div class="emoji-item" onclick="selectEmoji('👌')">👌</div>
-<div class="emoji-item" onclick="selectEmoji('🤏')">🤏</div>
-<div class="emoji-item" onclick="selectEmoji('✌️')">✌️</div>
-<div class="emoji-item" onclick="selectEmoji('👏')">👏</div>
-<div class="emoji-item" onclick="selectEmoji('🤝')">🤝</div>
-<div class="emoji-item" onclick="selectEmoji('❤️')">❤️</div>
-<div class="emoji-item" onclick="selectEmoji('💔')">💔</div>
-<div class="emoji-item" onclick="selectEmoji('💛')">💛</div>
-<div class="emoji-item" onclick="selectEmoji('💋')">💋</div>
-<div class="emoji-item" onclick="selectEmoji('🫂')">🫂</div>
-<div class="emoji-item" onclick="selectEmoji('🖤')">🖤</div>
-<div class="emoji-item" onclick="selectEmoji('🤍')">🤍</div>
-<div class="emoji-item" onclick="selectEmoji('👅')">👅</div>
-<div class="emoji-item" onclick="selectEmoji('🔪')">🔪</div>
-<div class="emoji-item" onclick="selectEmoji('🎧')">🎧</div>
-<div class="emoji-item" onclick="selectEmoji('🚫')">🚫</div>
-<div class="emoji-item" onclick="selectEmoji('🌐')">🌐</div>
-<div class="emoji-item" onclick="selectEmoji('🌍')">🌍</div>
-<div class="emoji-item" onclick="selectEmoji('🎵')">🎵</div>
-<div class="emoji-item" onclick="selectEmoji('✨')">✨</div>
-<div class="emoji-item" onclick="selectEmoji('⭐')">⭐</div>
-<div class="emoji-item" onclick="selectEmoji('🍉')">🍉</div>
-<div class="emoji-item" onclick="selectEmoji('🔥')">🔥</div>
-<div class="emoji-item" onclick="selectEmoji('💥')">💥</div>
-<div class="emoji-item" onclick="selectEmoji('🎉')">🎉</div>
-<div class="emoji-item" onclick="selectEmoji('🎊')">🎊</div>
-<div class="emoji-item" onclick="selectEmoji('💯')">💯</div>
-<div class="emoji-item" onclick="selectEmoji('🐶')">🐶</div>
-<div class="emoji-item" onclick="selectEmoji('🐱')">🐱</div>
-<div class="emoji-item" onclick="selectEmoji('🍇')">🍇</div>
-<div class="emoji-item" onclick="selectEmoji('🍌')">🍌</div>
-<div class="emoji-item" onclick="selectEmoji('🍎')">🍎</div>
-<div class="emoji-item" onclick="selectEmoji('☕')">☕</div>
-<div class="emoji-item" onclick="selectEmoji('🚀')">🚀</div>
-<div class="emoji-item" onclick="selectEmoji('🦴')">🦴</div>
-<div class="emoji-item" onclick="selectEmoji('🚑')">🚑</div>
-<div class="emoji-item" onclick="selectEmoji('🇰🇷')">🇰🇷</div>
-<div class="emoji-item" onclick="selectEmoji('🧊')">🧊</div>
-<div class="emoji-item" onclick="selectEmoji('☂️')">☂️️</div>
+<div class="emoji-list" id="emojiListContainer"></div>
+</div>
+</div>
+
+<!-- 사용자 이모티콘 추가 모달 -->
+<div id="addEmojiModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>사용자 이모티콘 추가</span>
+<span class="modal-close" onclick="closeAddEmojiModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 이모티콘이나 텍스트 기호를 입력해주세요.</div>
+<input type="text" id="customEmojiChar" class="modal-input" placeholder="이모티콘 입력 (예: 🐱‍👤)">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomEmoji()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddEmojiModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
 </div>
 </div>
 </div>
@@ -842,7 +750,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 사용자 한자 직접 추가 모달 -->
+<!-- 사용자 한자 추가 모달 -->
 <div id="addHanjaModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -879,6 +787,8 @@ const shiftBtn = document.getElementById('shiftBtn');
 const clipboardKey = document.getElementById('clipboardKey');
 const clipboardModal = document.getElementById('clipboardModal');
 const emojiModal = document.getElementById('emojiModal');
+const addEmojiModal = document.getElementById('addEmojiModal');
+const emojiListContainer = document.getElementById('emojiListContainer');
 const hanjaModal = document.getElementById('hanjaModal');
 const addHanjaModal = document.getElementById('addHanjaModal');
 const clipboardListContainer = document.getElementById('clipboardListContainer');
@@ -914,8 +824,43 @@ e.preventDefault();
 switchToBoard('symbolBoard1');
 });
 
-toAlphaBtn.addEventListener('click', () => { switchToBoard('alphaBoard'); });
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
+
+let aStartX = 0, aStartY = 0;
+let isALong = false;
+toAlphaBtn.addEventListener('touchstart', (e) => {
+if(e.touches.length > 0) {
+aStartX = e.touches[0].clientX;
+aStartY = e.touches[0].clientY;
+isALong = false;
+}
+}, { passive: true });
+
+toAlphaBtn.addEventListener('touchmove', (e) => {
+if(e.touches.length > 0) {
+let diffY = e.touches[0].clientY - aStartY;
+if (diffY < -25) {
+isALong = true;
+}
+}
+}, { passive: true });
+
+toAlphaBtn.addEventListener('touchend', (e) => {
+if(e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+let endY = e.changedTouches[0].clientY;
+let diffX = endX - aStartX;
+let diffY = endY - aStartY;
+if (diffY < -25 && Math.abs(diffY) > Math.abs(diffX)) {
+window.open('https://endic.naver.com', '_blank');
+if (navigator.vibrate) navigator.vibrate(30);
+return;
+}
+}
+if (!isALong) {
+switchToBoard('alphaBoard');
+}
+});
 
 function toggleShift(e) {
 if(e) e.preventDefault();
@@ -1346,6 +1291,7 @@ const diffX = touch.clientX - cbStartX;
 const diffY = touch.clientY - cbStartY;
 if (diffX > 40 && Math.abs(diffX) > Math.abs(diffY)) {
 isSwiping = true;
+renderEmojiModal();
 openEmojiModal();
 return;
 }
@@ -1398,6 +1344,64 @@ function openClipboardModal() { clipboardModal.style.display = 'flex'; }
 function closeClipboardModal() { clipboardModal.style.display = 'none'; }
 function openEmojiModal() { emojiModal.style.display = 'flex'; }
 function closeEmojiModal() { emojiModal.style.display = 'none'; }
+
+const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🤍', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '✨', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
+
+function getMergedEmojis() {
+let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
+// 기본 이모티콘 뒤에 사용자 지정 이모티콘이 붙도록 수정 (push 방식)
+return [...DEFAULT_EMOJIS, ...custom];
+}
+
+function renderEmojiModal() {
+emojiListContainer.innerHTML = '';
+let list = getMergedEmojis();
+list.forEach(emoji => {
+let item = document.createElement('div');
+item.className = 'emoji-item';
+item.textContent = emoji;
+item.onclick = () => selectEmoji(emoji);
+emojiListContainer.appendChild(item);
+});
+
+// 맨 마지막에 '사용자 이모티콘 추가' 버튼 생성
+let addBtn = document.createElement('div');
+addBtn.className = 'emoji-item';
+addBtn.style.background = '#e8f0fe';
+addBtn.style.color = '#1a73e8';
+addBtn.style.fontSize = '24px';
+addBtn.textContent = '+';
+addBtn.title = '사용자 이모티콘 추가';
+addBtn.onclick = () => {
+closeEmojiModal();
+openAddEmojiModal();
+};
+emojiListContainer.appendChild(addBtn);
+}
+
+function openAddEmojiModal() {
+document.getElementById('customEmojiChar').value = '';
+addEmojiModal.style.display = 'flex';
+}
+function closeAddEmojiModal() { addEmojiModal.style.display = 'none'; }
+
+function saveCustomEmoji() {
+let val = document.getElementById('customEmojiChar').value.trim();
+if (!val) {
+alert('이모티콘이나 기호를 입력해주세요.');
+return;
+}
+let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
+if (!custom.includes(val)) {
+custom.push(val); // 뒤에 추가되도록 push 사용
+localStorage.setItem('user_custom_emojis_v1', JSON.stringify(custom));
+}
+closeAddEmojiModal();
+showToast("사용자 이모티콘이 추가되었습니다");
+renderEmojiModal();
+openEmojiModal();
+}
+
 function selectEmoji(emoji) {
 commitCurrent();
 lastSlideDir = '';
@@ -1650,7 +1654,6 @@ for (let key in custom) {
 if (!merged[key]) {
 merged[key] = [];
 }
-// 중복 등록 방지
 custom[key].forEach(newItem => {
 if (!merged[key].some(existing => existing.c === newItem.c)) {
 merged[key].push(newItem);
@@ -1698,7 +1701,6 @@ closeHanjaModal();
 hanjaGridContainer.appendChild(div);
 });
 
-// 하단에 사용자 한자 추가 버튼 상시 배치
 let addBtnDiv = document.createElement('div');
 addBtnDiv.className = 'hanja-item';
 addBtnDiv.style.gridColumn = "span 2";
@@ -1740,7 +1742,7 @@ custom[targetHanjaCharForAdd] = [];
 custom[targetHanjaCharForAdd].push({ c: cInput, m: mInput });
 localStorage.setItem('user_custom_hanja_v1', JSON.stringify(custom));
 closeAddHanjaModal();
-showToast("사용자가 한자가 추가되었습니다");
+showToast("사용자 한자가 추가되었습니다");
 openHanjaModal();
 }
 
@@ -1755,6 +1757,7 @@ updateScreen();
 
 clipboardModal.addEventListener('click', function(e) { if (e.target === clipboardModal) closeClipboardModal(); });
 emojiModal.addEventListener('click', function(e) { if (e.target === emojiModal) closeEmojiModal(); });
+addEmojiModal.addEventListener('click', function(e) { if (e.target === addEmojiModal) closeAddEmojiModal(); });
 hanjaModal.addEventListener('click', function(e) { if (e.target === hanjaModal) closeHanjaModal(); });
 addHanjaModal.addEventListener('click', function(e) { if (e.target === addHanjaModal) closeAddHanjaModal(); });
 
