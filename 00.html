@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.76 - 좌로 밀기 & 커서 유지 완벽 해결</title>
+<title>쓸기자판 v8.76 - 토스트 메시지 위치 수정</title>
 <style>
 * {
 box-sizing: border-box;
@@ -236,10 +236,10 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-top: 20%;
+bottom: 250px; /* 자판(230px) 바로 위쪽에 위치하도록 수정 */
 left: 50%;
 transform: translateX(-50%);
-background: rgba(30, 34, 39, 0.92);
+background: rgba(30, 34, 39, 0.95);
 color: #ffffff;
 padding: 10px 20px;
 border-radius: 20px;
@@ -249,7 +249,7 @@ box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 z-index: 1000;
 pointer-events: none;
 opacity: 0;
-transition: opacity 0.4s ease;
+transition: opacity 0.3s ease;
 }
 #toastMessage.show {
 opacity: 1;
@@ -1130,7 +1130,6 @@ lastSlideDir = '';
 updateScreen();
 }
 
-// ⭐️ 좌로 밀기 전체삭제 및 커서 충돌 완벽 해결
 let bsTimer = null;
 let bsStartX = 0;
 
@@ -1153,7 +1152,6 @@ bsTimer = null;
 }
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
-// 좌로 30px 이상 밀었을 때 전체 삭제 및 커서 0으로 초기화
 if (endX - bsStartX < -30) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
@@ -1163,7 +1161,6 @@ try { screen.setSelectionRange(0, 0); } catch(e) {}
 return;
 }
 }
-// 일반 탭/삭제 후 포커스 유지
 setTimeout(() => {
 screen.focus();
 try { screen.setSelectionRange(cursorPos, cursorPos); } catch(e) {}
