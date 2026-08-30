@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.73 - ㅣ, ㅡ 탭 입력 완벽 차단 수정</title>
+<title>쓸기자판 v8.73 - ㅣ, ㅡ 롱프레스 숫자 입력 수정 완료</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1239,7 +1239,7 @@ isLongPressed = false;
 });
 }
 
-// ㅣ 키: 톡 입력 원천 차단 (슬라이드 조합만 가능)
+// ㅣ 키: 길게 누르면 '3' 입력, 슬라이드하면 'ㅣ' 조합
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1248,19 +1248,16 @@ iStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
-iKey.addEventListener('touchend', (e) => {
-if (e.changedTouches.length > 0) {
-let t = e.changedTouches[0];
+setupLongPressKey(iKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
-// 슬라이드 움직임이 감지되었을 때만 'ㅣ' 입력 허용
 if (Math.abs(diffX) > 12 || Math.abs(diffY) > 12) {
 appendHangul('ㅣ');
 }
-}
 });
 
-// ㅡ 키: 톡 입력 원천 차단 (슬라이드 조합만 가능)
+// ㅡ 키: 길게 누르면 '9' 입력, 슬라이드하면 'ㅡ' 조합
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1269,15 +1266,12 @@ euStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
-euKey.addEventListener('touchend', (e) => {
-if (e.changedTouches.length > 0) {
-let t = e.changedTouches[0];
+setupLongPressKey(euKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
-// 슬라이드 움직임이 감지되었을 때만 'ㅡ' 입력 허용
 if (Math.abs(diffX) > 12 || Math.abs(diffY) > 12) {
 appendHangul('ㅡ');
-}
 }
 });
 
