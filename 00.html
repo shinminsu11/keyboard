@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.78 - 커서 위치 밀림 현상 완전 해결</title>
+<title>쓸기자판 v8.79 - 기호판2 커스텀 및 중복 출력 해결</title>
 <style>
 * {
 box-sizing: border-box;
@@ -723,7 +723,24 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 모달 창들 -->
+<!-- ⭐️ 기호판 2 전용 커스텀 입력/삭제 모달 창 -->
+<div id="customSymbolModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span id="customSymbolModalTitle">사용자 기호 설정</span>
+<span class="modal-close" onclick="closeCustomSymbolModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;" id="customSymbolDesc">추가할 기호나 이모티콘을 입력해주세요.</div>
+<input type="text" id="customSymbolInput" class="modal-input" placeholder="기호 입력 (예: ★)">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomSymbolFromModal()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
+<button onclick="deleteCustomSymbolFromModal()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
+<button onclick="closeCustomSymbolModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">닫기</button>
+</div>
+</div>
+</div>
+
+<!-- 기존 모달 창들 -->
 <div id="slotModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -1015,7 +1032,6 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
-// ⭐️ 커서 밀림 현상을 완벽히 잡은 렌더링 함수 적용 완료
 function updateScreen() {
 let currentAssembled = assembleCurrent();
 let chars = Array.from(committedText);
@@ -1235,6 +1251,7 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
+// ⭐️ 기호판 2 전용 커스텀 기호 로직 (중복 출력 방지 및 편안한 모달 적용)
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
 function loadCustomSymbols() {
 let saved = localStorage.getItem('custom_symbols_v853');
@@ -1242,28 +1259,60 @@ return saved ? JSON.parse(saved) : defaultCustomSymbols;
 }
 function saveCustomSymbols(arr) { localStorage.setItem('custom_symbols_v853', JSON.stringify(arr)); }
 
+let activeSymbolIndex = null;
+function openCustomSymbolModal(idx, currentVal) {
+activeSymbolIndex = idx;
+document.getElementById('customSymbolModalTitle').textContent = (idx + 1) + '번째 사용자 기호 설정';
+document.getElementById('customSymbolDesc').textContent = (idx + 1) + '번째 슬롯에 넣을 기호나 이모티콘을 입력하세요.';
+document.getElementById('customSymbolInput').value = (currentVal === '+') ? '' : currentVal;
+document.getElementById('customSymbolModal').style.display = 'flex';
+}
+function closeCustomSymbolModal() {
+document.getElementById('customSymbolModal').style.display = 'none';
+activeSymbolIndex = null;
+}
+function saveCustomSymbolFromModal() {
+if (activeSymbolIndex === null) return;
+let val = document.getElementById('customSymbolInput').value.trim();
+let symbols = loadCustomSymbols();
+symbols[activeSymbolIndex] = val === '' ? '+' : val;
+saveCustomSymbols(symbols);
+initCustomKeys();
+closeCustomSymbolModal();
+showToast("저장되었습니다");
+}
+function deleteCustomSymbolFromModal() {
+if (activeSymbolIndex === null) return;
+let symbols = loadCustomSymbols();
+symbols[activeSymbolIndex] = '+';
+saveCustomSymbols(symbols);
+initCustomKeys();
+closeCustomSymbolModal();
+showToast("삭제되었습니다");
+}
+
 function initCustomKeys() {
 let symbols = loadCustomSymbols();
 document.querySelectorAll('.custom-key').forEach((key, idx) => {
 key.textContent = symbols[idx] || '+';
+
 let timer = null;
 let isLong = false;
 
-key.addEventListener('touchstart', (e) => {
+// 기존 리스너 누적 방지를 위해 클론 대체
+let newKey = key.cloneNode(true);
+key.parentNode.replaceChild(newKey, key);
+
+newKey.addEventListener('touchstart', (e) => {
 isLong = false;
 timer = setTimeout(() => {
 isLong = true;
-let newVal = prompt((idx + 1) + '번째 사용자 정의 기호 또는 이모티콘을 입력하세요:', symbols[idx] === '+' ? '' : symbols[idx]);
-if (newVal !== null) {
-symbols[idx] = newVal === '' ? '+' : newVal;
-saveCustomSymbols(symbols);
-initCustomKeys();
-}
+openCustomSymbolModal(idx, symbols[idx]);
 if (navigator.vibrate) navigator.vibrate(40);
-}, 600);
+}, 500);
 }, { passive: true });
 
-key.addEventListener('touchmove', () => {
+newKey.addEventListener('touchmove', () => {
 if (timer) {
 clearTimeout(timer);
 timer = null;
@@ -1271,7 +1320,7 @@ isLong = true;
 }
 }, { passive: true });
 
-key.addEventListener('touchend', (e) => {
+newKey.addEventListener('touchend', (e) => {
 if (timer) {
 clearTimeout(timer);
 timer = null;
@@ -1279,7 +1328,7 @@ timer = null;
 if (!isLong) {
 e.preventDefault();
 if (symbols[idx] === '+') {
-showToast("길게 누르세요");
+openCustomSymbolModal(idx, symbols[idx]);
 } else {
 appendSpecial(symbols[idx]);
 }
