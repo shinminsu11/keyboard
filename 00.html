@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.80 - 기호 및 깐띄기(엔터) 완벽 해결</title>
+<title>쓸기자판 v8.82 - 자음 밀기 방향 엄격 제한 (1차)</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1252,7 +1252,6 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
-// ⭐️ 깐띄기(엔터) 버튼 전용 확실한 핸들러 연결
 document.querySelectorAll('.enter-btn').forEach(btn => {
 btn.addEventListener('click', (e) => {
 e.preventDefault();
@@ -1264,7 +1263,6 @@ appendSpecial('\n');
 });
 });
 
-// ⭐️ 기호판 2 전용 커스텀 기호 로직 (중복 출력 방지 및 편안한 모달 적용)
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
 function loadCustomSymbols() {
 let saved = localStorage.getItem('custom_symbols_v853');
@@ -1408,6 +1406,7 @@ isLongPressed = false;
 });
 }
 
+// ㅣ 키 정밀 제어 (아래로 밀거나 제자리 터치만 허용, 왼쪽은 무시)
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1420,11 +1419,14 @@ setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
-if (Math.abs(diffX) > 12 || Math.abs(diffY) > 12) {
+if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
+appendHangul('ㅣ');
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅣ');
 }
 });
 
+// ㅡ 키 정밀 제어 (좌우 밀기 혹은 제자리 터치만 허용, 상하는 무시)
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1437,11 +1439,14 @@ setupLongPressKey(euKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
-if (Math.abs(diffX) > 12 || Math.abs(diffY) > 12) {
+if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
+appendHangul('ㅡ');
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅡ');
 }
 });
 
+// ⭐️ 1차 찌꺼기 수정: 자음판(slide-con)에서 아래/왼쪽 밀기 완벽 차단 (위쪽=쌍자음, 오른쪽=가획자음, 제자리=기본자음)
 document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
 key.addEventListener('touchstart', (e) => {
@@ -1455,15 +1460,26 @@ let diffY = t.clientY - startY;
 let base = key.getAttribute('data-base');
 let up = key.getAttribute('data-up');
 let right = key.getAttribute('data-right');
-if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 18 && right && diffX > 0) {
+
+// 오른쪽으로 확실하게 밀었을 때만 가획자음
+if (Math.abs(diffX) > Math.abs(diffY) && diffX > 18 && right) {
 appendHangul(right);
 return;
 }
-if (up && diffY < -8 && Math.abs(diffX) <= Math.abs(diffY) * 2.5) {
+// 위쪽으로 확실하게 밀었을 때만 쌍자음
+if (Math.abs(diffY) > Math.abs(diffX) && diffY < -18 && up) {
 appendHangul(up);
 return;
 }
+// 아래쪽(diffY > 18)이나 왼쪽(diffX < -18)으로 밀었을 때는 아무것도 출력하지 않음 (찌꺼기 차단)
+if (diffY > 18 || diffX < -18) {
+return;
+}
+
+// 제자리 터치(또는 미세한 움직임)인 경우에만 기본 자음 입력
+if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
 appendHangul(base);
+}
 });
 });
 
