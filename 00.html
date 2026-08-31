@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.79 - 기호판2 커스텀 및 중복 출력 해결</title>
+<title>쓸기자판 v8.80 - 기호 및 깐띄기(엔터) 완벽 해결</title>
 <style>
 * {
 box-sizing: border-box;
@@ -48,7 +48,7 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 display: flex;
 align-items: center;
 overflow-x: auto;
-white-space: nowrap;
+white-space: pre-wrap;
 cursor: text;
 flex-shrink: 0;
 }
@@ -60,6 +60,7 @@ display: inline-flex;
 align-items: center;
 position: relative;
 height: 100%;
+white-space: pre-wrap;
 }
 .cursor-bar {
 display: inline-block;
@@ -498,7 +499,7 @@ background: #e2e8f0;
 <div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:2px;">1※</div>
 <div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div>
 </div>
-<div class="key dark" onclick="appendSpecial('\n')" style="background-color:#9aa8b2; justify-content:center;">
+<div class="key dark enter-btn" style="background-color:#9aa8b2; justify-content:center;">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
@@ -566,7 +567,7 @@ background: #e2e8f0;
 <div class="eng-key func" style="grid-column: span 1; font-size: 13px;" onclick="switchToBoard('symbolBoard1')">!?#</div>
 <div class="eng-key" style="grid-column: span 4; font-size: 15px; color:#555;" onclick="appendSpecial(' ')">space</div>
 <div class="eng-key func" style="grid-column: span 1; font-size: 18px; font-weight: bold;" onclick="appendSpecial('.')">.</div>
-<div class="brand-btn" style="grid-column: span 2;" onclick="appendSpecial('\n')">
+<div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
@@ -620,7 +621,7 @@ background: #e2e8f0;
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
 <div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호1</div>
-<div class="brand-btn" style="grid-column: span 2;" onclick="appendSpecial('\n')">
+<div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
@@ -674,7 +675,7 @@ background: #e2e8f0;
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
 <div class="sym-key func" style="grid-column: span 1;" id="toSymbolBoard1Btn">기호1</div>
-<div class="brand-btn" style="grid-column: span 2;" onclick="appendSpecial('\n')">
+<div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
@@ -723,7 +724,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- ⭐️ 기호판 2 전용 커스텀 입력/삭제 모달 창 -->
+<!-- 기호판 2 전용 커스텀 입력/삭제 모달 창 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -1251,6 +1252,18 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
+// ⭐️ 깐띄기(엔터) 버튼 전용 확실한 핸들러 연결
+document.querySelectorAll('.enter-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.preventDefault();
+appendSpecial('\n');
+});
+btn.addEventListener('touchend', (e) => {
+e.preventDefault();
+appendSpecial('\n');
+});
+});
+
 // ⭐️ 기호판 2 전용 커스텀 기호 로직 (중복 출력 방지 및 편안한 모달 적용)
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
 function loadCustomSymbols() {
@@ -1299,7 +1312,6 @@ key.textContent = symbols[idx] || '+';
 let timer = null;
 let isLong = false;
 
-// 기존 리스너 누적 방지를 위해 클론 대체
 let newKey = key.cloneNode(true);
 key.parentNode.replaceChild(newKey, key);
 
