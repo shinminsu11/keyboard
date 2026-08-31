@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.82 - 자음 밀기 방향 엄격 제한 (1차)</title>
+<title>쓸기자판 v8.83 - 하단 안전 영역 대응 완료</title>
 <style>
 * {
 box-sizing: border-box;
@@ -30,7 +30,8 @@ margin: 0;
 padding: 0;
 width: 100%;
 height: 100%;
-padding-bottom: 0px !important; 
+/* ⭐️ APK 환경의 하단 내비게이션 바 영역 대응을 위한 안전 여백 반영 */
+padding-bottom: env(safe-area-inset-bottom) !important; 
 }
 .output-screen {
 background-color: #1e2227;
@@ -1446,7 +1447,7 @@ appendHangul('ㅡ');
 }
 });
 
-// ⭐️ 1차 찌꺼기 수정: 자음판(slide-con)에서 아래/왼쪽 밀기 완벽 차단 (위쪽=쌍자음, 오른쪽=가획자음, 제자리=기본자음)
+// 자음판(slide-con)에서 아래/왼쪽 밀기 완벽 차단
 document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
 key.addEventListener('touchstart', (e) => {
@@ -1461,22 +1462,17 @@ let base = key.getAttribute('data-base');
 let up = key.getAttribute('data-up');
 let right = key.getAttribute('data-right');
 
-// 오른쪽으로 확실하게 밀었을 때만 가획자음
 if (Math.abs(diffX) > Math.abs(diffY) && diffX > 18 && right) {
 appendHangul(right);
 return;
 }
-// 위쪽으로 확실하게 밀었을 때만 쌍자음
 if (Math.abs(diffY) > Math.abs(diffX) && diffY < -18 && up) {
 appendHangul(up);
 return;
 }
-// 아래쪽(diffY > 18)이나 왼쪽(diffX < -18)으로 밀었을 때는 아무것도 출력하지 않음 (찌꺼기 차단)
 if (diffY > 18 || diffX < -18) {
 return;
 }
-
-// 제자리 터치(또는 미세한 움직임)인 경우에만 기본 자음 입력
 if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
 appendHangul(base);
 }
