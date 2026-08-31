@@ -497,7 +497,7 @@ background: #e2e8f0;
 <div class="key func" id="toAlphaBtn" style="font-size:17px; font-weight:bold; color:#333; justify-content:center;">A</div>
 <div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;">
 <div style="font-size:10px; margin-bottom:1px; position:relative; top:5.5px;">(♥)</div>
-<div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:3px;">1※</div>
+<div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:px;">1※</div>
 <div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div>
 </div>
 <div class="key dark enter-btn" style="background-color:#9aa8b2; justify-content:center;">
@@ -574,7 +574,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 -->
+<!-- 기호판 1 (§, Δ 제거 및 【, 】 추가 완료) -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -595,8 +595,8 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('π')">π</div>
 <div class="sym-key" onclick="appendSpecial('÷')">÷</div>
 <div class="sym-key" onclick="appendSpecial('×')">×</div>
-<div class="sym-key" onclick="appendSpecial('§')">§</div>
-<div class="sym-key" onclick="appendSpecial('Δ')">Δ</div>
+<div class="sym-key" onclick="appendSpecial('【')">【</div>
+<div class="sym-key" onclick="appendSpecial('】')">】</div>
 <div class="sym-key" onclick="appendSpecial('!')">!</div>
 <div class="sym-key" onclick="appendSpecial('@')">@</div>
 <div class="sym-key" onclick="appendSpecial('#')">#</div>
@@ -621,7 +621,7 @@ background: #e2e8f0;
 <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -675,7 +675,7 @@ background: #e2e8f0;
 <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
-<div class="sym-key func" style="grid-column: span 1;" id="toSymbolBoard1Btn">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -939,14 +939,6 @@ if (board) board.classList.remove('active');
 const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
-
-document.getElementById('toSymbolBoard1Btn').addEventListener('click', () => {
-switchToBoard('symbolBoard1');
-});
-document.getElementById('toSymbolBoard1Btn').addEventListener('touchend', (e) => {
-e.preventDefault();
-switchToBoard('symbolBoard1');
-});
 
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
