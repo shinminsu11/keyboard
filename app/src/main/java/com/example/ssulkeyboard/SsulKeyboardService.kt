@@ -45,15 +45,14 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 중복 입력 및 밀림 현상을 방지하는 정밀 브릿지
+    // ★ 첫 글자 오타 및 조합 꼬임 현상을 원천 차단하는 정밀 브릿지
     inner class KeyboardBridge {
-        private var lastCommittedLength = 0
-
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection
             if (inputConnection != null) {
-                // 이전 조합 내용을 지우고 최신 완성본으로 교체하거나 추가
+                // 첫 입력 시 기존 조합 영역을 깔끔하게 비우고 텍스트를 안정적으로 삽입
+                inputConnection.setComposingText("", 0)
                 inputConnection.commitText(text, 1)
             }
         }
@@ -61,7 +60,10 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection
-            inputConnection?.deleteSurroundingText(1, 0)
+            if (inputConnection != null) {
+                inputConnection.setComposingText("", 0)
+                inputConnection.deleteSurroundingText(1, 0)
+            }
         }
     }
 
