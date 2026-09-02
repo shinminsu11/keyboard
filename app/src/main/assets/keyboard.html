@@ -427,26 +427,18 @@ touch-action: manipulation;
 background: #e2e8f0;
 }
 
-/* ===== 영문판 좌우 대칭 구도 =====
-   기존 입력/스와이프/버튼 기능은 그대로 두고
-   키의 폭과 좌우 여백만 대칭으로 정렬합니다. */
+/* ===== 영문판 좌우 대칭 구도 ===== */
 #alphaBoard .grid-eng-container {
   grid-template-columns: repeat(20, minmax(0, 1fr));
 }
-
-/* 1행 숫자 10개: 각 키 2칸 */
 #alphaBoard .grid-eng-container > :nth-child(-n+10) {
   grid-column: span 2;
   grid-row: 1;
 }
-
-/* 2행 q~p: 각 키 2칸 */
 #alphaBoard .grid-eng-container > :nth-child(n+11):nth-child(-n+20) {
   grid-column: span 2;
   grid-row: 2;
 }
-
-/* 3행 a~l: 양쪽 1칸씩 여백을 두고 정확히 중앙 정렬 */
 #alphaBoard .grid-eng-container > :nth-child(n+21):nth-child(-n+29) {
   grid-column: span 2;
   grid-row: 3;
@@ -460,13 +452,9 @@ background: #e2e8f0;
 #alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
 #alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
 #alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
-
-/* 기존의 빈 칸은 제거 */
 #alphaBoard .grid-eng-container > :nth-child(30) {
   display: none;
 }
-
-/* 4행: Shift 1 + 문자 7 + Backspace 2 = 좌우 대칭 (폭 수정: 3 / 3) */
 #alphaBoard .grid-eng-container > :nth-child(31) {
   grid-column: 1 / span 3 !important;
   grid-row: 4;
@@ -479,8 +467,6 @@ background: #e2e8f0;
   grid-column: 18 / span 3 !important;
   grid-row: 4;
 }
-
-/* 하단: Home 2 + 기호 1 + Space 4 + . 1 + Enter 2 */
 #alphaBoard .grid-eng-container > :nth-child(40) {
   grid-column: 1 / span 4 !important;
   grid-row: 5;
@@ -501,34 +487,6 @@ background: #e2e8f0;
   grid-column: 17 / span 4 !important;
   grid-row: 5;
 }
-
-
-/* 3번째 줄 9개 키를 10칸 그리드의 중앙에 배치 */
-.grid-eng-container .eng-key:nth-child(21),
-.grid-eng-container .eng-key:nth-child(22),
-.grid-eng-container .eng-key:nth-child(23),
-.grid-eng-container .eng-key:nth-child(24),
-.grid-eng-container .eng-key:nth-child(25),
-.grid-eng-container .eng-key:nth-child(26),
-.grid-eng-container .eng-key:nth-child(27),
-.grid-eng-container .eng-key:nth-child(28),
-.grid-eng-container .eng-key:nth-child(29) {
-  transform: translateX(calc(50% + 1.5px));
-}
-
-/* 영문판 진짜 좌우 대칭: 20분할로 양쪽 기능키 폭을 동일하게 */
-#alphaBoard .grid-eng-container {
-  grid-template-columns: repeat(20, minmax(0, 1fr));
-}
-#alphaBoard .grid-eng-container > .eng-key:nth-child(31) { grid-column: 1 / span 3; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(32) { grid-column: 4 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(33) { grid-column: 6 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(34) { grid-column: 8 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(35) { grid-column: 10 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(36) { grid-column: 12 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(37) { grid-column: 14 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(38) { grid-column: 16 / span 2; }
-#alphaBoard .grid-eng-container > .eng-key:nth-child(39) { grid-column: 18 / span 3; }
 </style>
 </head>
 <body>
@@ -837,7 +795,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 2 전용 커스텀 입력/삭제 모달 창 -->
+<!-- 모달 창들 생략 없이 전체 포함 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -854,7 +812,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기존 모달 창들 -->
 <div id="slotModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -1149,6 +1106,10 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
+
+if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+    window.AndroidBridge.setComposing(currentAssembled);
+}
 }
 
 function escapeHtml(str) {
@@ -1345,6 +1306,7 @@ bsTimer = null;
 });
 
 function appendSpecial(char) {
+if (!char) return;
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
