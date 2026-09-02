@@ -30,7 +30,7 @@ class SsulKeyboardService : InputMethodService() {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             
-            // ★ 웹에서 안드로이드로 글자를 보내는 다리(Bridge) 연결
+            // HTML에서 호출하는 이름("AndroidBridge")과 일치시킴
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
             loadUrl("file:///android_asset/keyboard.html")
@@ -46,16 +46,16 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 웹(HTML)의 버튼이 눌렸을 때 안드로이드 입력창에 텍스트를 꽂아주는 브릿지 클래스
+    // ★ HTML의 commitText, deleteText 호출과 함수명을 완벽하게 일치시킨 브릿지 클래스
     inner class KeyboardBridge {
         @JavascriptInterface
-        fun sendText(text: String) {
+        fun commitText(text: String) {
             val inputConnection = currentInputConnection
             inputConnection?.commitText(text, 1)
         }
 
         @JavascriptInterface
-        fun backSpace() {
+        fun deleteText() {
             val inputConnection = currentInputConnection
             inputConnection?.deleteSurroundingText(1, 0)
         }
