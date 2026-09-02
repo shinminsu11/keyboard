@@ -30,7 +30,6 @@ class SsulKeyboardService : InputMethodService() {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             
-            // HTML에서 호출하는 이름("AndroidBridge")과 일치시킴
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
             loadUrl("file:///android_asset/keyboard.html")
@@ -46,17 +45,20 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ HTML의 commitText, deleteText 호출과 함수명을 완벽하게 일치시킨 브릿지 클래스
+    // ★ HTML에서 넘어오는 조합된 텍스트와 삭제 명령을 깔끔하게 처리하는 브릿지
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection
+            // 조합 중인 상태를 무시하고 텍스트를 정확하게 입력창에 반영
+            inputConnection?.setComposingText("", 1)
             inputConnection?.commitText(text, 1)
         }
 
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection
+            // 글자 단위로 깔끔하게 지워지도록 조정
             inputConnection?.deleteSurroundingText(1, 0)
         }
     }
