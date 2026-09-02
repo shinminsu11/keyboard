@@ -45,20 +45,22 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ HTML에서 넘어오는 조합된 텍스트와 삭제 명령을 깔끔하게 처리하는 브릿지
+    // ★ 중복 입력 및 밀림 현상을 방지하는 정밀 브릿지
     inner class KeyboardBridge {
+        private var lastCommittedLength = 0
+
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection
-            // 조합 중인 상태를 무시하고 텍스트를 정확하게 입력창에 반영
-            inputConnection?.setComposingText("", 1)
-            inputConnection?.commitText(text, 1)
+            if (inputConnection != null) {
+                // 이전 조합 내용을 지우고 최신 완성본으로 교체하거나 추가
+                inputConnection.commitText(text, 1)
+            }
         }
 
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection
-            // 글자 단위로 깔끔하게 지워지도록 조정
             inputConnection?.deleteSurroundingText(1, 0)
         }
     }
