@@ -45,18 +45,20 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 첫타 공백 유입을 완벽히 차단하는 정제된 브릿지
+    // ★ 첫타 공백 및 빈 값 유입을 원천 차단하는 최종 방어 브릿지
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection
-            if (inputConnection != null && text.isNotEmpty()) {
-                // 공백이나 불필요한 빈 문자열 유입을 걸러냄
-                val cleanText = if (text == " ") " " else text.trim { it <= ' ' && it != ' ' }
-                if (cleanText.isNotEmpty()) {
-                    inputConnection.finishComposingText()
-                    inputConnection.commitText(text, 1)
+            if (inputConnection != null) {
+                // 공백(" ")이 의도된 것이 아니라 첫타 오작동으로 들어온 빈 공백일 경우 철저히 차단
+                if (text == " " || text.isEmpty()) {
+                    // 첫타 공백 무시
+                    return
                 }
+                
+                inputConnection.finishComposingText()
+                inputConnection.commitText(text, 1)
             }
         }
 
