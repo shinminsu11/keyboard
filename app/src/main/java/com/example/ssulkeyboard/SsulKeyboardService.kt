@@ -45,17 +45,18 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 첫 입력 씹힘 현상을 방지하기 위해 InputConnection을 확실히 깨우는 브릿지
+    // ★ 첫타 공백 유입을 완벽히 차단하는 정제된 브릿지
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                // 최초 입력 시 입력 연결의 배치를 강제로 동기화하여 첫 글자 누락 방지
-                inputConnection.beginBatchEdit()
-                inputConnection.finishComposingText()
-                inputConnection.commitText(text, 1)
-                inputConnection.endBatchEdit()
+            if (inputConnection != null && text.isNotEmpty()) {
+                // 공백이나 불필요한 빈 문자열 유입을 걸러냄
+                val cleanText = if (text == " ") " " else text.trim { it <= ' ' && it != ' ' }
+                if (cleanText.isNotEmpty()) {
+                    inputConnection.finishComposingText()
+                    inputConnection.commitText(text, 1)
+                }
             }
         }
 
@@ -63,10 +64,8 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection
             if (inputConnection != null) {
-                inputConnection.beginBatchEdit()
                 inputConnection.finishComposingText()
                 inputConnection.deleteSurroundingText(1, 0)
-                inputConnection.endBatchEdit()
             }
         }
     }
