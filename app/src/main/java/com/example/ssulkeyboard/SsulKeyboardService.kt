@@ -45,15 +45,17 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 쓸기 입력 및 조합 충돌을 방지하는 최종 브릿지
+    // ★ 첫 입력 씹힘 현상을 방지하기 위해 InputConnection을 확실히 깨우는 브릿지
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection
             if (inputConnection != null) {
-                // 쓸기 입력 시 안드로이드 시스템의 자체 한글 조합기(IC)를 강제로 초기화하여 충돌 방지
+                // 최초 입력 시 입력 연결의 배치를 강제로 동기화하여 첫 글자 누락 방지
+                inputConnection.beginBatchEdit()
                 inputConnection.finishComposingText()
                 inputConnection.commitText(text, 1)
+                inputConnection.endBatchEdit()
             }
         }
 
@@ -61,8 +63,10 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection
             if (inputConnection != null) {
+                inputConnection.beginBatchEdit()
                 inputConnection.finishComposingText()
                 inputConnection.deleteSurroundingText(1, 0)
+                inputConnection.endBatchEdit()
             }
         }
     }
