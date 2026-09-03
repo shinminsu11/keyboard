@@ -30,7 +30,6 @@ class SsulKeyboardService : InputMethodService() {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             
-            // HTML과 통신할 브릿지 연결
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
             loadUrl("file:///android_asset/keyboard.html")
@@ -46,36 +45,22 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 실시간 조합(setComposing)과 최종 확정(commitText)을 완벽히 지원하는 최종 브릿지
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                inputConnection.finishComposingText()
-                inputConnection.commitText(text, 1)
-            }
-        }
-
-        @JavascriptInterface
-        fun deleteText() {
-            val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                inputConnection.finishComposingText()
-                inputConnection.deleteSurroundingText(1, 0)
-            }
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            inputConnection.commitText(text, 1)
         }
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            val inputConnection = currentInputConnection
-            inputConnection?.setComposingText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun finishComposing() {
-            val inputConnection = currentInputConnection
-            inputConnection?.finishComposingText()
+            val inputConnection = currentInputConnection ?: return
+            if (text.isEmpty()) {
+                inputConnection.setComposingText("", 1)
+            } else {
+                inputConnection.setComposingText(text, 1)
+            }
         }
     }
 
