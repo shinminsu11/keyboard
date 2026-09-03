@@ -10,21 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 저장소 코드 가져오기
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: JDK 17 설치
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 권한 부여 및 APK 빌드 (디버그용)
+      - name: Grant execute permission and build APK
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: 빌드된 APK 업로드
+      - name: Upload built APK
         uses: actions/upload-artifact@v4
         with:
           name: SsulKeyboard-debug-apk
