@@ -9,7 +9,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SsulKeyboard">
 
-        <!-- 키보드 서비스 등록 (필수) -->
         <service
             android:name=".SsulKeyboardService"
             android:permission="android.permission.BIND_INPUT_METHOD"
