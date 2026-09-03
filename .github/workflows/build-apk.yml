@@ -19,13 +19,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Gradle 설치
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.9'
-
-      - name: APK 빌드 (디버그용)
-        run: gradle assembleDebug
+      - name: 권한 부여 및 APK 빌드 (디버그용)
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: 빌드된 APK 업로드
         uses: actions/upload-artifact@v4
