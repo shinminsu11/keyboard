@@ -795,7 +795,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 모달 창들 생략 없이 전체 포함 -->
+<!-- 각종 모달창들 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -966,8 +966,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-let hasStartedInput = false; // 최초 입력 플래그 (첫타 공백 방지)
-
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
@@ -1097,6 +1095,7 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
+// ★ 클로드 제안 반영: 실시간 조합 텍스트를 안드로이드에 바로 전달
 function updateScreen() {
 let currentAssembled = assembleCurrent();
 let chars = Array.from(committedText);
@@ -1108,6 +1107,11 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
+
+if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+    let fullComposingText = beforeCursor + currentAssembled + afterCursor;
+    window.AndroidBridge.setComposing(fullComposingText);
+}
 }
 
 function escapeHtml(str) {
@@ -1133,11 +1137,7 @@ chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    if (hasStartedInput) {
-        window.AndroidBridge.commitText(current);
-    } else {
-        hasStartedInput = true; // 첫타 빈값 방어 후 활성화
-    }
+    window.AndroidBridge.commitText(current);
 }
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
@@ -1308,7 +1308,6 @@ bsTimer = null;
 });
 
 function appendSpecial(char) {
-if (!char) return;
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
@@ -1317,11 +1316,7 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    if (hasStartedInput) {
-        window.AndroidBridge.commitText(char);
-    } else {
-        hasStartedInput = true;
-    }
+    window.AndroidBridge.commitText(char);
 }
 }
 
