@@ -45,33 +45,31 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 첫타 공백 및 빈 값 유입을 원천 차단하는 최종 방어 브릿지
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                // 공백(" ")이 의도된 것이 아니라 첫타 오작동으로 들어온 빈 공백일 경우 철저히 차단
-                if (text == " " || text.isEmpty()) {
-                    // 첫타 공백 무시
-                    return
-                }
-                
-                inputConnection.finishComposingText()
-                inputConnection.commitText(text, 1)
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            inputConnection.commitText(text, 1)
+        }
+
+        @JavascriptInterface
+        fun setComposing(text: String) {
+            val inputConnection = currentInputConnection ?: return
+            if (text.isEmpty()) {
+                inputConnection.setComposingText("", 1)
+            } else {
+                inputConnection.setComposingText(text, 1)
             }
         }
 
         @JavascriptInterface
         fun deleteText() {
-            val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                inputConnection.finishComposingText()
-                inputConnection.deleteSurroundingText(1, 0)
-            }
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            inputConnection.deleteSurroundingText(1, 0)
         }
     }
-
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         window.window?.let { window ->
