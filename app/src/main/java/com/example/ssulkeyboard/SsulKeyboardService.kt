@@ -1,79 +1,24 @@
-package com.example.ssulkeyboard
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-import android.inputmethodservice.InputMethodService
-import android.view.View
-import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
-import android.webkit.JavascriptInterface
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.LinearLayout
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-class SsulKeyboardService : InputMethodService() {
+        <service
+            android:name=".SsulKeyboardService"
+            android:permission="android.permission.BIND_INPUT_METHOD"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
 
-    private lateinit var webView: WebView
+    </application>
 
-    override fun onCreateInputView(): View {
-        val container = LinearLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.VERTICAL
-        }
-
-        webView = WebView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                800
-            )
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            
-            addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
-
-            loadUrl("file:///android_asset/keyboard.html")
-
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                }
-            }
-        }
-
-        container.addView(webView)
-        return container
-    }
-
-    inner class KeyboardBridge {
-        @JavascriptInterface
-        fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
-            inputConnection.commitText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            if (text.isEmpty()) {
-                inputConnection.setComposingText("", 1)
-            } else {
-                inputConnection.setComposingText(text, 1)
-            }
-        }
-    }
-
-    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
-        super.onStartInputView(info, restarting)
-        window.window?.let { window ->
-            window.decorView.let { decorView ->
-                decorView.requestLayout()
-            }
-        }
-    }
-
-    override fun onEvaluateFullscreenMode(): Boolean {
-        return false
-    }
-}
+</manifest>
