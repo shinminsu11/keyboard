@@ -29,7 +29,7 @@ class SsulKeyboardService : InputMethodService() {
             )
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-            
+
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
             loadUrl("file:///android_asset/keyboard.html")
@@ -48,28 +48,20 @@ class SsulKeyboardService : InputMethodService() {
     inner class KeyboardBridge {
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
-            inputConnection.commitText(text, 1)
+            currentInputConnection?.commitText(text, 1)
         }
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            if (text.isEmpty()) {
-                inputConnection.setComposingText("", 1)
-            } else {
-                inputConnection.setComposingText(text, 1)
-            }
+            currentInputConnection?.setComposingText(text, 1)
         }
 
         @JavascriptInterface
         fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
-            inputConnection.deleteSurroundingText(1, 0)
+            currentInputConnection?.deleteSurroundingText(1, 0)
         }
     }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         window.window?.let { window ->
