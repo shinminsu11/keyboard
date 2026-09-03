@@ -795,7 +795,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 각종 모달창들 -->
+<!-- 모달 창들 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -1095,7 +1095,6 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
-// ★ 클로드 제안 반영: 실시간 조합 텍스트를 안드로이드에 바로 전달
 function updateScreen() {
 let currentAssembled = assembleCurrent();
 let chars = Array.from(committedText);
@@ -1136,6 +1135,9 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
+if (window.AndroidBridge && window.AndroidBridge.finishComposing) {
+    window.AndroidBridge.finishComposing();
+}
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
@@ -1315,6 +1317,9 @@ chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.finishComposing) {
+    window.AndroidBridge.finishComposing();
+}
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
