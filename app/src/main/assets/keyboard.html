@@ -1147,7 +1147,11 @@ chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText(current);
+    if (hasStartedInput) {
+        window.AndroidBridge.commitText(current);
+    } else {
+        hasStartedInput = true;
+    }
 }
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
@@ -1331,7 +1335,11 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText(char);
+    if (hasStartedInput) {
+        window.AndroidBridge.commitText(char);
+    } else {
+        hasStartedInput = true;
+    }
 }
 }
 
@@ -1859,9 +1867,6 @@ chars.splice(cursorPos, 0, emoji);
 committedText = chars.join('');
 cursorPos += getCharLen(emoji);
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText(emoji);
-}
 closeEmojiModal();
 }
 
@@ -1938,9 +1943,6 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.replacePreviousChar) {
-    window.AndroidBridge.replacePreviousChar(hanjaChar);
-}
 }
 }
 
