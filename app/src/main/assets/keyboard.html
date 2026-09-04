@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 이모티콘/한자 브릿지 완벽 연동본</title>
+<title>쓸기자판 v8.89 - 검은 입력창 제거 완료본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -31,49 +31,6 @@ padding: 0;
 width: 100%;
 height: 100%;
 padding-bottom: env(safe-area-inset-bottom) !important; 
-}
-.output-screen {
-background-color: #1e2227;
-color: #ffffff;
-width: 100%;
-max-width: 530px;
-height: 48px;
-border-radius: 8px;
-margin-bottom: 6px;
-padding: 0 16px;
-font-size: 18px;
-border: none;
-outline: none;
-box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-display: flex;
-align-items: center;
-overflow-x: auto;
-white-space: pre-wrap;
-cursor: text;
-flex-shrink: 0;
-}
-.output-screen::-webkit-scrollbar {
-display: none;
-}
-.screen-text-wrap {
-display: inline-flex;
-align-items: center;
-position: relative;
-height: 100%;
-white-space: pre-wrap;
-}
-.cursor-bar {
-display: inline-block;
-width: 2px;
-height: 20px;
-background-color: #4285f4;
-animation: blink 1s infinite;
-vertical-align: middle;
-margin: 0 1px;
-}
-@keyframes blink {
-0%, 50% { opacity: 1; }
-51%, 100% { opacity: 0; }
 }
 
 .keyboard-container {
@@ -490,9 +447,6 @@ background: #e2e8f0;
 </style>
 </head>
 <body>
-<div id="screen" class="output-screen">
-  <div class="screen-text-wrap" id="screenTextWrap"></div>
-</div>
 
 <div id="toastMessage">길게 누르세요</div>
 
@@ -691,7 +645,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -935,8 +889,6 @@ background: #e2e8f0;
 </div>
 
 <script>
-const screenTextWrap = document.getElementById('screenTextWrap');
-const screenDiv = document.getElementById('screen');
 const mainBoard = document.getElementById('mainBoard');
 const alphaBoard = document.getElementById('alphaBoard');
 const symbolBoard1 = document.getElementById('symbolBoard1');
@@ -1086,34 +1038,14 @@ const CONSONANT_COMBINE = {
 };
 
 let hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-let committedText = '';
 let lastSlideDir = '';
 let lastSlideTime = 0;
-let cursorPos = 0;
-
-function getCharLen(str) {
-return Array.from(str).length;
-}
 
 function updateScreen() {
 let currentAssembled = assembleCurrent();
-let chars = Array.from(committedText);
-let beforeCursor = chars.slice(0, cursorPos).join('');
-let afterCursor = chars.slice(cursorPos).join('');
-
-screenTextWrap.innerHTML = 
-    escapeHtml(beforeCursor) + 
-    escapeHtml(currentAssembled) + 
-    '<span class="cursor-bar"></span>' + 
-    escapeHtml(afterCursor);
-
 if (window.AndroidBridge && window.AndroidBridge.setComposing) {
     window.AndroidBridge.setComposing(currentAssembled);
 }
-}
-
-function escapeHtml(str) {
-return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function assembleCurrent() {
@@ -1130,10 +1062,6 @@ return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 function commitCurrent() {
 let current = assembleCurrent();
 if (current) {
-let chars = Array.from(committedText);
-chars.splice(cursorPos, 0, current);
-committedText = chars.join('');
-cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
@@ -1212,14 +1140,8 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (cursorPos > 0) {
-        cursorPos--;
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, 1);
-        committedText = chars.join('');
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
@@ -1229,41 +1151,6 @@ else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
 lastSlideDir = '';
 updateScreen();
 }
-
-screenDiv.addEventListener('click', (e) => {
-commitCurrent();
-let fullText = committedText;
-if (fullText.length === 0) {
-cursorPos = 0;
-updateScreen();
-return;
-}
-
-let rect = screenTextWrap.getBoundingClientRect();
-let clickX = e.clientX - rect.left;
-
-let chars = Array.from(fullText);
-let closestIndex = chars.length;
-
-let tempSpan = document.createElement('span');
-tempSpan.style.font = window.getComputedStyle(screenDiv).font;
-tempSpan.style.visibility = 'hidden';
-tempSpan.style.position = 'absolute';
-document.body.appendChild(tempSpan);
-
-for (let i = 0; i <= chars.length; i++) {
-tempSpan.textContent = chars.slice(0, i).join('');
-let w = tempSpan.getBoundingClientRect().width;
-if (clickX <= w) {
-closestIndex = i;
-break;
-}
-}
-document.body.removeChild(tempSpan);
-
-cursorPos = closestIndex;
-updateScreen();
-});
 
 let bsTimer = null;
 let bsStartX = 0;
@@ -1289,8 +1176,9 @@ if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
 if (endX - bsStartX < -30) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-committedText = '';
-cursorPos = 0;
+if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+    for(let i=0; i<10; i++) window.AndroidBridge.deleteText();
+}
 updateScreen();
 return;
 }
@@ -1309,10 +1197,6 @@ function appendSpecial(char) {
 if (!char) return;
 commitCurrent();
 lastSlideDir = '';
-let chars = Array.from(committedText);
-chars.splice(cursorPos, 0, char);
-committedText = chars.join('');
-cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
@@ -1864,13 +1748,7 @@ openEmojiModal();
 function selectEmoji(emoji) {
 commitCurrent();
 lastSlideDir = '';
-let chars = Array.from(committedText);
-chars.splice(cursorPos, 0, emoji);
-committedText = chars.join('');
-cursorPos += getCharLen(emoji);
-updateScreen();
 closeEmojiModal();
-// ⭐️ 이모티콘 브릿지 연동
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
@@ -1896,15 +1774,13 @@ return merged;
 let targetHanjaCharForAdd = '';
 function openHanjaModal() {
 commitCurrent();
-let chars = Array.from(committedText);
-let lastChar = chars[cursorPos - 1] || chars[chars.length - 1] || '';
-targetHanjaCharForAdd = lastChar;
+let lastChar = ''; 
 hanjaGridContainer.innerHTML = "";
 let dict = getMergedHanjaDict();
 let list = dict[lastChar];
 
 if (!list || list.length === 0) {
-hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+hanjaModalTitle.textContent = `한자 변환`;
 let emptyDiv = document.createElement('div');
 emptyDiv.style.gridColumn = "span 2";
 emptyDiv.style.padding = "15px";
@@ -1914,7 +1790,7 @@ emptyDiv.innerHTML = `등록된 한자가 없습니다.<br><button id='addCustom
 hanjaGridContainer.appendChild(emptyDiv);
 document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
 } else {
-hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+hanjaModalTitle.textContent = `한자 변환`;
 list.forEach(item => {
 let div = document.createElement('div');
 div.className = 'hanja-item';
@@ -1927,7 +1803,7 @@ hanjaModal.style.display = 'flex';
 }
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
 function openAddHanjaModal(char) {
-addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한자와 뜻을 입력해주세요.`;
+addHanjaTargetDesc.textContent = `연결할 한자와 뜻을 입력해주세요.`;
 addHanjaModal.style.display = 'flex';
 }
 function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
@@ -1944,12 +1820,6 @@ showToast("추가되었습니다");
 openHanjaModal();
 }
 function replaceLastCharWithHanja(hanjaChar) {
-if (cursorPos > 0) {
-let chars = Array.from(committedText);
-chars[cursorPos - 1] = hanjaChar;
-committedText = chars.join('');
-updateScreen();
-// ⭐️ 한자 변환 브릿지 연동 (한글 1글자 삭제 후 한자 전송)
 if (window.AndroidBridge) {
     if (window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
@@ -1957,7 +1827,6 @@ if (window.AndroidBridge) {
     if (window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(hanjaChar);
     }
-}
 }
 }
 
@@ -2008,10 +1877,11 @@ settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY
 settingBtn.addEventListener('touchend', (e) => {
 let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
-commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
+if (window.AndroidBridge && window.AndroidBridge.deleteText) window.AndroidBridge.deleteText();
+return;
 }
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
-commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); return;
+return;
 }
 if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
 mainBoard.classList.remove('active'); twinBoard.classList.add('active');
@@ -2067,11 +1937,6 @@ return;
 }
 if (type === 'snippet' && val) { 
     commitCurrent();
-    let chars = Array.from(committedText);
-    chars.splice(cursorPos, 0, val);
-    committedText = chars.join('');
-    cursorPos += getCharLen(val);
-    updateScreen();
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(val);
     }
@@ -2093,11 +1958,6 @@ let res = eval(document.getElementById('calcScreen').value);
 document.getElementById('calcScreen').value = res;
 commitCurrent();
 let resStr = String(res);
-let chars = Array.from(committedText);
-chars.splice(cursorPos, 0, resStr);
-committedText = chars.join('');
-cursorPos += getCharLen(resStr);
-updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
 }
