@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.83 - 하단 안전 영역 대응 완료</title>
+<title>쓸기자판 v8.85 - 깐뛰기(띄어쓰기) 완벽 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -636,7 +636,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="eng-key func" style="grid-column: span 1; font-size: 13px;" onclick="switchToBoard('symbolBoard1')">!?#</div>
-<div class="eng-key" style="grid-column: span 4; font-size: 15px; color:#555;" onclick="appendSpecial(' ')">space</div>
+<div class="eng-key space-key-common" style="grid-column: span 4; font-size: 15px; color:#555;">space</div>
 <div class="eng-key func" style="grid-column: span 1; font-size: 18px; font-weight: bold;" onclick="appendSpecial('.')">.</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
@@ -690,7 +690,7 @@ background: #e2e8f0;
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
-<div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
+<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
 <div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
@@ -744,7 +744,7 @@ background: #e2e8f0;
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
-<div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
+<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
 <div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
@@ -966,20 +966,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-// ⭐️ [개선된 연타 방지] 첫타 씹힘 없이 아주 짧은 간격(50ms)으로 동일 키 연속 중복만 컷트
-let lastKeyTime = 0;
-let lastKeyChar = '';
-
-function checkDuplicateRapidTouch(char) {
-    let now = Date.now();
-    if (lastKeyChar === char && (now - lastKeyTime) < 70) {
-        return true; // 0.07초 내에 같은 키가 또 들어오면 중복으로 판단하고 무시
-    }
-    lastKeyTime = now;
-    lastKeyChar = char;
-    return false;
-}
-
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
@@ -1120,10 +1106,6 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
-
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    window.AndroidBridge.setComposing(currentAssembled);
-}
 }
 
 function escapeHtml(str) {
@@ -1158,8 +1140,6 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
-if (checkDuplicateRapidTouch(inputChar)) return; // 초고속 중복 입력 필터링
-
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
@@ -1323,8 +1303,6 @@ bsTimer = null;
 
 function appendSpecial(char) {
 if (!char) return;
-if (checkDuplicateRapidTouch(char)) return; // 특수문자 고속 중복 필터링
-
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
@@ -1336,6 +1314,18 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
 }
+
+// ⭐️ [깐뛰기(띄어쓰기) 완벽 연동] 모든 스페이스 키(영문, 기호판 등)에 공백 입력 즉시 적용
+document.querySelectorAll('.space-key-common').forEach(spaceBtn => {
+spaceBtn.addEventListener('click', (e) => {
+e.preventDefault();
+appendSpecial(' ');
+});
+spaceBtn.addEventListener('touchend', (e) => {
+e.preventDefault();
+appendSpecial(' ');
+});
+});
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
 btn.addEventListener('click', (e) => {
