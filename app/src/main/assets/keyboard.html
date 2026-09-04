@@ -152,6 +152,7 @@ user-select: none;
 transition: background-color 0.1s;
 overflow: hidden;
 padding-top: 1px;
+touch-action: manipulation;
 }
 .key:active {
 background-color: #e2e8f0;
@@ -179,6 +180,7 @@ font-size: 18px;
 cursor: pointer;
 user-select: none;
 min-width: 0;
+touch-action: manipulation;
 }
 .eng-key:active {
 background-color: #d8dee4;
@@ -209,6 +211,7 @@ align-items: center;
 border-radius: 5px;
 cursor: pointer;
 box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+touch-action: manipulation;
 }
 .brand-btn:active {
 background: #4a6068;
@@ -745,7 +748,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1261,6 +1264,7 @@ cursorPos = closestIndex;
 updateScreen();
 });
 
+// ⭐️ [즉시 반응형 삭제 버튼] 터치 순간(touchstart)에 바로 삭제 동작 실행
 let bsTimer = null;
 let bsStartX = 0;
 
@@ -1316,14 +1320,10 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
-btn.addEventListener('click', (e) => {
+btn.addEventListener('touchstart', (e) => {
 e.preventDefault();
 appendSpecial('\n');
-});
-btn.addEventListener('touchend', (e) => {
-e.preventDefault();
-appendSpecial('\n');
-});
+}, { passive: false });
 });
 
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
@@ -1446,26 +1446,43 @@ isLong = false;
 });
 });
 
-function setupLongPressKey(keyElement, onShortAction) {
+// ⭐️ [즉시 입력 코어 개조] 뗄 때(touchend)가 아니라 누를 때(touchstart) 바로 입력 실행!
+function setupInstantPressKey(keyElement, onShortAction) {
 let timer = null;
 let isLongPressed = false;
+let hasExecuted = false;
 let longChar = keyElement.getAttribute('data-long');
+
 keyElement.addEventListener('touchstart', (e) => {
 isLongPressed = false;
-if (!longChar) return;
+hasExecuted = false;
+if (longChar) {
 timer = setTimeout(() => {
 isLongPressed = true;
+hasExecuted = true;
 appendSpecial(longChar);
 if (navigator.vibrate) navigator.vibrate(40);
 }, 500);
+}
+// 누르는 순간 즉시 실행
+if (!hasExecuted) {
+hasExecuted = true;
+onShortAction(e);
+}
 }, { passive: true });
+
+keyElement.addEventListener('touchmove', () => {
+if (timer) {
+clearTimeout(timer);
+timer = null;
+}
+}, { passive: true });
+
 keyElement.addEventListener('touchend', (e) => {
-if (timer) { clearTimeout(timer); timer = null; }
-if (!isLongPressed) { onShortAction(e); }
-});
-keyElement.addEventListener('touchcancel', () => {
-if (timer) { clearTimeout(timer); timer = null; }
-isLongPressed = false;
+if (timer) {
+clearTimeout(timer);
+timer = null;
+}
 });
 }
 
@@ -1477,13 +1494,13 @@ iStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
-setupLongPressKey(iKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
+setupInstantPressKey(iKey, (e) => {
+let t = e.touches ? e.touches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 appendHangul('ㅣ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+} else {
 appendHangul('ㅣ');
 }
 });
@@ -1496,13 +1513,13 @@ euStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
-setupLongPressKey(euKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
+setupInstantPressKey(euKey, (e) => {
+let t = e.touches ? e.touches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
 appendHangul('ㅡ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+} else {
 appendHangul('ㅡ');
 }
 });
@@ -1510,11 +1527,14 @@ appendHangul('ㅡ');
 document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
 key.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
 startX = e.touches[0].clientX;
 startY = e.touches[0].clientY;
+}
 }, { passive: true });
-setupLongPressKey(key, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
+
+setupInstantPressKey(key, (e) => {
+let t = e.touches ? e.touches[0] : e;
 let diffX = t.clientX - startX;
 let diffY = t.clientY - startY;
 let base = key.getAttribute('data-base');
@@ -1532,16 +1552,21 @@ return;
 if (diffY > 18 || diffX < -18) {
 return;
 }
-if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
 appendHangul(base);
-}
 });
 });
 
 let touchStartX = 0, touchStartY = 0;
-slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
-setupLongPressKey(slideKey, (e) => {
-let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
+slideKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+touchStartX = e.touches[0].clientX;
+touchStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupInstantPressKey(slideKey, (e) => {
+let t = e.touches ? e.touches[0] : e;
+let diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
 if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
 let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
 let now = Date.now();
