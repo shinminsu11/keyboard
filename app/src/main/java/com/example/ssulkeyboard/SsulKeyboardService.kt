@@ -49,15 +49,22 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
+            // 밀림 현상을 막기 위해 즉시 텍스트를 입력합니다.
             inputConnection.commitText(text, 1)
         }
 
-        // 자바스크립트 호환성을 위해 setComposing 함수를 안전하게 복구해 둡니다
         @JavascriptInterface
         fun setComposing(text: String) {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.commitText(text, 1)
+            inputConnection.setComposingText(text, 1)
+        }
+
+        // ⭐️ 누락되었던 삭제 함수 추가 (이 부분이 없어서 삭제가 안 되었던 것입니다)
+        @JavascriptInterface
+        fun deleteText() {
+            val inputConnection = currentInputConnection ?: return
+            // 커서 앞의 글자 1개를 지웁니다.
+            inputConnection.deleteSurroundingText(1, 0)
         }
     }
 
