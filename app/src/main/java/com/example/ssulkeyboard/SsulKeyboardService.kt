@@ -49,7 +49,7 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
-            // 밀림 현상을 막기 위해 즉시 텍스트를 입력합니다.
+            // 엔터(\n)를 포함한 모든 텍스트를 InputConnection의 commitText로 통일하여 전달합니다.
             inputConnection.commitText(text, 1)
         }
 
@@ -59,7 +59,6 @@ class SsulKeyboardService : InputMethodService() {
             inputConnection.setComposingText(text, 1)
         }
 
-        // ⭐️ 누락되었던 삭제 함수 추가 (이 부분이 없어서 삭제가 안 되었던 것입니다)
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
