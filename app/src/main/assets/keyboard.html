@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.95 - 상단 여백 완전 제거</title>
+<title>쓸기자판 v8.96 - 자판 높이 확장형</title>
 <style>
 * {
 box-sizing: border-box;
@@ -37,7 +37,7 @@ padding-bottom: env(safe-area-inset-bottom) !important;
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 260px;
+height: 265px; /* ⭐️ 자판 전체 세로 높이를 키워서 위쪽 여백을 완전히 덮음 */
 margin-bottom: 0;
 flex-shrink: 0;
 background-color: #d1d8e0;
@@ -45,7 +45,7 @@ background-color: #d1d8e0;
 .keyboard-frame {
 background-color: #d1d8e0; 
 border-radius: 14px 14px 0 0;
-padding: 0px; /* ⭐️ 상단 4밀리 여백(패딩)을 완전히 제거하여 버튼을 맨 위로 붙임 */
+padding: 0px;
 width: 100%;
 max-width: 530px;
 position: absolute;
@@ -65,16 +65,18 @@ z-index: 10;
 .grid-container {
 display: grid;
 grid-template-columns: 1fr 1fr 1fr 1.05fr;
-grid-template-rows: repeat(4, 52px);
+grid-template-rows: repeat(4, 56px); /* ⭐️ 버튼들의 세로 크기를 살짝 키워서 전체 높이에 맞춤 */
 gap: 4px;
 width: 100%;
+padding-top: 15px; /* ⭐️ 위쪽으로 여백을 밀어 올려 버튼들을 아래로 배치하면서 회색 바 커버 */
 }
 .grid-eng-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 42px);
+grid-template-rows: repeat(5, 45px);
 gap: 3px;
 width: 100%;
+padding-top: 15px;
 }
 
 .grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
@@ -89,9 +91,10 @@ width: 100%;
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 42px);
+grid-template-rows: repeat(5, 45px);
 gap: 3px;
 width: 100%;
+padding-top: 15px;
 }
 .key {
 background-color: #ffffff;
@@ -234,7 +237,7 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-bottom: 250px;
+bottom: 280px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
