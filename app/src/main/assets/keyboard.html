@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.98 - 높이 확장 및 기호판 복원형</title>
+<title>쓸기자판 v8.89 - 높이 확장 및 입력 최적화본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -14,7 +14,7 @@ width: 100%;
 height: 100%;
 margin: 0;
 padding: 0;
-background-color: #d1d8e0;
+background-color: #2b3137;
 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 overflow: hidden;
 position: fixed;
@@ -32,18 +32,61 @@ width: 100%;
 height: 100%;
 padding-bottom: env(safe-area-inset-bottom) !important; 
 }
+.output-screen {
+background-color: #1e2227;
+color: #ffffff;
+width: 100%;
+max-width: 530px;
+height: 48px;
+border-radius: 8px;
+margin-bottom: 6px;
+padding: 0 16px;
+font-size: 18px;
+border: none;
+outline: none;
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+display: flex;
+align-items: center;
+overflow-x: auto;
+white-space: pre-wrap;
+cursor: text;
+flex-shrink: 0;
+}
+.output-screen::-webkit-scrollbar {
+display: none;
+}
+.screen-text-wrap {
+display: inline-flex;
+align-items: center;
+position: relative;
+height: 100%;
+white-space: pre-wrap;
+}
+.cursor-bar {
+display: inline-block;
+width: 2px;
+height: 20px;
+background-color: #4285f4;
+animation: blink 1s infinite;
+vertical-align: middle;
+margin: 0 1px;
+}
+@keyframes blink {
+0%, 50% { opacity: 1; }
+51%, 100% { opacity: 0; }
+}
 
 .keyboard-container {
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 295px; /* ⭐️ 높이를 더 넉넉하게 키워서 위쪽 회색 여백을 완전히 덮음 */
+height: 285px; /* ⭐️ 위쪽 높이를 넉넉하게 키워 상단 여백 문제 해결 */
 margin-bottom: 0;
 flex-shrink: 0;
 background-color: #d1d8e0;
 }
 .keyboard-frame {
-background-color: #d1d8e0; 
+background-color: #d1d8e0;
 border-radius: 14px 14px 0 0;
 padding: 0px;
 width: 100%;
@@ -52,7 +95,7 @@ position: absolute;
 top: auto;
 bottom: 0;
 left: 0;
-box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
 display: none;
 opacity: 0;
 transition: opacity 0.2s ease;
@@ -65,18 +108,18 @@ z-index: 10;
 .grid-container {
 display: grid;
 grid-template-columns: 1fr 1fr 1fr 1.05fr;
-grid-template-rows: repeat(4, 56px);
+grid-template-rows: repeat(4, 54px);
 gap: 4px;
 width: 100%;
-padding-top: 35px; /* ⭐️ 상단 패딩을 주어 자판을 위로 올려 여백을 완전히 커버 */
+padding-top: 30px; /* ⭐️ 자판 상단 패딩을 주어 위치 조절 */
 }
 .grid-eng-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 45px);
+grid-template-rows: repeat(5, 43px);
 gap: 3px;
 width: 100%;
-padding-top: 35px;
+padding-top: 30px;
 }
 
 .grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
@@ -91,10 +134,10 @@ padding-top: 35px;
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 45px);
+grid-template-rows: repeat(5, 43px);
 gap: 3px;
 width: 100%;
-padding-top: 35px;
+padding-top: 30px;
 }
 .key {
 background-color: #ffffff;
@@ -237,7 +280,7 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-bottom: 310px;
+bottom: 300px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
@@ -451,6 +494,9 @@ background: #e2e8f0;
 </style>
 </head>
 <body>
+<div id="screen" class="output-screen">
+  <div class="screen-text-wrap" id="screenTextWrap"></div>
+</div>
 
 <div id="toastMessage">길게 누르세요</div>
 
@@ -648,16 +694,15 @@ background: #e2e8f0;
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
-<div class="sym-key space-key-common" style="grid-column: span 4; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard2')">기호2</div>
-<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 </div>
 
-<!-- 기호판 2 (완벽 복원) -->
+<!-- 기호판 2 -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -703,9 +748,8 @@ background: #e2e8f0;
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
-<div class="sym-key space-key-common" style="grid-column: span 4; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard2')">기호2</div>
-<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -895,6 +939,8 @@ background: #e2e8f0;
 </div>
 
 <script>
+const screenTextWrap = document.getElementById('screenTextWrap');
+const screenDiv = document.getElementById('screen');
 const mainBoard = document.getElementById('mainBoard');
 const alphaBoard = document.getElementById('alphaBoard');
 const symbolBoard1 = document.getElementById('symbolBoard1');
@@ -1044,14 +1090,30 @@ const CONSONANT_COMBINE = {
 };
 
 let hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+let committedText = '';
 let lastSlideDir = '';
 let lastSlideTime = 0;
+let cursorPos = 0;
+
+function getCharLen(str) {
+return Array.from(str).length;
+}
 
 function updateScreen() {
 let currentAssembled = assembleCurrent();
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    window.AndroidBridge.setComposing(currentAssembled);
+let chars = Array.from(committedText);
+let beforeCursor = chars.slice(0, cursorPos).join('');
+let afterCursor = chars.slice(cursorPos).join('');
+
+screenTextWrap.innerHTML = 
+    escapeHtml(beforeCursor) + 
+    escapeHtml(currentAssembled) + 
+    '<span class="cursor-bar"></span>' + 
+    escapeHtml(afterCursor);
 }
+
+function escapeHtml(str) {
+return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function assembleCurrent() {
@@ -1068,6 +1130,10 @@ return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 function commitCurrent() {
 let current = assembleCurrent();
 if (current) {
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, current);
+committedText = chars.join('');
+cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
@@ -1128,6 +1194,19 @@ hangulBuffer.jung = jungIdx;
 }
 }
 }
+
+// ⭐️ 조합 즉시 완성해서 브릿지로 전송하고 화면 입력창에 반영
+let current = assembleCurrent();
+if (current) {
+    let chars = Array.from(committedText);
+    chars.splice(cursorPos, 0, current);
+    committedText = chars.join('');
+    cursorPos += getCharLen(current);
+    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(current);
+    }
+}
+hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 updateScreen();
 }
 
@@ -1146,8 +1225,14 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+    if (cursorPos > 0) {
+        cursorPos--;
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos, 1);
+        committedText = chars.join('');
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            window.AndroidBridge.deleteText();
+        }
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
@@ -1157,6 +1242,41 @@ else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
 lastSlideDir = '';
 updateScreen();
 }
+
+screenDiv.addEventListener('click', (e) => {
+commitCurrent();
+let fullText = committedText;
+if (fullText.length === 0) {
+cursorPos = 0;
+updateScreen();
+return;
+}
+
+let rect = screenTextWrap.getBoundingClientRect();
+let clickX = e.clientX - rect.left;
+
+let chars = Array.from(fullText);
+let closestIndex = chars.length;
+
+let tempSpan = document.createElement('span');
+tempSpan.style.font = window.getComputedStyle(screenDiv).font;
+tempSpan.style.visibility = 'hidden';
+tempSpan.style.position = 'absolute';
+document.body.appendChild(tempSpan);
+
+for (let i = 0; i <= chars.length; i++) {
+tempSpan.textContent = chars.slice(0, i).join('');
+let w = tempSpan.getBoundingClientRect().width;
+if (clickX <= w) {
+closestIndex = i;
+break;
+}
+}
+document.body.removeChild(tempSpan);
+
+cursorPos = closestIndex;
+updateScreen();
+});
 
 let bsTimer = null;
 let bsStartX = 0;
@@ -1182,9 +1302,8 @@ if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
 if (endX - bsStartX < -30) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-    for(let i=0; i<10; i++) window.AndroidBridge.deleteText();
-}
+committedText = '';
+cursorPos = 0;
 updateScreen();
 return;
 }
@@ -1203,6 +1322,10 @@ function appendSpecial(char) {
 if (!char) return;
 commitCurrent();
 lastSlideDir = '';
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, char);
+committedText = chars.join('');
+cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
@@ -1754,6 +1877,11 @@ openEmojiModal();
 function selectEmoji(emoji) {
 commitCurrent();
 lastSlideDir = '';
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, emoji);
+committedText = chars.join('');
+cursorPos += getCharLen(emoji);
+updateScreen();
 closeEmojiModal();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
@@ -1780,13 +1908,15 @@ return merged;
 let targetHanjaCharForAdd = '';
 function openHanjaModal() {
 commitCurrent();
-let lastChar = ''; 
+let chars = Array.from(committedText);
+let lastChar = chars[cursorPos - 1] || chars[chars.length - 1] || '';
+targetHanjaCharForAdd = lastChar;
 hanjaGridContainer.innerHTML = "";
 let dict = getMergedHanjaDict();
 let list = dict[lastChar];
 
 if (!list || list.length === 0) {
-hanjaModalTitle.textContent = `한자 변환`;
+hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
 let emptyDiv = document.createElement('div');
 emptyDiv.style.gridColumn = "span 2";
 emptyDiv.style.padding = "15px";
@@ -1796,7 +1926,7 @@ emptyDiv.innerHTML = `등록된 한자가 없습니다.<br><button id='addCustom
 hanjaGridContainer.appendChild(emptyDiv);
 document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
 } else {
-hanjaModalTitle.textContent = `한자 변환`;
+hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
 list.forEach(item => {
 let div = document.createElement('div');
 div.className = 'hanja-item';
@@ -1809,7 +1939,7 @@ hanjaModal.style.display = 'flex';
 }
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
 function openAddHanjaModal(char) {
-addHanjaTargetDesc.textContent = `연결할 한자와 뜻을 입력해주세요.`;
+addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한자와 뜻을 입력해주세요.`;
 addHanjaModal.style.display = 'flex';
 }
 function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
@@ -1826,6 +1956,11 @@ showToast("추가되었습니다");
 openHanjaModal();
 }
 function replaceLastCharWithHanja(hanjaChar) {
+if (cursorPos > 0) {
+let chars = Array.from(committedText);
+chars[cursorPos - 1] = hanjaChar;
+committedText = chars.join('');
+updateScreen();
 if (window.AndroidBridge) {
     if (window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
@@ -1833,6 +1968,7 @@ if (window.AndroidBridge) {
     if (window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(hanjaChar);
     }
+}
 }
 }
 
@@ -1883,11 +2019,10 @@ settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY
 settingBtn.addEventListener('touchend', (e) => {
 let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
-if (window.AndroidBridge && window.AndroidBridge.deleteText) window.AndroidBridge.deleteText();
-return;
+commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
 }
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
-return;
+commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); return;
 }
 if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
 mainBoard.classList.remove('active'); twinBoard.classList.add('active');
@@ -1943,6 +2078,11 @@ return;
 }
 if (type === 'snippet' && val) { 
     commitCurrent();
+    let chars = Array.from(committedText);
+    chars.splice(cursorPos, 0, val);
+    committedText = chars.join('');
+    cursorPos += getCharLen(val);
+    updateScreen();
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(val);
     }
@@ -1964,6 +2104,11 @@ let res = eval(document.getElementById('calcScreen').value);
 document.getElementById('calcScreen').value = res;
 commitCurrent();
 let resStr = String(res);
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, resStr);
+committedText = chars.join('');
+cursorPos += getCharLen(resStr);
+updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
 }
