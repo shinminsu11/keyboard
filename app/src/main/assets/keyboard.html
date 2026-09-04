@@ -968,15 +968,18 @@ const toastMessage = document.getElementById('toastMessage');
 
 let hasStartedInput = false;
 
-// ⭐️ [중요] 연타 및 중복 입력 방지를 위한 절대 방어 락
-let isTouchLocked = false;
-function guardTouch(callback) {
-    if (isTouchLocked) return;
-    isTouchLocked = true;
-    callback();
-    setTimeout(() => {
-        isTouchLocked = false;
-    }, 150); // 0.15초 동안 추가 터치 완전 차단
+// ⭐️ [개선된 연타 방지] 첫타 씹힘 없이 아주 짧은 간격(50ms)으로 동일 키 연속 중복만 컷트
+let lastKeyTime = 0;
+let lastKeyChar = '';
+
+function checkDuplicateRapidTouch(char) {
+    let now = Date.now();
+    if (lastKeyChar === char && (now - lastKeyTime) < 70) {
+        return true; // 0.07초 내에 같은 키가 또 들어오면 중복으로 판단하고 무시
+    }
+    lastKeyTime = now;
+    lastKeyChar = char;
+    return false;
 }
 
 function showCustomConfirm(message, onOk) {
@@ -1157,7 +1160,8 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
-guardTouch(() => {
+if (checkDuplicateRapidTouch(inputChar)) return; // 초고속 중복 입력 필터링
+
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
@@ -1209,7 +1213,6 @@ hangulBuffer.jung = jungIdx;
 }
 }
 updateScreen();
-});
 }
 
 function replaceLastVowel(newVowel) {
@@ -1322,7 +1325,8 @@ bsTimer = null;
 
 function appendSpecial(char) {
 if (!char) return;
-guardTouch(() => {
+if (checkDuplicateRapidTouch(char)) return; // 특수문자 고속 중복 필터링
+
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
@@ -1337,7 +1341,6 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
         hasStartedInput = true;
     }
 }
-});
 }
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
