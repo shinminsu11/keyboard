@@ -745,7 +745,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -966,22 +966,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-let hasStartedInput = false;
-
-// ⭐️ [개선된 연타 방지] 첫타 씹힘 없이 아주 짧은 간격(50ms)으로 동일 키 연속 중복만 컷트
-let lastKeyTime = 0;
-let lastKeyChar = '';
-
-function checkDuplicateRapidTouch(char) {
-    let now = Date.now();
-    if (lastKeyChar === char && (now - lastKeyTime) < 70) {
-        return true; // 0.07초 내에 같은 키가 또 들어오면 중복으로 판단하고 무시
-    }
-    lastKeyTime = now;
-    lastKeyChar = char;
-    return false;
-}
-
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
@@ -1147,11 +1131,7 @@ chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    if (hasStartedInput) {
-        window.AndroidBridge.commitText(current);
-    } else {
-        hasStartedInput = true;
-    }
+    window.AndroidBridge.commitText(current);
 }
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
@@ -1160,8 +1140,6 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
-if (checkDuplicateRapidTouch(inputChar)) return; // 초고속 중복 입력 필터링
-
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
@@ -1325,8 +1303,6 @@ bsTimer = null;
 
 function appendSpecial(char) {
 if (!char) return;
-if (checkDuplicateRapidTouch(char)) return; // 특수문자 고속 중복 필터링
-
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
@@ -1335,11 +1311,7 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    if (hasStartedInput) {
-        window.AndroidBridge.commitText(char);
-    } else {
-        hasStartedInput = true;
-    }
+    window.AndroidBridge.commitText(char);
 }
 }
 
