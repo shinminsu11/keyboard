@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.89 - 높이 확장 및 입력 최적화본</title>
+<title>쓸기자판 v8.90 - 기호판 정상 복원 및 자판 높이 최적화본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -80,7 +80,7 @@ margin: 0 1px;
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 285px; /* ⭐️ 위쪽 높이를 넉넉하게 키워 상단 여백 문제 해결 */
+height: 285px; /* ⭐️ 자판 높이 확장 */
 margin-bottom: 0;
 flex-shrink: 0;
 background-color: #d1d8e0;
@@ -111,7 +111,7 @@ grid-template-columns: 1fr 1fr 1fr 1.05fr;
 grid-template-rows: repeat(4, 54px);
 gap: 4px;
 width: 100%;
-padding-top: 30px; /* ⭐️ 자판 상단 패딩을 주어 위치 조절 */
+padding-top: 30px; /* ⭐️ 상단 여백 보정 */
 }
 .grid-eng-container {
 display: grid;
@@ -648,7 +648,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 -->
+<!-- 기호판 1 (원본 유지) -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -702,7 +702,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 2 -->
+<!-- 기호판 2 (원본 유지) -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -1194,19 +1194,6 @@ hangulBuffer.jung = jungIdx;
 }
 }
 }
-
-// ⭐️ 조합 즉시 완성해서 브릿지로 전송하고 화면 입력창에 반영
-let current = assembleCurrent();
-if (current) {
-    let chars = Array.from(committedText);
-    chars.splice(cursorPos, 0, current);
-    committedText = chars.join('');
-    cursorPos += getCharLen(current);
-    if (window.AndroidBridge && window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText(current);
-    }
-}
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 updateScreen();
 }
 
