@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.85 - 깐뛰기(띄어쓰기) 완벽 수정본</title>
+<title>쓸기자판 v8.86 - 최종본 깐뛰기 완벽 적용</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1315,27 +1315,31 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
-// ⭐️ [깐뛰기(띄어쓰기) 완벽 연동] 모든 스페이스 키(영문, 기호판 등)에 공백 입력 즉시 적용
-document.querySelectorAll('.space-key-common').forEach(spaceBtn => {
-spaceBtn.addEventListener('click', (e) => {
-e.preventDefault();
-appendSpecial(' ');
+// ⭐️ [깐뛰기(띄어쓰기) 완벽 연동] 영문판, 기호판 등 모든 스페이스 버튼에 공백 입력 즉시 적용
+document.querySelectorAll('.eng-key[onclick*="space"], .sym-key[onclick*="space"], div[onclick*="space"], div.eng-key:not([data-char])').forEach(btn => {
+    if (btn.textContent.trim().toLowerCase() === 'space') {
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            appendSpecial(' ');
+        }, { passive: false });
+    }
 });
-spaceBtn.addEventListener('touchend', (e) => {
-e.preventDefault();
-appendSpecial(' ');
-});
+
+// 추가적으로 class 기반이나 명시적 스페이스 버튼 타겟팅 보완
+document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
+    if (el.textContent.trim() === 'space') {
+        el.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            appendSpecial(' ');
+        }, { passive: false });
+    }
 });
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
-btn.addEventListener('click', (e) => {
+btn.addEventListener('touchstart', (e) => {
 e.preventDefault();
 appendSpecial('\n');
-});
-btn.addEventListener('touchend', (e) => {
-e.preventDefault();
-appendSpecial('\n');
-});
+}, { passive: false });
 });
 
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
