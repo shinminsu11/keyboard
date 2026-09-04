@@ -1,6 +1,7 @@
 package com.example.ssulkeyboard
 
 import android.inputmethodservice.InputMethodService
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -49,8 +50,16 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
-            // ⭐️ 반글자 공백(\u2009)을 포함한 모든 텍스트/기호를 외부 앱에 그대로 정확하게 꽂아줍니다.
-            inputConnection.commitText(text, 1)
+            
+            // ⭐️ 엔터(\n) 입력 시 키 이벤트(DOWN/UP)로 강제 전달하여 깐띄기(줄바꿈) 보장
+            if (text == "\n" || text.contains("\n")) {
+                inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+                inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+                inputConnection.performEditorAction(EditorInfo.IME_ACTION_UNSPECIFIED)
+            } else {
+                // ⭐️ 일반 문자 및 깐띄기(스페이스 공백) 포함 모두 정상 반영
+                inputConnection.commitText(text, 1)
+            }
         }
 
         @JavascriptInterface
@@ -62,7 +71,6 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
-            // 커서 앞의 미세 공백이나 글자 1개를 깔끔하게 지웁니다.
             inputConnection.deleteSurroundingText(1, 0)
         }
     }
