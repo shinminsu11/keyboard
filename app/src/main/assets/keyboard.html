@@ -30,6 +30,7 @@ margin: 0;
 padding: 0;
 width: 100%;
 height: 100%;
+/* ⭐️ APK 환경의 하단 내비게이션 바 영역 대응을 위한 안전 여백 반영 */
 padding-bottom: env(safe-area-inset-bottom) !important; 
 }
 .output-screen {
@@ -118,16 +119,6 @@ grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
 }
-
-.grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
-.grid-eng-container .eng-key:nth-child(22) { grid-column: 2 / 3; }
-.grid-eng-container .eng-key:nth-child(23) { grid-column: 3 / 4; }
-.grid-eng-container .eng-key:nth-child(24) { grid-column: 4 / 5; }
-.grid-eng-container .eng-key:nth-child(25) { grid-column: 5 / 6; }
-.grid-eng-container .eng-key:nth-child(26) { grid-column: 6 / 7; }
-.grid-eng-container .eng-key:nth-child(27) { grid-column: 7 / 8; }
-.grid-eng-container .eng-key:nth-child(28) { grid-column: 8 / 9; }
-.grid-eng-container .eng-key:nth-child(29) { grid-column: 9 / 10; }
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -426,67 +417,6 @@ touch-action: manipulation;
 .hanja-item:active {
 background: #e2e8f0;
 }
-
-/* ===== 영문판 좌우 대칭 구도 ===== */
-#alphaBoard .grid-eng-container {
-  grid-template-columns: repeat(20, minmax(0, 1fr));
-}
-#alphaBoard .grid-eng-container > :nth-child(-n+10) {
-  grid-column: span 2;
-  grid-row: 1;
-}
-#alphaBoard .grid-eng-container > :nth-child(n+11):nth-child(-n+20) {
-  grid-column: span 2;
-  grid-row: 2;
-}
-#alphaBoard .grid-eng-container > :nth-child(n+21):nth-child(-n+29) {
-  grid-column: span 2;
-  grid-row: 3;
-}
-#alphaBoard .grid-eng-container > :nth-child(21) { grid-column-start: 2; }
-#alphaBoard .grid-eng-container > :nth-child(22) { grid-column-start: 4; }
-#alphaBoard .grid-eng-container > :nth-child(23) { grid-column-start: 6; }
-#alphaBoard .grid-eng-container > :nth-child(24) { grid-column-start: 8; }
-#alphaBoard .grid-eng-container > :nth-child(25) { grid-column-start: 10; }
-#alphaBoard .grid-eng-container > :nth-child(26) { grid-column-start: 12; }
-#alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
-#alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
-#alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
-#alphaBoard .grid-eng-container > :nth-child(30) {
-  display: none;
-}
-#alphaBoard .grid-eng-container > :nth-child(31) {
-  grid-column: 1 / span 3 !important;
-  grid-row: 4;
-}
-#alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) {
-  grid-column: span 2;
-  grid-row: 4;
-}
-#alphaBoard .grid-eng-container > :nth-child(39) {
-  grid-column: 18 / span 3 !important;
-  grid-row: 4;
-}
-#alphaBoard .grid-eng-container > :nth-child(40) {
-  grid-column: 1 / span 4 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(41) {
-  grid-column: 5 / span 2 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(42) {
-  grid-column: 7 / span 8 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(43) {
-  grid-column: 15 / span 2 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(44) {
-  grid-column: 17 / span 4 !important;
-  grid-row: 5;
-}
 </style>
 </head>
 <body>
@@ -567,7 +497,7 @@ background: #e2e8f0;
 <div class="key func" id="toAlphaBtn" style="font-size:17px; font-weight:bold; color:#333; justify-content:center;">A</div>
 <div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;">
 <div style="font-size:10px; margin-bottom:1px; position:relative; top:5.5px;">(♥)</div>
-<div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:3px;">1※</div>
+<div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:px;">1※</div>
 <div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div>
 </div>
 <div class="key dark enter-btn" style="background-color:#9aa8b2; justify-content:center;">
@@ -621,9 +551,9 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<div class="eng-key eng-long" data-char="l" data-long)"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
-<div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
+<div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:15px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
 <div class="eng-key eng-long" data-char="x" data-long='"'><span class="eng-sub">"</span><span class="key-text">x</span></div>
 <div class="eng-key eng-long" data-char="c" data-long="~"><span class="eng-sub">~</span><span class="key-text">c</span></div>
@@ -633,13 +563,13 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="m" data-long="?"><span class="eng-sub">?</span><span class="key-text">m</span></div>
 <div class="eng-key func bs-key-common" style="grid-column: span 2; font-size: 20px;">⌫</div>
 <div class="brand-btn" style="grid-column: span 2;" id="engHomeBtn">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="eng-key func" style="grid-column: span 1; font-size: 13px;" onclick="switchToBoard('symbolBoard1')">!?#</div>
 <div class="eng-key" style="grid-column: span 4; font-size: 15px; color:#555;" onclick="appendSpecial(' ')">space</div>
 <div class="eng-key func" style="grid-column: span 1; font-size: 18px; font-weight: bold;" onclick="appendSpecial('.')">.</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 </div>
@@ -686,14 +616,14 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial(']')">]</div>
 <div class="sym-key" onclick="appendSpecial('{')">{</div>
 <div class="sym-key" onclick="appendSpecial('}')">}</div>
-<div class="sym-key func bs-key-common" style="font-size:15px;">⌫</div>
+<div class="sym-key func bs-key-common">⌫</div>
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
-<svg width="22" height="22 " viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
 <div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 </div>
@@ -711,43 +641,43 @@ background: #e2e8f0;
 <div class="sym-key custom-key" data-index="7" style="color:#1a73e8; font-weight:bold;">+</div>
 <div class="sym-key custom-key" data-index="8" style="color:#1a73e8; font-weight:bold;">+</div>
 <div class="sym-key custom-key" data-index="9" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key" onclick="appendSpecial('☎')">☎</div>
-<div class="sym-key" onclick="appendSpecial('♫')">♫</div>
-<div class="sym-key" onclick="appendSpecial('♨')">♨</div>
-<div class="sym-key" onclick="appendSpecial('∫')">∫</div>
+<div class="sym-key" onclick="appendSpecial('∂')">∂</div>
+<div class="sym-key" onclick="appendSpecial('∇')">∇</div>
+<div class="sym-key" onclick="appendSpecial('∈')">∈</div>
+<div class="sym-key" onclick="appendSpecial('∉')">∉</div>
 <div class="sym-key" onclick="appendSpecial('⊂')">⊂</div>
 <div class="sym-key" onclick="appendSpecial('⊃')">⊃</div>
-<div class="sym-key" onclick="appendSpecial('∑')">∑</div>
-<div class="sym-key" onclick="appendSpecial('▷')">▷</div>
-<div class="sym-key" onclick="appendSpecial('♨')">♨</div>
+<div class="sym-key" onclick="appendSpecial('⊆')">⊆</div>
+<div class="sym-key" onclick="appendSpecial('⊇')">⊇</div>
+<div class="sym-key" onclick="appendSpecial('⊈')">⊈</div>
+<div class="sym-key" onclick="appendSpecial('∠')">∠</div>
+<div class="sym-key" onclick="appendSpecial('¢')">¢</div>
+<div class="sym-key" onclick="appendSpecial('£')">£</div>
+<div class="sym-key" onclick="appendSpecial('¥')">¥</div>
+<div class="sym-key" onclick="appendSpecial('€')">€</div>
+<div class="sym-key" onclick="appendSpecial('©')">©</div>
+<div class="sym-key" onclick="appendSpecial('®')">®</div>
+<div class="sym-key" onclick="appendSpecial('™')">™</div>
+<div class="sym-key" onclick="appendSpecial('°')">°</div>
+<div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial('·')">·</div>
-<div class="sym-key" onclick="appendSpecial('↑')">↑</div>
-<div class="sym-key" onclick="appendSpecial('↓')">↓</div>
-<div class="sym-key" onclick="appendSpecial('←')">←</div>
-<div class="sym-key" onclick="appendSpecial('→')">→</div>
-<div class="sym-key" onclick="appendSpecial('↔')">↔</div>
-<div class="sym-key" onclick="appendSpecial('★')">★</div>
-<div class="sym-key" onclick="appendSpecial('♡')">♡</div>
-<div class="sym-key" onclick="appendSpecial('º')">º</div>
-<div class="sym-key" onclick="appendSpecial('☞')">☞</div>
-<div class="sym-key" onclick="appendSpecial('◎')">◎</div>
 <div class="sym-key func" onclick="switchToBoard('alphaBoard')">ABC</div>
-<div class="sym-key" onclick="appendSpecial('≠')">≠</div>
-<div class="sym-key" onclick="appendSpecial('∞')">∞</div>
+<div class="sym-key" onclick="appendSpecial('“')">“</div>
+<div class="sym-key" onclick="appendSpecial('”')">”</div>
 <div class="sym-key" onclick="appendSpecial('‘')">‘</div>
 <div class="sym-key" onclick="appendSpecial('’')">’</div>
 <div class="sym-key" onclick="appendSpecial('«')">«</div>
 <div class="sym-key" onclick="appendSpecial('»')">»</div>
 <div class="sym-key" onclick="appendSpecial('<')"><</div>
 <div class="sym-key" onclick="appendSpecial('>')">></div>
-<div class="sym-key func bs-key-common" style="font-size:15px;">⌫</div>
+<div class="sym-key func bs-key-common">⌫</div>
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key" style="grid-column: span 5; color:#555;" onclick="appendSpecial(' ')">space</div>
 <div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 </div>
@@ -966,6 +896,16 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
+// ⭐️ [중요] 연타 및 중복 입력 방지를 위한 락(Lock) 변수
+let isInputLocked = false;
+
+function lockInputBriefly(duration = 120) {
+    isInputLocked = true;
+    setTimeout(() => {
+        isInputLocked = false;
+    }, duration);
+}
+
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
@@ -1106,11 +1046,6 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
-
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    let fullComposingText = beforeCursor + currentAssembled + afterCursor;
-    window.AndroidBridge.setComposing(fullComposingText);
-}
 }
 
 function escapeHtml(str) {
@@ -1135,9 +1070,6 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
-if (window.AndroidBridge && window.AndroidBridge.finishComposing) {
-    window.AndroidBridge.finishComposing();
-}
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
@@ -1148,6 +1080,9 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
+if (isInputLocked) return; // ⭐️ 중복 입력 차단 가드
+lockInputBriefly(120);
+
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
@@ -1310,6 +1245,9 @@ bsTimer = null;
 });
 
 function appendSpecial(char) {
+if (isInputLocked) return; // ⭐️ 중복 입력 차단 가드
+lockInputBriefly(120);
+
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
@@ -1317,9 +1255,6 @@ chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.finishComposing) {
-    window.AndroidBridge.finishComposing();
-}
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
@@ -1479,6 +1414,7 @@ isLongPressed = false;
 });
 }
 
+// ㅣ 키 정밀 제어
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1498,6 +1434,7 @@ appendHangul('ㅣ');
 }
 });
 
+// ㅡ 키 정밀 제어
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1517,6 +1454,7 @@ appendHangul('ㅡ');
 }
 });
 
+// 자음판(slide-con) 제어
 document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
 key.addEventListener('touchstart', (e) => {
