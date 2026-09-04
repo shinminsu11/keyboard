@@ -51,10 +51,12 @@ class SsulKeyboardService : InputMethodService() {
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
             
-            // ⭐️ 엔터(\n) 입력 시 키 이벤트(DOWN/UP)로 강제 전달하여 외부 앱 깐띄기 보장
+            // ⭐️ 엔터(\n) 입력 시 키 이벤트와 에디터 액션을 동시에 강제 전달
             if (text == "\n" || text.contains("\n")) {
                 inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+                // 일부 앱에서 개행 액션을 강제로 처리하도록 유도
+                inputConnection.performEditorAction(EditorInfo.IME_ACTION_UNSPECIFIED)
             } else {
                 inputConnection.commitText(text, 1)
             }
