@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.87 - 깐띄기 및 브릿지 연동 완성본</title>
+<title>쓸기자판 v8.88 - 이모티콘/한자 브릿지 완벽 연동본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1319,7 +1319,6 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
-// ⭐️ [깐띄기 완벽 연동] 모든 스페이스 키(영문판, 기호판 등)에 공백 입력 즉시 안드로이드 전송 연결
 document.querySelectorAll('.space-key-common, div.eng-key:not([data-char]), .sym-key').forEach(btn => {
     if (btn.textContent.trim().toLowerCase() === 'space') {
         btn.addEventListener('click', (e) => {
@@ -1333,7 +1332,6 @@ document.querySelectorAll('.space-key-common, div.eng-key:not([data-char]), .sym
     }
 });
 
-// 추가적인 스페이스 버튼 일괄 보완
 document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     if (el.textContent.trim() === 'space') {
         el.addEventListener('click', (e) => {
@@ -1872,6 +1870,10 @@ committedText = chars.join('');
 cursorPos += getCharLen(emoji);
 updateScreen();
 closeEmojiModal();
+// ⭐️ 이모티콘 브릿지 연동
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
+    window.AndroidBridge.commitText(emoji);
+}
 }
 
 const DEFAULT_HANJA_DICT = {
@@ -1947,6 +1949,15 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
+// ⭐️ 한자 변환 브릿지 연동 (한글 1글자 삭제 후 한자 전송)
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(hanjaChar);
+    }
+}
 }
 }
 
