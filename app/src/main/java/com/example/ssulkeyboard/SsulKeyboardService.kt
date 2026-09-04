@@ -73,13 +73,6 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.deleteSurroundingText(1, 0)
         }
-
-        @JavascriptInterface
-        fun replacePreviousChar(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.deleteSurroundingText(1, 0)
-            inputConnection.commitText(text, 1)
-        }
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
