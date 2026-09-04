@@ -966,6 +966,8 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
+let hasStartedInput = false;
+
 // ⭐️ [개선된 연타 방지] 첫타 씹힘 없이 아주 짧은 간격(50ms)으로 동일 키 연속 중복만 컷트
 let lastKeyTime = 0;
 let lastKeyChar = '';
@@ -1120,10 +1122,6 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
-
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    window.AndroidBridge.setComposing(currentAssembled);
-}
 }
 
 function escapeHtml(str) {
@@ -1861,6 +1859,9 @@ chars.splice(cursorPos, 0, emoji);
 committedText = chars.join('');
 cursorPos += getCharLen(emoji);
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
+    window.AndroidBridge.commitText(emoji);
+}
 closeEmojiModal();
 }
 
@@ -1937,6 +1938,9 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.replacePreviousChar) {
+    window.AndroidBridge.replacePreviousChar(hanjaChar);
+}
 }
 }
 
