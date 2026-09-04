@@ -1,9 +1,9 @@
-ㄷ<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.97 - 상단 여백 완벽 밀착형</title>
+<title>쓸기자판 v8.98 - 높이 확장 및 기호판 복원형</title>
 <style>
 * {
 box-sizing: border-box;
@@ -37,7 +37,7 @@ padding-bottom: env(safe-area-inset-bottom) !important;
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 275px; /* ⭐️ 높이를 275px로 넉넉하게 키워서 위쪽 여백을 완전히 덮음 */
+height: 295px; /* ⭐️ 높이를 더 넉넉하게 키워서 위쪽 회색 여백을 완전히 덮음 */
 margin-bottom: 0;
 flex-shrink: 0;
 background-color: #d1d8e0;
@@ -68,7 +68,7 @@ grid-template-columns: 1fr 1fr 1fr 1.05fr;
 grid-template-rows: repeat(4, 56px);
 gap: 4px;
 width: 100%;
-padding-top: 24px; /* ⭐️ 위쪽 패딩을 더 주어 자판 전체를 위로 밀어올림 */
+padding-top: 35px; /* ⭐️ 상단 패딩을 주어 자판을 위로 올려 여백을 완전히 커버 */
 }
 .grid-eng-container {
 display: grid;
@@ -76,7 +76,7 @@ grid-template-columns: repeat(10, minmax(0, 1fr));
 grid-template-rows: repeat(5, 45px);
 gap: 3px;
 width: 100%;
-padding-top: 24px;
+padding-top: 35px;
 }
 
 .grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
@@ -94,7 +94,7 @@ grid-template-columns: repeat(10, minmax(0, 1fr));
 grid-template-rows: repeat(5, 45px);
 gap: 3px;
 width: 100%;
-padding-top: 24px;
+padding-top: 35px;
 }
 .key {
 background-color: #ffffff;
@@ -237,7 +237,7 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-bottom: 290px;
+bottom: 310px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
@@ -648,15 +648,16 @@ background: #e2e8f0;
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
-<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key space-key-common" style="grid-column: span 4; color:#555;">space</div>
+<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 </div>
 
-<!-- 기호판 2 -->
+<!-- 기호판 2 (완벽 복원) -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -702,8 +703,9 @@ background: #e2e8f0;
 <div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
-<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key space-key-common" style="grid-column: span 4; color:#555;">space</div>
+<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1; font-size:11px;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
