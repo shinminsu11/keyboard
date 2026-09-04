@@ -966,8 +966,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-let hasStartedInput = false;
-
 // ⭐️ [개선된 연타 방지] 첫타 씹힘 없이 아주 짧은 간격(50ms)으로 동일 키 연속 중복만 컷트
 let lastKeyTime = 0;
 let lastKeyChar = '';
@@ -1122,6 +1120,10 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
+
+if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+    window.AndroidBridge.setComposing(currentAssembled);
+}
 }
 
 function escapeHtml(str) {
@@ -1147,11 +1149,7 @@ chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    if (hasStartedInput) {
-        window.AndroidBridge.commitText(current);
-    } else {
-        hasStartedInput = true;
-    }
+    window.AndroidBridge.commitText(current);
 }
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
@@ -1335,11 +1333,7 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    if (hasStartedInput) {
-        window.AndroidBridge.commitText(char);
-    } else {
-        hasStartedInput = true;
-    }
+    window.AndroidBridge.commitText(char);
 }
 }
 
