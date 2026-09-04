@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.90 - 기호판 정상 복원 및 자판 높이 최적화본</title>
+<title>쓸기자판 v8.88 - 이모티콘/한자 브릿지 완벽 연동본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -80,15 +80,14 @@ margin: 0 1px;
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 285px; /* ⭐️ 자판 높이 확장 */
+height: 230px;
 margin-bottom: 0;
 flex-shrink: 0;
-background-color: #d1d8e0;
 }
 .keyboard-frame {
 background-color: #d1d8e0;
 border-radius: 14px 14px 0 0;
-padding: 0px;
+padding: 4px;
 width: 100%;
 max-width: 530px;
 position: absolute;
@@ -108,18 +107,16 @@ z-index: 10;
 .grid-container {
 display: grid;
 grid-template-columns: 1fr 1fr 1fr 1.05fr;
-grid-template-rows: repeat(4, 54px);
+grid-template-rows: repeat(4, 52px);
 gap: 4px;
 width: 100%;
-padding-top: 30px; /* ⭐️ 상단 여백 보정 */
 }
 .grid-eng-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 43px);
+grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
-padding-top: 30px;
 }
 
 .grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
@@ -134,10 +131,9 @@ padding-top: 30px;
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 43px);
+grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
-padding-top: 30px;
 }
 .key {
 background-color: #ffffff;
@@ -280,7 +276,7 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-bottom: 300px;
+bottom: 250px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
@@ -648,7 +644,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 (원본 유지) -->
+<!-- 기호판 1 -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -702,7 +698,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 2 (원본 유지) -->
+<!-- 기호판 2 -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -1110,6 +1106,10 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
+
+if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+    window.AndroidBridge.setComposing(currentAssembled);
+}
 }
 
 function escapeHtml(str) {
@@ -1870,6 +1870,7 @@ committedText = chars.join('');
 cursorPos += getCharLen(emoji);
 updateScreen();
 closeEmojiModal();
+// ⭐️ 이모티콘 브릿지 연동
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
@@ -1948,6 +1949,7 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
+// ⭐️ 한자 변환 브릿지 연동 (한글 1글자 삭제 후 한자 전송)
 if (window.AndroidBridge) {
     if (window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
