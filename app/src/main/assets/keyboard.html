@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.84 - 즉시 반응 완벽 수정본</title>
+<title>쓸기자판 v8.83 - 하단 안전 영역 대응 완료</title>
 <style>
 * {
 box-sizing: border-box;
@@ -149,9 +149,9 @@ color: #222222;
 font-size: 22px;
 cursor: pointer;
 user-select: none;
+transition: background-color 0.1s;
 overflow: hidden;
 padding-top: 1px;
-touch-action: manipulation;
 }
 .key:active {
 background-color: #e2e8f0;
@@ -179,7 +179,6 @@ font-size: 18px;
 cursor: pointer;
 user-select: none;
 min-width: 0;
-touch-action: manipulation;
 }
 .eng-key:active {
 background-color: #d8dee4;
@@ -210,7 +209,6 @@ align-items: center;
 border-radius: 5px;
 cursor: pointer;
 box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-touch-action: manipulation;
 }
 .brand-btn:active {
 background: #4a6068;
@@ -515,11 +513,11 @@ background: #e2e8f0;
 <!-- 메인 자판 -->
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
-<div class="key red slide-key-item" data-base="ㅇ" data-right="ㅎ" data-long="1">
+<div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63935" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
 <span class="sub-top">1</span>
 </div>
-<div class="key slide-key-item" data-base="ㄱ" data-up="ㄲ" data-right="ㅋ" data-long="2">ㄱ<span class="sub-top">2</span></div>
+<div class="key slide-con" data-base="ㄱ" data-up="ㄲ" data-right="ㅋ" data-long="2">ㄱ<span class="sub-top">2</span></div>
 <div class="key" id="iKey" data-long="3">
 <svg width="10" height="20" viewBox="0 0 10 20"><rect x="3.5" y="0" width="3" height="20" fill="#222"/></svg>
 <span class="sub-top">3</span>
@@ -527,8 +525,8 @@ background: #e2e8f0;
 <div class="key func" id="backspaceBtn">
 <svg width="28" height="20" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
 </div>
-<div class="key orange slide-key-item" data-base="ㄴ" data-right="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
-<div class="key slide-key-item" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
+<div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
+<div class="key slide-con" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
 <div class="key" id="slideKey" data-long="6">
 <svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="18" cy="18" r="2.2" fill="#e63935"></circle>
@@ -554,8 +552,8 @@ background: #e2e8f0;
 <polyline points="19 30.5 21.5 33 24 30.5" stroke-width="1.8" fill="none"></polyline>
 </svg>
 </div>
-<div class="key green slide-key-item" data-base="ㅅ" data-up="ㅆ" data-long="7">ㅅ<span class="sub-top">7</span></div>
-<div class="key slide-key-item" data-base="ㅈ" data-up="ㅉ" data-right="ㅊ" data-long="8">ㅈ<span class="sub-top">8</span></div>
+<div class="key green slide-con" data-base="ㅅ" data-up="ㅆ" data-long="7">ㅅ<span class="sub-top">7</span></div>
+<div class="key slide-con" data-base="ㅈ" data-up="ㅉ" data-right="ㅊ" data-long="8">ㅈ<span class="sub-top">8</span></div>
 <div class="key" id="euKey" data-long="9">
 <svg width="20" height="10" viewBox="0 0 20 10"><rect x="0" y="3.5" width="20" height="3" fill="#222"/></svg>
 <span class="sub-top">9</span>
@@ -576,11 +574,11 @@ background: #e2e8f0;
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
-<div class="key slide-key-item" data-base="ㅁ" data-long="*">
+<div class="key slide-con" data-base="ㅁ" data-long="*">
 <svg width="19" height="12.5" viewBox="0 0 24 18" fill="none" stroke="#222" stroke-width="3.8" stroke-linecap="square" stroke-linejoin="miter" style="position: relative; top: -0.8px;"><rect x="3" y="3" width="19" height="12.5"></rect></svg>
 <span class="sub-top">*</span>
 </div>
-<div class="key slide-key-item" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
+<div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
 <span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
@@ -968,6 +966,20 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
+// ⭐️ [개선된 연타 방지] 첫타 씹힘 없이 아주 짧은 간격(50ms)으로 동일 키 연속 중복만 컷트
+let lastKeyTime = 0;
+let lastKeyChar = '';
+
+function checkDuplicateRapidTouch(char) {
+    let now = Date.now();
+    if (lastKeyChar === char && (now - lastKeyTime) < 70) {
+        return true; // 0.07초 내에 같은 키가 또 들어오면 중복으로 판단하고 무시
+    }
+    lastKeyTime = now;
+    lastKeyChar = char;
+    return false;
+}
+
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
@@ -1015,22 +1027,34 @@ engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
 let aStartX = 0, aStartY = 0;
 let isALong = false;
-toAlphaBtn.addEventListener('pointerdown', (e) => {
-aStartX = e.clientX;
-aStartY = e.clientY;
-isALorg = false;
-});
-toAlphaBtn.addEventListener('pointermove', (e) => {
-let diffY = e.clientY - aStartY;
-if (diffY < -25) isALong = true;
-});
-toAlphaBtn.addEventListener('pointerup', (e) => {
-let diffX = e.clientX - aStartX;
-let diffY = e.clientY - aStartY;
+toAlphaBtn.addEventListener('touchstart', (e) => {
+if(e.touches.length > 0) {
+aStartX = e.touches[0].clientX;
+aStartY = e.touches[0].clientY;
+isALong = false;
+}
+}, { passive: true });
+
+toAlphaBtn.addEventListener('touchmove', (e) => {
+if(e.touches.length > 0) {
+let diffY = e.touches[0].clientY - aStartY;
+if (diffY < -25) {
+isALong = true;
+}
+}
+}, { passive: true });
+
+toAlphaBtn.addEventListener('touchend', (e) => {
+if(e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+let endY = e.changedTouches[0].clientY;
+let diffX = endX - aStartX;
+let diffY = endY - aStartY;
 if (diffY < -25 && Math.abs(diffY) > Math.abs(diffX)) {
 window.open('https://endic.naver.com', '_blank');
 if (navigator.vibrate) navigator.vibrate(30);
 return;
+}
 }
 if (!isALong) {
 switchToBoard('alphaBoard');
@@ -1054,7 +1078,8 @@ charSpan.textContent = isShiftActive ? baseChar.toUpperCase() : baseChar;
 });
 }
 if (shiftBtn) {
-shiftBtn.addEventListener('pointerup', toggleShift);
+shiftBtn.addEventListener('touchend', toggleShift);
+shiftBtn.addEventListener('click', toggleShift);
 }
 
 const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -1095,6 +1120,10 @@ screenTextWrap.innerHTML =
     escapeHtml(currentAssembled) + 
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
+
+if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+    window.AndroidBridge.setComposing(currentAssembled);
+}
 }
 
 function escapeHtml(str) {
@@ -1129,6 +1158,8 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
+if (checkDuplicateRapidTouch(inputChar)) return; // 초고속 중복 입력 필터링
+
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
@@ -1250,34 +1281,39 @@ cursorPos = closestIndex;
 updateScreen();
 });
 
-// ⭐️ [초고속 삭제 버튼] 누르자마자 즉시 삭제 실행
 let bsTimer = null;
 let bsStartX = 0;
+
 document.querySelectorAll('.bs-key-common, #backspaceBtn').forEach(bsKey => {
-bsKey.addEventListener('pointerdown', (e) => {
-bsStartX = e.clientX;
+bsKey.addEventListener('touchstart', (e) => {
+if (e.touches && e.touches.length > 0) {
+bsStartX = e.touches[0].clientX;
+}
 backspaceHangul();
 if (bsTimer) clearInterval(bsTimer);
 bsTimer = setInterval(() => {
 backspaceHangul();
 }, 150);
-});
+}, { passive: true });
 
-bsKey.addEventListener('pointerup', (e) => {
+bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
 }
-let diffX = e.clientX - bsStartX;
-if (diffX < -30) {
+if (e.changedTouches && e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+if (endX - bsStartX < -30) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
 cursorPos = 0;
 updateScreen();
+return;
+}
 }
 });
 
-bsKey.addEventListener('pointercancel', () => {
+bsKey.addEventListener('touchcancel', () => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
@@ -1287,6 +1323,8 @@ bsTimer = null;
 
 function appendSpecial(char) {
 if (!char) return;
+if (checkDuplicateRapidTouch(char)) return; // 특수문자 고속 중복 필터링
+
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
@@ -1300,7 +1338,11 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
-btn.addEventListener('pointerup', (e) => {
+btn.addEventListener('click', (e) => {
+e.preventDefault();
+appendSpecial('\n');
+});
+btn.addEventListener('touchend', (e) => {
 e.preventDefault();
 appendSpecial('\n');
 });
@@ -1352,32 +1394,34 @@ key.textContent = symbols[idx] || '+';
 
 let timer = null;
 let isLong = false;
+
 let newKey = key.cloneNode(true);
 key.parentNode.replaceChild(newKey, key);
 
-newKey.addEventListener('pointerdown', () => {
+newKey.addEventListener('touchstart', (e) => {
 isLong = false;
 timer = setTimeout(() => {
 isLong = true;
 openCustomSymbolModal(idx, symbols[idx]);
 if (navigator.vibrate) navigator.vibrate(40);
 }, 500);
-});
+}, { passive: true });
 
-newKey.addEventListener('pointermove', () => {
+newKey.addEventListener('touchmove', () => {
 if (timer) {
 clearTimeout(timer);
 timer = null;
 isLong = true;
 }
-});
+}, { passive: true });
 
-newKey.addEventListener('pointerup', (e) => {
+newKey.addEventListener('touchend', (e) => {
 if (timer) {
 clearTimeout(timer);
 timer = null;
 }
 if (!isLong) {
+e.preventDefault();
 if (symbols[idx] === '+') {
 openCustomSymbolModal(idx, symbols[idx]);
 } else {
@@ -1394,15 +1438,15 @@ let timer = null;
 let isLong = false;
 let char = key.getAttribute('data-char');
 let longChar = key.getAttribute('data-long');
-key.addEventListener('pointerdown', () => {
+key.addEventListener('touchstart', (e) => {
 isLong = false;
 timer = setTimeout(() => {
 isLong = true;
 appendSpecial(longChar);
 if (navigator.vibrate) navigator.vibrate(40);
 }, 500);
-});
-key.addEventListener('pointerup', () => {
+}, { passive: true });
+key.addEventListener('touchend', (e) => {
 if (timer) { clearTimeout(timer); timer = null; }
 if (!isLong) {
 let outputChar = isShiftActive ? char.toUpperCase() : char;
@@ -1418,92 +1462,83 @@ if (cs) cs.textContent = bc;
 }
 }
 });
-key.addEventListener('pointercancel', () => {
+key.addEventListener('touchcancel', () => {
 if (timer) { clearTimeout(timer); timer = null; }
 isLong = false;
 });
 });
 
-// ⭐️ [핵심 핵심] 누르는 순간(pointerdown) 즉시 한글 입력 실행!
-function setupInstantPressKey(keyElement, onShortAction) {
+function setupLongPressKey(keyElement, onShortAction) {
 let timer = null;
 let isLongPressed = false;
-let hasExecuted = false;
 let longChar = keyElement.getAttribute('data-long');
-
-keyElement.addEventListener('pointerdown', (e) => {
+keyElement.addEventListener('touchstart', (e) => {
 isLongPressed = false;
-hasExecuted = false;
-if (longChar) {
+if (!longChar) return;
 timer = setTimeout(() => {
 isLongPressed = true;
-hasExecuted = true;
 appendSpecial(longChar);
 if (navigator.vibrate) navigator.vibrate(40);
 }, 500);
-}
-// 누르는 즉시 발동
-if (!hasExecuted) {
-hasExecuted = true;
-onShortAction(e);
-}
+}, { passive: true });
+keyElement.addEventListener('touchend', (e) => {
+if (timer) { clearTimeout(timer); timer = null; }
+if (!isLongPressed) { onShortAction(e); }
 });
-
-keyElement.addEventListener('pointermove', () => {
-if (timer) {
-clearTimeout(timer);
-timer = null;
-}
-});
-
-keyElement.addEventListener('pointerup', () => {
-if (timer) {
-clearTimeout(timer);
-timer = null;
-}
+keyElement.addEventListener('touchcancel', () => {
+if (timer) { clearTimeout(timer); timer = null; }
+isLongPressed = false;
 });
 }
 
 let iStartX = 0, iStartY = 0;
-iKey.addEventListener('pointerdown', (e) => {
-iStartX = e.clientX;
-iStartY = e.clientY;
-});
-setupInstantPressKey(iKey, (e) => {
-let diffX = e.clientX - iStartX;
-let diffY = e.clientY - iStartY;
+iKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+iStartX = e.touches[0].clientX;
+iStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupLongPressKey(iKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - iStartX;
+let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 appendHangul('ㅣ');
-} else {
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅣ');
 }
 });
 
 let euStartX = 0, euStartY = 0;
-euKey.addEventListener('pointerdown', (e) => {
-euStartX = e.clientX;
-euStartY = e.clientY;
-});
-setupInstantPressKey(euKey, (e) => {
-let diffX = e.clientX - euStartX;
-let diffY = e.clientY - euStartY;
+euKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+euStartX = e.touches[0].clientX;
+euStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupLongPressKey(euKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - euStartX;
+let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
 appendHangul('ㅡ');
-} else {
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅡ');
 }
 });
 
-document.querySelectorAll('.slide-key-item').forEach(key => {
+document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
-key.addEventListener('pointerdown', (e) => {
-startX = e.clientX;
-startY = e.clientY;
-});
-
-setupInstantPressKey(key, (e) => {
-let diffX = e.clientX - startX;
-let diffY = e.clientY - startY;
+key.addEventListener('touchstart', (e) => {
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+}, { passive: true });
+setupLongPressKey(key, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - startX;
+let diffY = t.clientY - startY;
 let base = key.getAttribute('data-base');
 let up = key.getAttribute('data-up');
 let right = key.getAttribute('data-right');
@@ -1519,19 +1554,16 @@ return;
 if (diffY > 18 || diffX < -18) {
 return;
 }
+if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
 appendHangul(base);
+}
 });
 });
 
 let touchStartX = 0, touchStartY = 0;
-slideKey.addEventListener('pointerdown', (e) => {
-touchStartX = e.clientX;
-touchStartY = e.clientY;
-});
-
-setupInstantPressKey(slideKey, (e) => {
-let diffX = e.clientX - touchStartX;
-let diffY = e.clientY - touchStartY;
+slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
+setupLongPressKey(slideKey, (e) => {
+let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
 if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
 let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
 let now = Date.now();
@@ -1577,9 +1609,10 @@ if (arr.length > 50) { arr = arr.slice(0, 50); }
 localStorage.setItem('my_clip_history_v3', JSON.stringify(arr));
 }
 
-clipboardKey.addEventListener('pointerdown', function(e) {
-cbStartX = e.clientX;
-cbStartY = e.clientY;
+clipboardKey.addEventListener('touchstart', function(e) {
+const touch = e.touches[0];
+cbStartX = touch.clientX;
+cbStartY = touch.clientY;
 isSwiping = false;
 isCbLong = false;
 cbTimer = setTimeout(function() {
@@ -1587,21 +1620,23 @@ isCbLong = true;
 appendSpecial('#');
 if (navigator.vibrate) navigator.vibrate(40);
 }, 500);
-});
+}, { passive: true });
 
-clipboardKey.addEventListener('pointermove', function(e) {
-const diffX = e.clientX - cbStartX;
-const diffY = e.clientY - cbStartY;
+clipboardKey.addEventListener('touchmove', function(e) {
+const touch = e.touches[0];
+const diffX = touch.clientX - cbStartX;
+const diffY = touch.clientY - cbStartY;
 if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
 if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
 }
-});
+}, { passive: true });
 
-clipboardKey.addEventListener('pointerup', function(e) {
+clipboardKey.addEventListener('touchend', function(e) {
 if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
 if (isCbLong) return;
-const diffX = e.clientX - cbStartX;
-const diffY = e.clientY - cbStartY;
+const touch = e.changedTouches[0];
+const diffX = touch.clientX - cbStartX;
+const diffY = touch.clientY - cbStartY;
 if (diffX > 40 && Math.abs(diffX) > Math.abs(diffY)) {
 isSwiping = true;
 renderEmojiModal();
@@ -1613,7 +1648,7 @@ isSwiping = true;
 openHanjaModal();
 return;
 }
-});
+}, { passive: true });
 
 clipboardKey.addEventListener('click', async function() {
 if (isSwiping || isCbLong) {
@@ -1667,11 +1702,11 @@ let isLong = false;
 let startX = 0, startY = 0;
 let hasMoved = false;
 
-item.addEventListener('pointerdown', (e) => {
+item.addEventListener('touchstart', (e) => {
 isLong = false;
 hasMoved = false;
-startX = e.clientX;
-startY = e.clientY;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
 timer = setTimeout(() => {
 if (!hasMoved) {
 isLong = true;
@@ -1680,18 +1715,18 @@ if (navigator.vibrate) navigator.vibrate(40);
 confirmDeleteClip(index, text);
 }
 }, 550);
-});
+}, { passive: true });
 
-item.addEventListener('pointermove', (e) => {
-let dx = e.clientX - startX;
-let dy = e.clientY - startY;
+item.addEventListener('touchmove', (e) => {
+let dx = e.touches[0].clientX - startX;
+let dy = e.touches[0].clientY - startY;
 if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
 hasMoved = true;
 if (timer) { clearTimeout(timer); timer = null; }
 }
-});
+}, { passive: true });
 
-item.addEventListener('pointerup', () => {
+item.addEventListener('touchend', (e) => {
 if (timer) { clearTimeout(timer); timer = null; }
 item.classList.remove('deletable-active');
 if (!isLong && !hasMoved) {
@@ -1772,18 +1807,18 @@ emojiListContainer.appendChild(addBtn);
 
 function attachCustomEmojiHandlers(item, emoji, customIndex) {
 let timer = null, isLong = false, startX = 0, startY = 0;
-item.addEventListener('pointerdown', (e) => {
+item.addEventListener('touchstart', (e) => {
 isLong = false;
-startX = e.clientX;
-startY = e.clientY;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
 timer = setTimeout(() => {
 isLong = true;
 item.classList.add('deletable-active');
 if (navigator.vibrate) navigator.vibrate(40);
 confirmDeleteCustomEmoji(customIndex, emoji);
 }, 550);
-});
-item.addEventListener('pointerup', () => {
+}, { passive: true });
+item.addEventListener('touchend', (e) => {
 if (timer) { clearTimeout(timer); timer = null; }
 item.classList.remove('deletable-active');
 if (!isLong) selectEmoji(emoji);
@@ -1913,14 +1948,14 @@ hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) close
 addHanjaModal.addEventListener('click', (e) => { if (e.target === addHanjaModal) closeAddHanjaModal(); });
 
 let topX = 0, topY = 0, topTimer = null, topLong = false;
-topSymbolKey.addEventListener('pointerdown', (e) => {
-topX = e.clientX; topY = e.clientY; topLong = false;
+topSymbolKey.addEventListener('touchstart', (e) => {
+topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
 topTimer = setTimeout(() => { topLong = true; appendSpecial('•'); }, 500);
-});
-topSymbolKey.addEventListener('pointerup', (e) => {
+}, { passive: true });
+topSymbolKey.addEventListener('touchend', (e) => {
 if (topTimer) { clearTimeout(topTimer); topTimer = null; }
 if (topLong) return;
-let dx = e.clientX - topX, dy = e.clientY - topY;
+let t = e.changedTouches[0], dx = t.clientX - topX, dy = t.clientY - topY;
 if (Math.hypot(dx, dy) < 15) { appendSpecial('.'); return; }
 let angle = Math.atan2(dy, dx) * (180 / Math.PI);
 if (angle >= -22.5 && angle < 22.5) appendSpecial(',');
@@ -1934,23 +1969,23 @@ else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
 });
 
 let symX = 0, symY = 0, symTimer = null, symLong = false;
-symbolKey.addEventListener('pointerdown', (e) => {
-symX = e.clientX; symY = e.clientY; symLong = false;
+symbolKey.addEventListener('touchstart', (e) => {
+symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
 symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); }, 500);
-});
-symbolKey.addEventListener('pointerup', (e) => {
+}, { passive: true });
+symbolKey.addEventListener('touchend', (e) => {
 if (symTimer) { clearTimeout(symTimer); symTimer = null; }
 if (symLong) return;
-let dx = e.clientX - symX, dy = e.clientY - symY;
+let t = e.changedTouches[0], dx = t.clientX - symX, dy = t.clientY - symY;
 if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) appendSpecial(dx > 0 ? ')' : '(');
 else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 ? '♡' : '→');
 else switchToBoard('symbolBoard1');
 });
 
 let sX = 0, sY = 0;
-settingBtn.addEventListener('pointerdown', (e) => { sX = e.clientX; sY = e.clientY; });
-settingBtn.addEventListener('pointerup', (e) => {
-let dx = e.clientX - sX, dy = e.clientY - sY;
+settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY = e.touches[0].clientY; }, { passive: true });
+settingBtn.addEventListener('touchend', (e) => {
+let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
 commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
 }
@@ -1965,9 +2000,9 @@ commitCurrent(); let chars = Array.from(committedText); chars.splice(cursorPos, 
 });
 
 let twinStartX = 0, twinStartY = 0;
-twinBoard.addEventListener('pointerdown', (e) => { twinStartX = e.clientX; twinStartY = e.clientY; });
-twinBoard.addEventListener('pointerup', (e) => {
-let dx = e.clientX - twinStartX, dy = e.clientY - twinStartY;
+twinBoard.addEventListener('touchstart', (e) => { twinStartX = e.touches[0].clientX; twinStartY = e.touches[0].clientY; }, { passive: true });
+twinBoard.addEventListener('touchend', (e) => {
+let t = e.changedTouches[0], dx = t.clientX - twinStartX, dy = t.clientY - twinStartY;
 if (dy > 25 && Math.abs(dy) > Math.abs(dx)) { twinBoard.classList.remove('active'); mainBoard.classList.add('active'); }
 });
 
@@ -1995,12 +2030,12 @@ el.innerHTML = staticHtml + `<span class="content-text">${labelText}</span>`;
 document.querySelectorAll('.slot-key').forEach(el => {
 let slotKey = el.getAttribute('data-slot'), type = el.getAttribute('data-type');
 let pressTimer = null, isLongPress = false;
-el.addEventListener('pointerdown', () => {
+el.addEventListener('touchstart', (e) => {
 isLongPress = false;
 if (pressTimer) clearTimeout(pressTimer);
 pressTimer = setTimeout(() => { isLongPress = true; openModal(slotKey, type); }, 550);
-});
-el.addEventListener('pointerup', (e) => {
+}, { passive: true });
+el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
