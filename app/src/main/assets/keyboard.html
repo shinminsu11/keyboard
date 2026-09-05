@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.89 - 세로 크기 확장 및 안정화본</title>
+<title>쓸기자판 v8.91 - 세로 크기 맞춤 조절본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -80,7 +80,7 @@ margin: 0 1px;
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 275px; /* ⭐️ 자판 전체 세로 높이 확장 */
+height: 250px; /* ⭐️ 전체 자판 높이 적당하게 설정 */
 margin-bottom: 0;
 flex-shrink: 0;
 }
@@ -107,14 +107,14 @@ z-index: 10;
 .grid-container {
 display: grid;
 grid-template-columns: 1fr 1fr 1fr 1.05fr;
-grid-template-rows: repeat(4, 63px); /* ⭐️ 각 행 높이 확장 (총 252px + 여백) */
-gap: 5px;
+grid-template-rows: repeat(4, 57px); /* ⭐️ 각 행 높이 조절 */
+gap: 4px;
 width: 100%;
 }
 .grid-eng-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 51px); /* ⭐️ 영문판 행 높이 확장 */
+grid-template-rows: repeat(5, 45px); /* ⭐️ 영문판 행 높이 조절 */
 gap: 3px;
 width: 100%;
 }
@@ -131,7 +131,7 @@ width: 100%;
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 51px); /* ⭐️ 기호판 행 높이 확장 */
+grid-template-rows: repeat(5, 45px); /* ⭐️ 기호판 행 높이 조절 */
 gap: 3px;
 width: 100%;
 }
@@ -146,7 +146,7 @@ position: relative;
 box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 font-weight: bold;
 color: #222222;
-font-size: 24px; /* ⭐️ 글자 크기도 비례해서 살짝 확대 */
+font-size: 22px;
 cursor: pointer;
 user-select: none;
 transition: background-color 0.1s;
@@ -158,8 +158,8 @@ background-color: #e2e8f0;
 }
 .sub-top {
 position: absolute;
-top: 4px;
-right: 8px;
+top: 3px;
+right: 6px;
 font-size: 11px;
 color: #777777;
 font-weight: normal;
@@ -175,7 +175,7 @@ position: relative;
 box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 font-weight: normal;
 color: #111111;
-font-size: 19px;
+font-size: 18px;
 cursor: pointer;
 user-select: none;
 min-width: 0;
@@ -185,8 +185,8 @@ background-color: #d8dee4;
 }
 .eng-sub {
 position: absolute;
-top: 2px;
-left: 4px;
+top: 1px;
+left: 3px;
 font-size: 9px;
 color: #555555;
 }
@@ -224,7 +224,7 @@ position: relative;
 box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 font-weight: normal;
 color: #111111;
-font-size: 17px;
+font-size: 16px;
 cursor: pointer;
 user-select: none;
 min-width: 0;
@@ -253,13 +253,13 @@ grid-row: 3 / 5;
 display: grid;
 grid-template-rows: 1fr 1fr;
 grid-template-columns: 1fr 1fr;
-gap: 5px;
+gap: 4px;
 width: 100%;
 height: 100%;
 }
 .label { font-size: 10px; font-weight: bold; margin-bottom: 1px; color: #555; }
-.icon { font-size: 17px; line-height: 1.1; }
-.plus { font-size: 16px; font-weight: bold; color: #1a73e8; }
+.icon { font-size: 16px; line-height: 1.1; }
+.plus { font-size: 15px; font-weight: bold; color: #1a73e8; }
 .content-text {
 font-size: 11px;
 font-weight: bold;
@@ -276,7 +276,7 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-bottom: 290px;
+bottom: 265px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
@@ -514,21 +514,21 @@ background: #e2e8f0;
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
 <div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
-<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e63935" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63935" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
 <span class="sub-top">1</span>
 </div>
 <div class="key slide-con" data-base="ㄱ" data-up="ㄲ" data-right="ㅋ" data-long="2">ㄱ<span class="sub-top">2</span></div>
 <div class="key" id="iKey" data-long="3">
-<svg width="11" height="23" viewBox="0 0 10 20"><rect x="3.5" y="0" width="3" height="20" fill="#222"/></svg>
+<svg width="10" height="20" viewBox="0 0 10 20"><rect x="3.5" y="0" width="3" height="20" fill="#222"/></svg>
 <span class="sub-top">3</span>
 </div>
 <div class="key func" id="backspaceBtn">
-<svg width="30" height="22" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
+<svg width="28" height="20" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
 </div>
 <div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
 <div class="key slide-con" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
 <div class="key" id="slideKey" data-long="6">
-<svg width="34" height="34" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="18" cy="18" r="2.2" fill="#e63935"></circle>
 <line x1="18" y1="4" x2="18" y2="13"></line><polyline points="15 9 18 4 21 9"></polyline>
 <line x1="18" y1="23" x2="18" y2="32"></line><polyline points="15 27 18 32 21 27"></polyline>
@@ -538,7 +538,7 @@ background: #e2e8f0;
 <span class="sub-top">6</span>
 </div>
 <div class="key func" id="settingBtn">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<svg width="34" height="34" viewBox="0 0 36 36" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="18" cy="7" r="3"></circle>
 <path d="M18 2V1 M18 12V13 M12.5 4L11.5 3 M23.5 10L24.5 11 M12.5 10L11.5 11 M23.5 4L24.5 3"></path>
 <path d="M13 15V18H23V15" stroke-width="2.2" fill="none"></path>
@@ -555,7 +555,7 @@ background: #e2e8f0;
 <div class="key green slide-con" data-base="ㅅ" data-up="ㅆ" data-long="7">ㅅ<span class="sub-top">7</span></div>
 <div class="key slide-con" data-base="ㅈ" data-up="ㅉ" data-right="ㅊ" data-long="8">ㅈ<span class="sub-top">8</span></div>
 <div class="key" id="euKey" data-long="9">
-<svg width="22" height="11" viewBox="0 0 20 10"><rect x="0" y="3.5" width="20" height="3" fill="#222"/></svg>
+<svg width="20" height="10" viewBox="0 0 20 10"><rect x="0" y="3.5" width="20" height="3" fill="#222"/></svg>
 <span class="sub-top">9</span>
 </div>
 <div class="right-split-area">
@@ -564,25 +564,25 @@ background: #e2e8f0;
 <div style="position:relative; top:-2px;"><span style="font-weight:bold;">.</span> <span style="font-weight:bold;">,</span></div>
 <div style="position:relative; top:0px;"><span style="font-size:8px; position:relative; top:-0.5px;">/</span> ? !</div>
 </div>
-<div class="key func" id="toAlphaBtn" style="font-size:18px; font-weight:bold; color:#333; justify-content:center;">A</div>
+<div class="key func" id="toAlphaBtn" style="font-size:17px; font-weight:bold; color:#333; justify-content:center;">A</div>
 <div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;">
 <div style="font-size:10px; margin-bottom:1px; position:relative; top:5.5px;">(♥)</div>
 <div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:3px;">1※</div>
 <div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div>
 </div>
 <div class="key dark enter-btn" style="background-color:#9aa8b2; justify-content:center;">
-<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
 </div>
 <div class="key slide-con" data-base="ㅁ" data-long="*">
-<svg width="21" height="14" viewBox="0 0 24 18" fill="none" stroke="#222" stroke-width="3.8" stroke-linecap="square" stroke-linejoin="miter" style="position: relative; top: -0.8px;"><rect x="3" y="3" width="19" height="12.5"></rect></svg>
+<svg width="19" height="12.5" viewBox="0 0 24 18" fill="none" stroke="#222" stroke-width="3.8" stroke-linecap="square" stroke-linejoin="miter" style="position: relative; top: -0.8px;"><rect x="3" y="3" width="19" height="12.5"></rect></svg>
 <span class="sub-top">*</span>
 </div>
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
 <span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
-<span style="font-size:15px; margin:1 3px;">📋</span>
+<span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:1px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
 </div>
