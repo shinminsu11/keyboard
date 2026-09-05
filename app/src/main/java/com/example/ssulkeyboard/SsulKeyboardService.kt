@@ -22,7 +22,6 @@ class SsulKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
         }
 
-        // 자판 높이를 살짝 높이고 경계선 및 여백을 완벽히 없앤 최종 높이 설정 (255dp)
         val heightDp = 255
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
@@ -66,6 +65,16 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        @JavascriptInterface
+        fun updateSelection(newCursorPos: Int) {
+            val inputConnection = currentInputConnection ?: return
+            try {
+                inputConnection.setSelection(newCursorPos, newCursorPos)
+            } catch (e: Exception) {
+                // 예외 처리
+            }
         }
     }
 
