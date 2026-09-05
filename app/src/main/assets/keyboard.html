@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.91 - 삭제 커서 싱크 완벽 수정본</title>
+<title>쓸기자판 v8.92 - 백스페이스 동기화 완벽 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -14,7 +14,7 @@ width: 100%;
 height: 100%;
 margin: 0;
 padding: 0;
-background-color: #d1d8e0;
+background-color: #2b3137;
 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 overflow: hidden;
 position: fixed;
@@ -33,7 +33,6 @@ height: 100%;
 padding-bottom: env(safe-area-inset-bottom) !important; 
 }
 .output-screen {
-display: none;
 background-color: #1e2227;
 color: #ffffff;
 width: 100%;
@@ -46,6 +45,7 @@ font-size: 18px;
 border: none;
 outline: none;
 box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+display: flex;
 align-items: center;
 overflow-x: auto;
 white-space: pre-wrap;
@@ -80,21 +80,21 @@ margin: 0 1px;
 position: relative;
 width: 100%;
 max-width: 530px;
-height: 255px;
+height: 230px;
 margin-bottom: 0;
 flex-shrink: 0;
 }
 .keyboard-frame {
 background-color: #d1d8e0;
-border-radius: 0;
-padding: 2px;
+border-radius: 14px 14px 0 0;
+padding: 4px;
 width: 100%;
 max-width: 530px;
 position: absolute;
 top: auto;
 bottom: 0;
 left: 0;
-box-shadow: none;
+box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
 display: none;
 opacity: 0;
 transition: opacity 0.2s ease;
@@ -107,14 +107,14 @@ z-index: 10;
 .grid-container {
 display: grid;
 grid-template-columns: 1fr 1fr 1fr 1.05fr;
-grid-template-rows: repeat(4, 57px);
+grid-template-rows: repeat(4, 52px);
 gap: 4px;
 width: 100%;
 }
 .grid-eng-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 45px);
+grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
 }
@@ -131,7 +131,7 @@ width: 100%;
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
-grid-template-rows: repeat(5, 45px);
+grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
 }
@@ -276,7 +276,7 @@ justify-content: center;
 
 #toastMessage {
 position: fixed;
-bottom: 270px;
+bottom: 250px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
@@ -1107,14 +1107,8 @@ screenTextWrap.innerHTML =
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
 
-if (window.AndroidBridge) {
-    if (window.AndroidBridge.setComposing) {
-        window.AndroidBridge.setComposing(currentAssembled);
-    }
-    // ⭐️ 외부 앱과 커서 위치(인덱스) 싱크 동기화 전달
-    if (window.AndroidBridge.updateSelection) {
-        window.AndroidBridge.updateSelection(cursorPos);
-    }
+if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+    window.AndroidBridge.setComposing(currentAssembled);
 }
 }
 
@@ -1218,18 +1212,16 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+    // ⭐️ 핵심 수정: 조합 중인 글자가 없을 때는 안드로이드 시스템의 실제 커서 앞 글자를 지우도록 deleteText() 브릿지를 호출합니다.
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    // 자판 내부 가상 텍스트 메모리도 함께 동기화합니다.
     if (cursorPos > 0) {
         cursorPos--;
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
-    } else {
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
