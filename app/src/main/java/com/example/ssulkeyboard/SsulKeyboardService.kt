@@ -6,16 +6,20 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedText
 import android.view.inputmethod.ExtractedTextRequest
+import android.view.inputmethod.InputConnection
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
+import org.json.JSONObject
 
 class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
     private val mainHandler = Handler(Looper.getMainLooper())
+    private var extractedTextToken = 0
 
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
@@ -38,9 +42,16 @@ class SsulKeyboardService : InputMethodService() {
             settings.domStorageEnabled = true
             settings.allowFileAccess = true
             settings.allowContentAccess = true
+            settings.builtInZoomControls = false
+            settings.displayZoomControls = false
 
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
-            webViewClient = WebViewClient()
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    requestEditorState()
+                }
+            }
             loadUrl("file:///android_asset/keyboard.html")
         }
 
@@ -48,98 +59,143 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    /**
-     * JS에서 전달한 논리 커서 위치를 실제 앱 입력창의 UTF-16 커서 위치로 변환합니다.
-     * Android InputConnection의 setSelection()은 UTF-16 인덱스를 사용하고,
-     * HTML의 Array.from() 기반 cursorPosition은 유니코드 코드 포인트 인덱스이므로
-     * 이모지까지 고려해 변환합니다.
-     */
+    private fun currentConnection(): InputConnection? = currentInputConnection
+
     private fun codePointIndexToUtf16(text: String, codePointIndex: Int): Int {
-        val safeIndex = codePointIndex.coerceIn(0, text.codePointCount(0, text.length))
+        val count = text.codePointCount(0, text.length)
+        val safeIndex = codePointIndex.coerceIn(0, count)
         return text.offsetByCodePoints(0, safeIndex)
     }
 
-    private fun runOnInputConnection(action: (android.view.inputmethod.InputConnection) -> Unit) {
+    private fun requestEditorState() {
         mainHandler.post {
-            currentInputConnection?.let(action)
+            val inputConnection = currentConnection() ?: return@post
+            val request = ExtractedTextRequest().also {
+                it.token = ++extractedTextToken
+            }
+            val extracted = inputConnection.getExtractedText(
+                request,
+                InputConnection.GET_EXTRACTED_TEXT_MONITOR
+            )
+
+            if (extracted != null) {
+                sendEditorStateToHtml(extracted)
+                return@post
+            }
+
+            // 일부 입력창은 ExtractedText를 제공하지 않으므로 앞·뒤 텍스트로 보완합니다.
+            val before = inputConnection.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+            val after = inputConnection.getTextAfterCursor(10000, 0)?.toString() ?: ""
+            sendEditorStateToHtml(before, after)
+        }
+    }
+
+    private fun sendEditorStateToHtml(extracted: ExtractedText) {
+        val text = extracted.text?.toString() ?: ""
+        val selectionStart = extracted.selectionStart.coerceIn(0, text.length)
+        val selectionEnd = extracted.selectionEnd.coerceIn(selectionStart, text.length)
+        val before = text.substring(0, selectionStart)
+        val after = text.substring(selectionEnd)
+        sendEditorStateToHtml(before, after)
+    }
+
+    private fun sendEditorStateToHtml(before: String, after: String) {
+        if (!::webView.isInitialized) return
+        val beforeJson = JSONObject.quote(before)
+        val afterJson = JSONObject.quote(after)
+        val javascript = "window.setAndroidEditorState($beforeJson, $afterJson);"
+        webView.post {
+            webView.evaluateJavascript(javascript, null)
+        }
+    }
+
+    private fun runWithConnection(action: (InputConnection) -> Unit) {
+        mainHandler.post {
+            currentConnection()?.let(action)
         }
     }
 
     inner class KeyboardBridge {
 
         @JavascriptInterface
+        fun requestEditorState() {
+            this@SsulKeyboardService.requestEditorState()
+        }
+
+        @JavascriptInterface
         fun commitText(text: String) {
-            runOnInputConnection { inputConnection ->
+            runWithConnection { inputConnection ->
                 inputConnection.commitText(text, 1)
             }
         }
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            runOnInputConnection { inputConnection ->
+            runWithConnection { inputConnection ->
                 inputConnection.setComposingText(text, 1)
             }
         }
 
-        /**
-         * HTML의 논리 커서 위치를 실제 편집창에 반영합니다.
-         * htmlText가 현재 편집창 텍스트와 일치하면 정확한 위치를 사용하고,
-         * 일치하지 않으면 현재 Android 커서를 보존해 다른 앱의 기존 텍스트를
-         * 임의로 잘못 이동시키지 않습니다.
-         */
+        /** HTML 커서 위치를 실제 편집창 커서로 이동합니다. 위치는 코드 포인트 기준입니다. */
         @JavascriptInterface
         fun setCursorPosition(codePointPosition: Int, htmlText: String) {
-            runOnInputConnection { inputConnection ->
-                val extracted = inputConnection.getExtractedText(
-                    ExtractedTextRequest(),
-                    0
-                ) ?: return@runOnInputConnection
-
-                val actualText = extracted.text?.toString() ?: return@runOnInputConnection
-                if (actualText != htmlText) return@runOnInputConnection
+            runWithConnection { inputConnection ->
+                val extracted = readExtractedText(inputConnection) ?: return@runWithConnection
+                val actualText = extracted.text?.toString() ?: return@runWithConnection
+                val selectionStart = extracted.selectionStart.coerceIn(0, actualText.length)
+                val selectionEnd = extracted.selectionEnd.coerceIn(selectionStart, actualText.length)
+                val actualBefore = actualText.substring(0, selectionStart)
+                val actualAfter = actualText.substring(selectionEnd)
+                if (actualBefore + actualAfter != htmlText) {
+                    sendEditorStateToHtml(actualBefore, actualAfter)
+                    return@runWithConnection
+                }
 
                 val utf16Position = codePointIndexToUtf16(htmlText, codePointPosition)
                 inputConnection.setSelection(utf16Position, utf16Position)
             }
         }
 
-        /**
-         * deleteAt은 삭제 전 HTML 커서 위치입니다.
-         * HTML 텍스트와 실제 편집창 텍스트가 일치하는 경우에만 해당 위치로 이동한 뒤
-         * 커서 앞의 한 유니코드 코드 포인트를 삭제합니다.
-         */
+        /** HTML의 커서 앞 글자를 실제 입력창에서 삭제합니다. */
         @JavascriptInterface
-        fun deleteTextAt(deleteAtCodePoint: Int, htmlText: String) {
-            runOnInputConnection { inputConnection ->
-                val extracted = inputConnection.getExtractedText(
-                    ExtractedTextRequest(),
-                    0
-                ) ?: return@runOnInputConnection
+        fun deleteTextAt(codePointPosition: Int, htmlText: String) {
+            runWithConnection { inputConnection ->
+                val extracted = readExtractedText(inputConnection) ?: return@runWithConnection
+                val actualText = extracted.text?.toString() ?: return@runWithConnection
+                val selectionStart = extracted.selectionStart.coerceIn(0, actualText.length)
+                val selectionEnd = extracted.selectionEnd.coerceIn(selectionStart, actualText.length)
+                val actualBefore = actualText.substring(0, selectionStart)
+                val actualAfter = actualText.substring(selectionEnd)
+                if (actualBefore + actualAfter != htmlText) {
+                    sendEditorStateToHtml(actualBefore, actualAfter)
+                    return@runWithConnection
+                }
 
-                val actualText = extracted.text?.toString() ?: return@runOnInputConnection
-                if (actualText != htmlText) return@runOnInputConnection
-
-                val utf16Position = codePointIndexToUtf16(htmlText, deleteAtCodePoint)
+                val utf16Position = codePointIndexToUtf16(htmlText, codePointPosition)
                 inputConnection.setSelection(utf16Position, utf16Position)
                 inputConnection.deleteSurroundingTextInCodePoints(1, 0)
             }
         }
 
-        /**
-         * 기존 HTML과의 호환을 위한 기본 삭제 함수입니다.
-         * 새 HTML은 deleteTextAt()을 사용합니다.
-         */
         @JavascriptInterface
         fun deleteText() {
-            runOnInputConnection { inputConnection ->
+            runWithConnection { inputConnection ->
                 inputConnection.deleteSurroundingTextInCodePoints(1, 0)
             }
+        }
+
+        private fun readExtractedText(inputConnection: InputConnection): ExtractedText? {
+            val request = ExtractedTextRequest().also {
+                it.token = ++extractedTextToken
+            }
+            return inputConnection.getExtractedText(request, 0)
         }
     }
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         window.window?.decorView?.requestLayout()
+        requestEditorState()
     }
 
     override fun onEvaluateFullscreenMode(): Boolean = false
