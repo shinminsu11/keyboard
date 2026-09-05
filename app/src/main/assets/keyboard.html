@@ -3,139 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 - 클린 스타트</title>
+<title>쓸기자판 v8.93 - 안정 통합본</title>
 <style>
 * {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
+box-sizing: border-box;
+-webkit-tap-highlight-color: transparent;
 }
 html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: #2b3137;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
+width: 100%;
+height: 100%;
+margin: 0;
+padding: 0;
+background-color: #2b3137;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+overflow: hidden;
+position: fixed;
+top: 0;
+left: 0;
 }
 body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  width: 100%;
-  height: 100%;
-  padding-bottom: env(safe-area-inset-bottom) !important; 
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: flex-end;
+margin: 0;
+padding: 0;
+width: 100%;
+height: 100%;
+padding-bottom: env(safe-area-inset-bottom) !important; 
 }
 .output-screen {
-  background-color: #1e2227;
-  color: #ffffff;
-  width: 100%;
-  max-width: 530px;
-  height: 48px;
-  border-radius: 8px;
-  margin-bottom: 6px;
-  padding: 0 16px;
-  font-size: 18px;
-  border: none;
-  outline: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  cursor: text;
-  flex-shrink: 0;
+background-color: #1e2227;
+color: #ffffff;
+width: 100%;
+max-width: 530px;
+height: 48px;
+border-radius: 8px;
+margin-bottom: 6px;
+padding: 0 16px;
+font-size: 18px;
+border: none;
+outline: none;
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+display: flex;
+align-items: center;
+overflow-x: auto;
+white-space: pre-wrap;
+cursor: text;
+flex-shrink: 0;
 }
 .output-screen::-webkit-scrollbar {
-  display: none;
+display: none;
 }
 .screen-text-wrap {
-  display: inline-flex;
-  align-items: center;
-  position: relative;
-  height: 100%;
-  white-space: pre-wrap;
+display: inline-flex;
+align-items: center;
+position: relative;
+height: 100%;
+white-space: pre-wrap;
 }
 .cursor-bar {
-  display: inline-block;
-  width: 2px;
-  height: 20px;
-  background-color: #4285f4;
-  animation: blink 1s infinite;
-  vertical-align: middle;
-  margin: 0 1px;
+display: inline-block;
+width: 2px;
+height: 20px;
+background-color: #4285f4;
+animation: blink 1s infinite;
+vertical-align: middle;
+margin: 0 1px;
 }
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
+0%, 50% { opacity: 1; }
+51%, 100% { opacity: 0; }
 }
 
 .keyboard-container {
-  position: relative;
-  width: 100%;
-  max-width: 530px;
-  height: 250px;
-  margin-bottom: 0;
-  flex-shrink: 0;
+position: relative;
+width: 100%;
+max-width: 530px;
+height: 250px;
+margin-bottom: 0;
+flex-shrink: 0;
 }
 .keyboard-frame {
-  background-color: #d1d8e0;
-  border-radius: 14px 14px 0 0;
-  padding: 4px;
-  width: 100%;
-  max-width: 530px;
-  position: absolute;
-  top: auto;
-  bottom: 0;
-  left: 0;
-  box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
-  display: none;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+background-color: #d1d8e0;
+border-radius: 14px 14px 0 0;
+padding: 4px;
+width: 100%;
+max-width: 530px;
+position: absolute;
+top: auto;
+bottom: 0;
+left: 0;
+box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+display: none;
+opacity: 0;
+transition: opacity 0.2s ease;
 }
 .keyboard-frame.active {
-  display: block;
-  opacity: 1;
-  z-index: 10;
+display: block;
+opacity: 1;
+z-index: 10;
 }
 .grid-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1.05fr;
-  grid-template-rows: repeat(4, 57px);
-  gap: 4px;
-  width: 100%;
+display: grid;
+grid-template-columns: 1fr 1fr 1fr 1.05fr;
+grid-template-rows: repeat(4, 57px);
+gap: 4px;
+width: 100%;
 }
 .key {
-  background-color: #ffffff;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  font-weight: bold;
-  color: #222222;
-  font-size: 22px;
-  cursor: pointer;
-  user-select: none;
-  overflow: hidden;
-  padding-top: 1px;
+background-color: #ffffff;
+border-radius: 8px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+position: relative;
+box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+font-weight: bold;
+color: #222222;
+font-size: 22px;
+cursor: pointer;
+user-select: none;
+overflow: hidden;
+padding-top: 1px;
 }
 .key:active {
-  background-color: #e2e8f0;
+background-color: #e2e8f0;
 }
 .sub-top {
-  position: absolute;
-  top: 3px;
-  right: 6px;
-  font-size: 11px;
-  color: #777777;
-  font-weight: normal;
+position: absolute;
+top: 3px;
+right: 6px;
+font-size: 11px;
+color: #777777;
+font-weight: normal;
 }
 .key.red { color: #e63935; }
 .key.orange { color: #e67e22; }
@@ -143,14 +145,14 @@ body {
 .key.func { background-color: #b0bec5; color: #333; }
 .key.dark { background-color: #546e7a; color: #fff; }
 .right-split-area {
-  grid-column: 4 / 5;
-  grid-row: 3 / 5;
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  width: 100%;
-  height: 100%;
+grid-column: 4 / 5;
+grid-row: 3 / 5;
+display: grid;
+grid-template-rows: 1fr 1fr;
+grid-template-columns: 1fr 1fr;
+gap: 4px;
+width: 100%;
+height: 100%;
 }
 </style>
 </head>
@@ -165,7 +167,7 @@ body {
       <div class="key red" onclick="appendSpecial('ㅇ')">ㅇ<span class="sub-top">1</span></div>
       <div class="key" onclick="appendSpecial('ㄱ')">ㄱ<span class="sub-top">2</span></div>
       <div class="key" onclick="appendSpecial('ㅣ')">ㅣ<span class="sub-top">3</span></div>
-      <div class="key func" onclick="backspaceText()">⌫</div>
+      <div class="key func" id="backspaceBtn">⌫</div>
       <div class="key orange" onclick="appendSpecial('ㄴ')">ㄴ<span class="sub-top">4</span></div>
       <div class="key" onclick="appendSpecial('ㄷ')">ㄷ<span class="sub-top">5</span></div>
       <div class="key" onclick="appendSpecial('ㅡ')">ㅡ<span class="sub-top">6</span></div>
@@ -177,7 +179,7 @@ body {
         <div class="key func" onclick="appendSpecial('.')">.</div>
         <div class="key func" onclick="appendSpecial('A')">A</div>
         <div class="key func" onclick="appendSpecial('!')">!</div>
-        <div class="key dark" onclick="appendSpecial('\n')">↵</div>
+        <div class="key dark enter-btn" onclick="appendSpecial('\n')">↵</div>
       </div>
       <div class="key" onclick="appendSpecial('ㅁ')">ㅁ<span class="sub-top">*</span></div>
       <div class="key" onclick="appendSpecial('ㅂ')">ㅂ<span class="sub-top">0</span></div>
@@ -214,7 +216,7 @@ function appendSpecial(char) {
   }
 }
 
-function backspaceText() {
+function backspaceHangul() {
   if (cursorPos > 0) {
     cursorPos--;
     let chars = Array.from(committedText);
@@ -226,6 +228,8 @@ function backspaceText() {
     }
   }
 }
+
+document.getElementById('backspaceBtn').addEventListener('click', backspaceHangul);
 
 updateScreen();
 </script>
