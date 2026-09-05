@@ -22,7 +22,9 @@ class SsulKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
         }
 
-        val heightDp = 255
+        // ⭐️ 까만창(.output-screen)이 숨겨졌으므로 
+        // 웹뷰 전체 높이를 자판 영역 크기(235dp)에 맞추어 여백을 없앱니다.
+        val heightDp = 235
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
         webView = WebView(this).apply {
@@ -65,17 +67,6 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.deleteSurroundingText(1, 0)
-        }
-
-        // ⭐️ fn이 아니라 정상적인 fun 키워드로 수정 완료
-        @JavascriptInterface
-        fun updateSelection(newCursorPos: Int) {
-            val inputConnection = currentInputConnection ?: return
-            try {
-                inputConnection.setSelection(newCursorPos, newCursorPos)
-            } catch (e: Exception) {
-                // 예외 처리
-            }
         }
     }
 
