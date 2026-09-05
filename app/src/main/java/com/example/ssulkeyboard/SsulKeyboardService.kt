@@ -1,6 +1,7 @@
 package com.example.ssulkeyboard
 
 import android.inputmethodservice.InputMethodService
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -22,8 +23,6 @@ class SsulKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
         }
 
-        // ⭐️ 까만창(.output-screen)이 숨겨졌으므로 
-        // 웹뷰 전체 높이를 자판 영역 크기(235dp)에 맞추어 여백을 없앱니다.
         val heightDp = 235
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
@@ -67,6 +66,14 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        // ⭐️ 시스템 실제 백스페이스 키를 발생시켜 커서 위치의 글자를 정확히 삭제
+        @JavascriptInterface
+        fun sendBackspace() {
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+            inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
         }
     }
 
