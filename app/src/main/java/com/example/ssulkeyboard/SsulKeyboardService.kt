@@ -67,6 +67,7 @@ class SsulKeyboardService : InputMethodService() {
             inputConnection.deleteSurroundingText(1, 0)
         }
 
+        // ⭐️ fn이 아니라 정상적인 fun 키워드로 수정 완료
         @JavascriptInterface
         fun updateSelection(newCursorPos: Int) {
             val inputConnection = currentInputConnection ?: return
