@@ -22,9 +22,9 @@ class SsulKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
         }
 
-        // ⭐️ 검은띠(여백) 제거 핵심 수정: 
-        // 800이라는 고정 px 대신, HTML 자판 실제 높이에 맞는 dp를 계산하여 px로 변환합니다.
-        val heightDp = 285
+        // ⭐️ 까만창(.output-screen)이 숨겨졌으므로 
+        // 웹뷰 전체 높이를 자판 영역 크기(235dp)에 맞추어 여백을 없앱니다.
+        val heightDp = 235
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
         webView = WebView(this).apply {
