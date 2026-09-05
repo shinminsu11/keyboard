@@ -3,69 +3,504 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.95 - 백스페이스 완벽 연동본</title>
+<title>쓸기자판 v8.88 - 까만창 제거 최종 통합본</title>
 <style>
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { width: 100%; height: 100%; margin: 0; padding: 0; background-color: #2b3137; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; position: fixed; top: 0; left: 0; }
-body { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; height: 100%; padding-bottom: env(safe-area-inset-bottom) !important; }
-.output-screen { background-color: #1e2227; color: #ffffff; width: 100%; max-width: 530px; height: 48px; border-radius: 8px; margin-bottom: 6px; padding: 0 16px; font-size: 18px; border: none; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; overflow-x: auto; white-space: pre-wrap; cursor: text; flex-shrink: 0; }
-.output-screen::-webkit-scrollbar { display: none; }
-.screen-text-wrap { display: inline-flex; align-items: center; position: relative; height: 100%; white-space: pre-wrap; }
-.cursor-bar { display: inline-block; width: 2px; height: 20px; background-color: #4285f4; animation: blink 1s infinite; vertical-align: middle; margin: 0 1px; }
-@keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-.keyboard-container { position: relative; width: 100%; max-width: 530px; height: 230px; margin-bottom: 0; flex-shrink: 0; }
-.keyboard-frame { background-color: #d1d8e0; border-radius: 14px 14px 0 0; padding: 4px; width: 100%; max-width: 530px; position: absolute; top: auto; bottom: 0; left: 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.3); display: none; opacity: 0; transition: opacity 0.2s ease; }
-.keyboard-frame.active { display: block; opacity: 1; z-index: 10; }
-.grid-container { display: grid; grid-template-columns: 1fr 1fr 1fr 1.05fr; grid-template-rows: repeat(4, 52px); gap: 4px; width: 100%; }
-.grid-eng-container { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); grid-template-rows: repeat(5, 42px); gap: 3px; width: 100%; }
-.grid-symbol-container { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); grid-template-rows: repeat(5, 42px); gap: 3px; width: 100%; }
-.key { background-color: #ffffff; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: bold; color: #222222; font-size: 22px; cursor: pointer; user-select: none; transition: background-color 0.1s; overflow: hidden; padding-top: 1px; }
-.key:active { background-color: #e2e8f0; }
-.sub-top { position: absolute; top: 3px; right: 6px; font-size: 11px; color: #777777; font-weight: normal; }
-.eng-key { background-color: #ffffff; border-radius: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: normal; color: #111111; font-size: 18px; cursor: pointer; user-select: none; min-width: 0; }
-.eng-key:active { background-color: #d8dee4; }
-.eng-sub { position: absolute; top: 1px; left: 3px; font-size: 9px; color: #555555; }
-.eng-key.func { background-color: #b0bec5; color: #222; font-weight: bold; font-size: 15px; }
-.eng-key.dark { background-color: #546e7a; color: #fff; }
-.brand-btn { background: #5a747d; color: #fff; display: flex; justify-content: center; align-items: center; border-radius: 5px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.brand-btn:active { background: #4a6068; }
-.sym-key { background-color: #ffffff; border-radius: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.15); font-weight: normal; color: #111111; font-size: 16px; cursor: pointer; user-select: none; min-width: 0; touch-action: manipulation; }
-.sym-key:active { background-color: #d8dee4; }
-.sym-key.func { background-color: #b0bec5; color: #222; font-weight: bold; font-size: 11px; white-space: nowrap; }
-.key.red { color: #e63935; } .key.orange { color: #e67e22; } .key.green { color: #27ae60; }
-.key.func { background-color: #b0bec5; color: #333; } .key.dark { background-color: #546e7a; color: #fff; }
+* {
+box-sizing: border-box;
+-webkit-tap-highlight-color: transparent;
+}
+html, body {
+width: 100%;
+height: 100%;
+margin: 0;
+padding: 0;
+background-color: #2b3137;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+overflow: hidden;
+position: fixed;
+top: 0;
+left: 0;
+}
+body {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: flex-end;
+margin: 0;
+padding: 0;
+width: 100%;
+height: 100%;
+padding-bottom: env(safe-area-inset-bottom) !important; 
+}
+.output-screen {
+display: none; /* 자판 위 까만 입력창 숨김 */
+background-color: #1e2227;
+color: #ffffff;
+width: 100%;
+max-width: 530px;
+height: 48px;
+border-radius: 8px;
+margin-bottom: 6px;
+padding: 0 16px;
+font-size: 18px;
+border: none;
+outline: none;
+box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+align-items: center;
+overflow-x: auto;
+white-space: pre-wrap;
+cursor: text;
+flex-shrink: 0;
+}
+.output-screen::-webkit-scrollbar {
+display: none;
+}
+.screen-text-wrap {
+display: inline-flex;
+align-items: center;
+position: relative;
+height: 100%;
+white-space: pre-wrap;
+}
+.cursor-bar {
+display: inline-block;
+width: 2px;
+height: 20px;
+background-color: #4285f4;
+animation: blink 1s infinite;
+vertical-align: middle;
+margin: 0 1px;
+}
+@keyframes blink {
+0%, 50% { opacity: 1; }
+51%, 100% { opacity: 0; }
+}
+
+.keyboard-container {
+position: relative;
+width: 100%;
+max-width: 530px;
+height: 230px;
+margin-bottom: 0;
+flex-shrink: 0;
+}
+.keyboard-frame {
+background-color: #d1d8e0;
+border-radius: 14px 14px 0 0;
+padding: 4px;
+width: 100%;
+max-width: 530px;
+position: absolute;
+top: auto;
+bottom: 0;
+left: 0;
+box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+display: none;
+opacity: 0;
+transition: opacity 0.2s ease;
+}
+.keyboard-frame.active {
+display: block;
+opacity: 1;
+z-index: 10;
+}
+.grid-container {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr 1.05fr;
+grid-template-rows: repeat(4, 52px);
+gap: 4px;
+width: 100%;
+}
+.grid-eng-container {
+display: grid;
+grid-template-columns: repeat(10, minmax(0, 1fr));
+grid-template-rows: repeat(5, 42px);
+gap: 3px;
+width: 100%;
+}
+
+.grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
+.grid-eng-container .eng-key:nth-child(22) { grid-column: 2 / 3; }
+.grid-eng-container .eng-key:nth-child(23) { grid-column: 3 / 4; }
+.grid-eng-container .eng-key:nth-child(24) { grid-column: 4 / 5; }
+.grid-eng-container .eng-key:nth-child(25) { grid-column: 5 / 6; }
+.grid-eng-container .eng-key:nth-child(26) { grid-column: 6 / 7; }
+.grid-eng-container .eng-key:nth-child(27) { grid-column: 7 / 8; }
+.grid-eng-container .eng-key:nth-child(28) { grid-column: 8 / 9; }
+.grid-eng-container .eng-key:nth-child(29) { grid-column: 9 / 10; }
+.grid-symbol-container {
+display: grid;
+grid-template-columns: repeat(10, minmax(0, 1fr));
+grid-template-rows: repeat(5, 42px);
+gap: 3px;
+width: 100%;
+}
+.key {
+background-color: #ffffff;
+border-radius: 8px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+position: relative;
+box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+font-weight: bold;
+color: #222222;
+font-size: 22px;
+cursor: pointer;
+user-select: none;
+transition: background-color 0.1s;
+overflow: hidden;
+padding-top: 1px;
+}
+.key:active {
+background-color: #e2e8f0;
+}
+.sub-top {
+position: absolute;
+top: 3px;
+right: 6px;
+font-size: 11px;
+color: #777777;
+font-weight: normal;
+}
+.eng-key {
+background-color: #ffffff;
+border-radius: 5px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+position: relative;
+box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+font-weight: normal;
+color: #111111;
+font-size: 18px;
+cursor: pointer;
+user-select: none;
+min-width: 0;
+}
+.eng-key:active {
+background-color: #d8dee4;
+}
+.eng-sub {
+position: absolute;
+top: 1px;
+left: 3px;
+font-size: 9px;
+color: #555555;
+}
+.eng-key.func {
+background-color: #b0bec5;
+color: #222;
+font-weight: bold;
+font-size: 15px;
+}
+.eng-key.dark {
+background-color: #546e7a;
+color: #fff;
+}
+.brand-btn {
+background: #5a747d;
+color: #fff;
+display: flex;
+justify-content: center;
+align-items: center;
+border-radius: 5px;
+cursor: pointer;
+box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.brand-btn:active {
+background: #4a6068;
+}
+.sym-key {
+background-color: #ffffff;
+border-radius: 5px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+position: relative;
+box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+font-weight: normal;
+color: #111111;
+font-size: 16px;
+cursor: pointer;
+user-select: none;
+min-width: 0;
+touch-action: manipulation;
+}
+.sym-key:active {
+background-color: #d8dee4;
+}
+.sym-key.func {
+background-color: #b0bec5;
+color: #222;
+font-weight: bold;
+font-size: 11px;
+white-space: nowrap;
+}
+.key.red { color: #e63935; }
+.key.orange { color: #e67e22; }
+.key.green { color: #27ae60; }
+.key.func { background-color: #b0bec5; color: #333; }
+.key.dark { background-color: #546e7a; color: #fff; }
+.key.dark .sub-top { color: #ccc; }
 .key.blue-tint { background-color: #e8f0fe; color: #1a73e8; }
-.right-split-area { grid-column: 4 / 5; grid-row: 3 / 5; display: grid; grid-template-rows: 1fr 1fr; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; height: 100%; }
+.right-split-area {
+grid-column: 4 / 5;
+grid-row: 3 / 5;
+display: grid;
+grid-template-rows: 1fr 1fr;
+grid-template-columns: 1fr 1fr;
+gap: 4px;
+width: 100%;
+height: 100%;
+}
 .label { font-size: 10px; font-weight: bold; margin-bottom: 1px; color: #555; }
 .icon { font-size: 16px; line-height: 1.1; }
 .plus { font-size: 15px; font-weight: bold; color: #1a73e8; }
-.content-text { font-size: 11px; font-weight: bold; color: #1a73e8; word-break: break-all; margin-top: 1px; }
-.slot-key { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-#toastMessage { position: fixed; bottom: 250px; left: 50%; transform: translateX(-50%); background: rgba(30, 34, 39, 0.95); color: #ffffff; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
-#toastMessage.show { opacity: 1; }
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; touch-action: auto; }
-.modal-box { background: #fff; width: 90%; max-width: 340px; border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); display: flex; flex-direction: column; color: #333; box-sizing: border-box; touch-action: auto; }
-.modal-header { font-weight: bold; font-size: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; color: #333; }
-.modal-close { cursor: pointer; font-size: 28px; color: #777; padding: 0 5px; line-height: 1; }
-.modal-input { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; }
-.clipboard-list { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
-.clipboard-item { padding: 12px 10px; background: #f1f3f5; border-radius: 6px; font-size: 13px; cursor: pointer; box-sizing: border-box; word-break: break-all; color: #333; user-select: none; touch-action: pan-y; }
-.clipboard-item:active { background: #e2e8f0; }
-.emoji-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-height: 60vh; overflow-y: auto; padding-right: 4px; box-sizing: border-box; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
-.emoji-item { height: 52px; background: #f1f3f5; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 32px; cursor: pointer; user-select: none; touch-action: manipulation; position: relative; }
-.emoji-item:active { background: #e2e8f0; }
-.hanja-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 50vh; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
-.hanja-item { padding: 10px; background: #f1f3f5; border-radius: 8px; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #333; touch-action: manipulation; }
-.hanja-item:active { background: #e2e8f0; }
+.content-text {
+font-size: 11px;
+font-weight: bold;
+color: #1a73e8;
+word-break: break-all;
+margin-top: 1px;
+}
+.slot-key {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+}
+
+#toastMessage {
+position: fixed;
+bottom: 250px;
+left: 50%;
+transform: translateX(-50%);
+background: rgba(30, 34, 39, 0.95);
+color: #ffffff;
+padding: 10px 20px;
+border-radius: 20px;
+font-size: 14px;
+font-weight: bold;
+box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+z-index: 1000;
+pointer-events: none;
+opacity: 0;
+transition: opacity 0.3s ease;
+}
+#toastMessage.show {
+opacity: 1;
+}
+
+.modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.5);
+display: none;
+justify-content: center;
+align-items: center;
+z-index: 100;
+touch-action: auto;
+}
+.modal-box {
+background: #fff;
+width: 90%;
+max-width: 340px;
+border-radius: 12px;
+padding: 16px;
+box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+display: flex;
+flex-direction: column;
+color: #333;
+box-sizing: border-box;
+touch-action: auto;
+}
+.modal-header {
+font-weight: bold;
+font-size: 16px;
+margin-bottom: 10px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+color: #333;
+}
+.modal-close {
+cursor: pointer;
+font-size: 28px;
+color: #777;
+padding: 0 5px;
+line-height: 1;
+}
+.modal-input {
+width: 100%;
+padding: 10px;
+font-size: 14px;
+border: 1px solid #ccc;
+border-radius: 6px;
+margin-bottom: 8px;
+}
+.clipboard-list {
+display: flex;
+flex-direction: column;
+gap: 6px;
+max-height: 50vh;
+overflow-y: auto;
+touch-action: pan-y;
+-webkit-overflow-scrolling: touch;
+}
+.clipboard-item {
+padding: 12px 10px;
+background: #f1f3f5;
+border-radius: 6px;
+font-size: 13px;
+cursor: pointer;
+box-sizing: border-box;
+word-break: break-all;
+color: #333;
+user-select: none;
+touch-action: pan-y;
+}
+.clipboard-item:active {
+background: #e2e8f0;
+}
+.clipboard-item.deletable-active {
+background: #ffd9d9;
+}
+.emoji-list {
+display: grid;
+grid-template-columns: repeat(5, 1fr);
+gap: 8px;
+max-height: 60vh;
+overflow-y: auto;
+padding-right: 4px;
+box-sizing: border-box;
+touch-action: pan-y;
+-webkit-overflow-scrolling: touch;
+}
+.emoji-item {
+height: 52px;
+background: #f1f3f5;
+border-radius: 8px;
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 32px;
+cursor: pointer;
+user-select: none;
+touch-action: manipulation;
+position: relative;
+}
+.emoji-item:active {
+background: #e2e8f0;
+}
+.emoji-item.deletable-active {
+background: #ffd9d9;
+}
+.hanja-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 8px;
+max-height: 50vh;
+overflow-y: auto;
+touch-action: pan-y;
+-webkit-overflow-scrolling: touch;
+}
+.hanja-item {
+padding: 10px;
+background: #f1f3f5;
+border-radius: 8px;
+font-size: 15px;
+cursor: pointer;
+display: flex;
+align-items: center;
+gap: 8px;
+color: #333;
+touch-action: manipulation;
+}
+.hanja-item:active {
+background: #e2e8f0;
+}
+
+/* ===== 영문판 좌우 대칭 구도 ===== */
+#alphaBoard .grid-eng-container {
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+}
+#alphaBoard .grid-eng-container > :nth-child(-n+10) {
+  grid-column: span 2;
+  grid-row: 1;
+}
+#alphaBoard .grid-eng-container > :nth-child(n+11):nth-child(-n+20) {
+  grid-column: span 2;
+  grid-row: 2;
+}
+#alphaBoard .grid-eng-container > :nth-child(n+21):nth-child(-n+29) {
+  grid-column: span 2;
+  grid-row: 3;
+}
+#alphaBoard .grid-eng-container > :nth-child(21) { grid-column-start: 2; }
+#alphaBoard .grid-eng-container > :nth-child(22) { grid-column-start: 4; }
+#alphaBoard .grid-eng-container > :nth-child(23) { grid-column-start: 6; }
+#alphaBoard .grid-eng-container > :nth-child(24) { grid-column-start: 8; }
+#alphaBoard .grid-eng-container > :nth-child(25) { grid-column-start: 10; }
+#alphaBoard .grid-eng-container > :nth-child(26) { grid-column-start: 12; }
+#alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
+#alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
+#alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
+#alphaBoard .grid-eng-container > :nth-child(30) {
+  display: none;
+}
+#alphaBoard .grid-eng-container > :nth-child(31) {
+  grid-column: 1 / span 3 !important;
+  grid-row: 4;
+}
+#alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) {
+  grid-column: span 2;
+  grid-row: 4;
+}
+#alphaBoard .grid-eng-container > :nth-child(39) {
+  grid-column: 18 / span 3 !important;
+  grid-row: 4;
+}
+#alphaBoard .grid-eng-container > :nth-child(40) {
+  grid-column: 1 / span 4 !important;
+  grid-row: 5;
+}
+#alphaBoard .grid-eng-container > :nth-child(41) {
+  grid-column: 5 / span 2 !important;
+  grid-row: 5;
+}
+#alphaBoard .grid-eng-container > :nth-child(42) {
+  grid-column: 7 / span 8 !important;
+  grid-row: 5;
+}
+#alphaBoard .grid-eng-container > :nth-child(43) {
+  grid-column: 15 / span 2 !important;
+  grid-row: 5;
+}
+#alphaBoard .grid-eng-container > :nth-child(44) {
+  grid-column: 17 / span 4 !important;
+  grid-row: 5;
+}
 </style>
 </head>
 <body>
-<div id="screen" class="output-screen"><div class="screen-text-wrap" id="screenTextWrap"></div></div>
+<div id="screen" class="output-screen">
+  <div class="screen-text-wrap" id="screenTextWrap"></div>
+</div>
+
 <div id="toastMessage">길게 누르세요</div>
 
 <div id="customConfirmModal" class="modal-overlay" style="z-index: 2000;">
 <div class="modal-box" style="max-width:300px; text-align:center;">
-<div class="modal-header" style="justify-content:center; margin-bottom:12px;"><span id="confirmTitle" style="font-size:16px; font-weight:bold; color:#333;">삭제 확인</span></div>
+<div class="modal-header" style="justify-content:center; margin-bottom:12px;">
+<span id="confirmTitle" style="font-size:16px; font-weight:bold; color:#333;">삭제 확인</span>
+</div>
 <div id="confirmMessage" style="font-size:14px; color:#555; margin-bottom:20px; word-break:break-all;">정말 삭제하시겠습니까?</div>
 <div style="display:flex; gap:8px;">
 <button id="confirmOkBtn" style="flex:1; padding:10px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px;">삭제</button>
@@ -75,28 +510,426 @@ body { display: flex; flex-direction: column; align-items: center; justify-conte
 </div>
 
 <div class="keyboard-container">
+<!-- 메인 자판 -->
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
-<div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63935" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg><span class="sub-top">1</span></div>
+<div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63935" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
+<span class="sub-top">1</span>
+</div>
 <div class="key slide-con" data-base="ㄱ" data-up="ㄲ" data-right="ㅋ" data-long="2">ㄱ<span class="sub-top">2</span></div>
-<div class="key" id="iKey" data-long="3"><svg width="10" height="20" viewBox="0 0 10 20"><rect x="3.5" y="0" width="3" height="20" fill="#222"/></svg><span class="sub-top">3</span></div>
-<div class="key func" id="backspaceBtn"><svg width="28" height="20" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg></div>
+<div class="key" id="iKey" data-long="3">
+<svg width="10" height="20" viewBox="0 0 10 20"><rect x="3.5" y="0" width="3" height="20" fill="#222"/></svg>
+<span class="sub-top">3</span>
+</div>
+<div class="key func" id="backspaceBtn">
+<svg width="28" height="20" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
+</div>
 <div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
 <div class="key slide-con" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
-<div class="key" id="slideKey" data-long="6"><svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="2.2" fill="#e63935"></circle><line x1="18" y1="4" x2="18" y2="13"></line><polyline points="15 9 18 4 21 9"></polyline><line x1="18" y1="23" x2="18" y2="32"></line><polyline points="15 27 18 32 21 27"></polyline><line x1="4" y1="18" x2="13" y2="18"></line><polyline points="9 15 4 18 9 21"></polyline><line x1="23" y1="18" x2="32" y2="18"></line><polyline points="27 15 32 18 27 21"></polyline></svg><span class="sub-top">6</span></div>
-<div class="key func" id="settingBtn"><svg width="34" height="34" viewBox="0 0 36 36" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="7" r="3"></circle><path d="M18 2V1 M18 12V13 M12.5 4L11.5 3 M23.5 10L24.5 11 M12.5 10L11.5 11 M23.5 4L24.5 3"></path><path d="M13 15V18H23V15" stroke-width="2.2" fill="none"></path><line x1="10" y1="16.5" x2="4" y2="16.5" stroke-width="1.8"></line><polyline points="6.5 14 4 16.5 6.5 19" stroke-width="1.8" fill="none"></polyline><line x1="26" y1="16.5" x2="32" y2="16.5" stroke-width="1.8"></line><polyline points="29.5 14 32 16.5 29.5 19" stroke-width="1.8" fill="none"></polyline><line x1="14.5" y1="23" x2="14.5" y2="33" stroke-width="1.8"></line><polyline points="12 30.5 14.5 33 17 30.5" stroke-width="1.8" fill="none"></polyline><line x1="21.5" y1="23" x2="21.5" y2="33" stroke-width="1.8"></line><polyline points="19 30.5 21.5 33 24 30.5" stroke-width="1.8" fill="none"></polyline></svg></div>
+<div class="key" id="slideKey" data-long="6">
+<svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="18" cy="18" r="2.2" fill="#e63935"></circle>
+<line x1="18" y1="4" x2="18" y2="13"></line><polyline points="15 9 18 4 21 9"></polyline>
+<line x1="18" y1="23" x2="18" y2="32"></line><polyline points="15 27 18 32 21 27"></polyline>
+<line x1="4" y1="18" x2="13" y2="18"></line><polyline points="9 15 4 18 9 21"></polyline>
+<line x1="23" y1="18" x2="32" y2="18"></line><polyline points="27 15 32 18 27 21"></polyline>
+</svg>
+<span class="sub-top">6</span>
+</div>
+<div class="key func" id="settingBtn">
+<svg width="34" height="34" viewBox="0 0 36 36" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="18" cy="7" r="3"></circle>
+<path d="M18 2V1 M18 12V13 M12.5 4L11.5 3 M23.5 10L24.5 11 M12.5 10L11.5 11 M23.5 4L24.5 3"></path>
+<path d="M13 15V18H23V15" stroke-width="2.2" fill="none"></path>
+<line x1="10" y1="16.5" x2="4" y2="16.5" stroke-width="1.8"></line>
+<polyline points="6.5 14 4 16.5 6.5 19" stroke-width="1.8" fill="none"></polyline>
+<line x1="26" y1="16.5" x2="32" y2="16.5" stroke-width="1.8"></line>
+<polyline points="29.5 14 32 16.5 29.5 19" stroke-width="1.8" fill="none"></polyline>
+<line x1="14.5" y1="23" x2="14.5" y2="33" stroke-width="1.8"></line>
+<polyline points="12 30.5 14.5 33 17 30.5" stroke-width="1.8" fill="none"></polyline>
+<line x1="21.5" y1="23" x2="21.5" y2="33" stroke-width="1.8"></line>
+<polyline points="19 30.5 21.5 33 24 30.5" stroke-width="1.8" fill="none"></polyline>
+</svg>
+</div>
 <div class="key green slide-con" data-base="ㅅ" data-up="ㅆ" data-long="7">ㅅ<span class="sub-top">7</span></div>
 <div class="key slide-con" data-base="ㅈ" data-up="ㅉ" data-right="ㅊ" data-long="8">ㅈ<span class="sub-top">8</span></div>
-<div class="key" id="euKey" data-long="9"><svg width="20" height="10" viewBox="0 0 20 10"><rect x="0" y="3.5" width="20" height="3" fill="#222"/></svg><span class="sub-top">9</span></div>
-<div class="right-split-area">
-<div class="key func" id="topSymbolKey" style="font-size:11px; font-weight:normal; line-height:1.1; text-align:center; justify-content:center; display:flex; flex-direction:column; align-items:center;"><div style="position:relative; top:1px;">~ ^ '</div><div style="position:relative; top:-2px;"><span style="font-weight:bold;">.</span> <span style="font-weight:bold;">,</span></div><div style="position:relative; top:0px;"><span style="font-size:8px; position:relative; top:-0.5px;">/</span> ? !</div></div>
-<div class="key func" id="toAlphaBtn" style="font-size:17px; font-weight:bold; color:#333; justify-content:center;">A</div>
-<div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;"><div style="font-size:10px; margin-bottom:1px; position:relative; top:5.5px;">(♥)</div><div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:3px;">1※</div><div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div></div>
-<div class="key dark enter-btn" style="background-color:#9aa8b2; justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg></div>
+<div class="key" id="euKey" data-long="9">
+<svg width="20" height="10" viewBox="0 0 20 10"><rect x="0" y="3.5" width="20" height="3" fill="#222"/></svg>
+<span class="sub-top">9</span>
 </div>
-<div class="key slide-con" data-base="ㅁ" data-long="*"><svg width="19" height="12.5" viewBox="0 0 24 18" fill="none" stroke="#222" stroke-width="3.8" stroke-linecap="square" stroke-linejoin="miter" style="position: relative; top: -0.8px;"><rect x="3" y="3" width="19" height="12.5"></rect></svg><span class="sub-top">*</span></div>
+<div class="right-split-area">
+<div class="key func" id="topSymbolKey" style="font-size:11px; font-weight:normal; line-height:1.1; text-align:center; justify-content:center; display:flex; flex-direction:column; align-items:center;">
+<div style="position:relative; top:1px;">~ ^ '</div>
+<div style="position:relative; top:-2px;"><span style="font-weight:bold;">.</span> <span style="font-weight:bold;">,</span></div>
+<div style="position:relative; top:0px;"><span style="font-size:8px; position:relative; top:-0.5px;">/</span> ? !</div>
+</div>
+<div class="key func" id="toAlphaBtn" style="font-size:17px; font-weight:bold; color:#333; justify-content:center;">A</div>
+<div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;">
+<div style="font-size:10px; margin-bottom:1px; position:relative; top:5.5px;">(♥)</div>
+<div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:3px;">1※</div>
+<div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div>
+</div>
+<div class="key dark enter-btn" style="background-color:#9aa8b2; justify-content:center;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+</div>
+</div>
+<div class="key slide-con" data-base="ㅁ" data-long="*">
+<svg width="19" height="12.5" viewBox="0 0 24 18" fill="none" stroke="#222" stroke-width="3.8" stroke-linecap="square" stroke-linejoin="miter" style="position: relative; top: -0.8px;"><rect x="3" y="3" width="19" height="12.5"></rect></svg>
+<span class="sub-top">*</span>
+</div>
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
-<div class="key" id="clipboardKey" data-long="#"><div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;"><span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span><span style="font-size:14px; margin:1 3px;">📋</span><span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:1px; margin-left:1px;">😊</span><span class="sub-top" style="top:2px; right:4px;">#</span></div></div>
+<div class="key" id="clipboardKey" data-long="#">
+<div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
+<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:14px; margin:1 3px;">📋</span>
+<span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:1px; margin-left:1px;">😊</span>
+<span class="sub-top" style="top:2px; right:4px;">#</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 영문판 -->
+<div id="alphaBoard" class="keyboard-frame">
+<div class="grid-eng-container">
+<div class="eng-key" onclick="appendSpecial('1')">1</div>
+<div class="eng-key" onclick="appendSpecial('2')">2</div>
+<div class="eng-key" onclick="appendSpecial('3')">3</div>
+<div class="eng-key" onclick="appendSpecial('4')">4</div>
+<div class="eng-key" onclick="appendSpecial('5')">5</div>
+<div class="eng-key" onclick="appendSpecial('6')">6</div>
+<div class="eng-key" onclick="appendSpecial('7')">7</div>
+<div class="eng-key" onclick="appendSpecial('8')">8</div>
+<div class="eng-key" onclick="appendSpecial('9')">9</div>
+<div class="eng-key" onclick="appendSpecial('0')">0</div>
+<div class="eng-key eng-long" data-char="q" data-long="%"><span class="eng-sub">%</span><span class="key-text">q</span></div>
+<div class="eng-key eng-long" data-char="w" data-long="₩"><span class="eng-sub">₩</span><span class="key-text">w</span></div>
+<div class="eng-key eng-long" data-char="e" data-long="="><span class="eng-sub">=</span><span class="key-text">e</span></div>
+<div class="eng-key eng-long" data-char="r" data-long="&"><span class="eng-sub">&</span><span class="key-text">r</span></div>
+<div class="eng-key eng-long" data-char="t" data-long="·"><span class="eng-sub">·</span><span class="key-text">t</span></div>
+<div class="eng-key eng-long" data-char="y" data-long="*"><span class="eng-sub">*</span><span class="key-text">y</span></div>
+<div class="eng-key eng-long" data-char="u" data-long="-"><span class="eng-sub">-</span><span class="key-text">u</span></div>
+<div class="eng-key eng-long" data-char="i" data-long="+"><span class="eng-sub">+</span><span class="key-text">i</span></div>
+<div class="eng-key eng-long" data-char="o" data-long="<"><span class="eng-sub"><</span><span class="key-text">o</span></div>
+<div class="eng-key eng-long" data-char="p" data-long=">"><span class="eng-sub">></span><span class="key-text">p</span></div>
+<div class="eng-key eng-long" data-char="a" data-long="@"><span class="eng-sub">@</span><span class="key-text">a</span></div>
+<div class="eng-key eng-long" data-char="s" data-long="#"><span class="eng-sub">#</span><span class="key-text">s</span></div>
+<div class="eng-key eng-long" data-char="d" data-long=":"><span class="eng-sub">:</span><span class="key-text">d</span></div>
+<div class="eng-key eng-long" data-char="f" data-long=";"><span class="eng-sub">;</span><span class="key-text">f</span></div>
+<div class="eng-key eng-long" data-char="g" data-long="^"><span class="eng-sub">^</span><span class="key-text">g</span></div>
+<div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
+<div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
+<div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
+<div class="eng-key eng-long" data-char="l" data-long)"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
+<div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
+<div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
+<div class="eng-key eng-long" data-char="x" data-long='"'><span class="eng-sub">"</span><span class="key-text">x</span></div>
+<div class="eng-key eng-long" data-char="c" data-long="~"><span class="eng-sub">~</span><span class="key-text">c</span></div>
+<div class="eng-key eng-long" data-char="v" data-long="`"><span class="eng-sub">`</span><span class="key-text">v</span></div>
+<div class="eng-key eng-long" data-char="b" data-long="'"><span class="eng-sub">'</span><span class="key-text">b</span></div>
+<div class="eng-key eng-long" data-char="n" data-long="!"><span class="eng-sub">!</span><span class="key-text">n</span></div>
+<div class="eng-key eng-long" data-char="m" data-long="?"><span class="eng-sub">?</span><span class="key-text">m</span></div>
+<div class="eng-key func bs-key-common" style="grid-column: span 2; font-size: 20px;">⌫</div>
+<div class="brand-btn" style="grid-column: span 2;" id="engHomeBtn">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+</div>
+<div class="eng-key func" style="grid-column: span 1; font-size: 13px;" onclick="switchToBoard('symbolBoard1')">!?#</div>
+<div class="eng-key space-key-common" style="grid-column: span 4; font-size: 15px; color:#555;">space</div>
+<div class="eng-key func" style="grid-column: span 1; font-size: 18px; font-weight: bold;" onclick="appendSpecial('.')">.</div>
+<div class="brand-btn enter-btn" style="grid-column: span 2;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+</div>
+</div>
+</div>
+
+<!-- 기호판 1 -->
+<div id="symbolBoard1" class="keyboard-frame">
+<div class="grid-symbol-container">
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
+<div class="sym-key" onclick="appendSpecial('2')">2</div>
+<div class="sym-key" onclick="appendSpecial('3')">3</div>
+<div class="sym-key" onclick="appendSpecial('4')">4</div>
+<div class="sym-key" onclick="appendSpecial('5')">5</div>
+<div class="sym-key" onclick="appendSpecial('6')">6</div>
+<div class="sym-key" onclick="appendSpecial('7')">7</div>
+<div class="sym-key" onclick="appendSpecial('8')">8</div>
+<div class="sym-key" onclick="appendSpecial('9')">9</div>
+<div class="sym-key" onclick="appendSpecial('0')">0</div>
+<div class="sym-key" onclick="appendSpecial('~')">~</div>
+<div class="sym-key" onclick="appendSpecial('`')">`</div>
+<div class="sym-key" onclick="appendSpecial('|')">|</div>
+<div class="sym-key" onclick="appendSpecial('•')">•</div>
+<div class="sym-key" onclick="appendSpecial('√')">√</div>
+<div class="sym-key" onclick="appendSpecial('π')">π</div>
+<div class="sym-key" onclick="appendSpecial('÷')">÷</div>
+<div class="sym-key" onclick="appendSpecial('×')">×</div>
+<div class="sym-key" onclick="appendSpecial('【')">【</div>
+<div class="sym-key" onclick="appendSpecial('】')">】</div>
+<div class="sym-key" onclick="appendSpecial('!')">!</div>
+<div class="sym-key" onclick="appendSpecial('@')">@</div>
+<div class="sym-key" onclick="appendSpecial('#')">#</div>
+<div class="sym-key" onclick="appendSpecial('?')">?</div>
+<div class="sym-key" onclick="appendSpecial('%')">%</div>
+<div class="sym-key" onclick="appendSpecial('^')">^</div>
+<div class="sym-key" onclick="appendSpecial('&')">&</div>
+<div class="sym-key" onclick="appendSpecial('*')">*</div>
+<div class="sym-key" onclick="appendSpecial('(')">(</div>
+<div class="sym-key" onclick="appendSpecial(')')">)</div>
+<div class="sym-key func" onclick="switchToBoard('alphaBoard')">ABC</div>
+<div class="sym-key" onclick="appendSpecial('-')">-</div>
+<div class="sym-key" onclick="appendSpecial('_')">_</div>
+<div class="sym-key" onclick="appendSpecial('+')">+</div>
+<div class="sym-key" onclick="appendSpecial('=')">=</div>
+<div class="sym-key" onclick="appendSpecial('[')">[</div>
+<div class="sym-key" onclick="appendSpecial(']')">]</div>
+<div class="sym-key" onclick="appendSpecial('{')">{</div>
+<div class="sym-key" onclick="appendSpecial('}')">}</div>
+<div class="sym-key func bs-key-common" style="font-size:15px;">⌫</div>
+<div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+</div>
+<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="brand-btn enter-btn" style="grid-column: span 2;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+</div>
+</div>
+</div>
+
+<!-- 기호판 2 -->
+<div id="symbolBoard2" class="keyboard-frame">
+<div class="grid-symbol-container">
+<div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="1" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="2" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="3" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="4" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="5" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="6" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="7" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="8" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key custom-key" data-index="9" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key" onclick="appendSpecial('☎')">☎</div>
+<div class="sym-key" onclick="appendSpecial('♫')">♫</div>
+<div class="sym-key" onclick="appendSpecial('♨')">♨</div>
+<div class="sym-key" onclick="appendSpecial('∫')">∫</div>
+<div class="sym-key" onclick="appendSpecial('⊂')">⊂</div>
+<div class="sym-key" onclick="appendSpecial('⊃')">⊃</div>
+<div class="sym-key" onclick="appendSpecial('∑')">∑</div>
+<div class="sym-key" onclick="appendSpecial('▷')">▷</div>
+<div class="sym-key" onclick="appendSpecial('♨')">♨</div>
+<div class="sym-key" onclick="appendSpecial('·')">·</div>
+<div class="sym-key" onclick="appendSpecial('↑')">↑</div>
+<div class="sym-key" onclick="appendSpecial('↓')">↓</div>
+<div class="sym-key" onclick="appendSpecial('←')">←</div>
+<div class="sym-key" onclick="appendSpecial('→')">→</div>
+<div class="sym-key" onclick="appendSpecial('↔')">↔</div>
+<div class="sym-key" onclick="appendSpecial('★')">★</div>
+<div class="sym-key" onclick="appendSpecial('♡')">♡</div>
+<div class="sym-key" onclick="appendSpecial('º')">º</div>
+<div class="sym-key" onclick="appendSpecial('☞')">☞</div>
+<div class="sym-key" onclick="appendSpecial('◎')">◎</div>
+<div class="sym-key func" onclick="switchToBoard('alphaBoard')">ABC</div>
+<div class="sym-key" onclick="appendSpecial('≠')">≠</div>
+<div class="sym-key" onclick="appendSpecial('∞')">∞</div>
+<div class="sym-key" onclick="appendSpecial('‘')">‘</div>
+<div class="sym-key" onclick="appendSpecial('’')">’</div>
+<div class="sym-key" onclick="appendSpecial('«')">«</div>
+<div class="sym-key" onclick="appendSpecial('»')">»</div>
+<div class="sym-key" onclick="appendSpecial('<')"><</div>
+<div class="sym-key" onclick="appendSpecial('>')">></div>
+<div class="sym-key func bs-key-common" style="font-size:15px;">⌫</div>
+<div class="brand-btn" style="grid-column: span 2;" onclick="switchToBoard('mainBoard')">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+</div>
+<div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="brand-btn enter-btn" style="grid-column: span 2;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+</div>
+</div>
+</div>
+
+<!-- 쌍둥이판 -->
+<div id="twinBoard" class="keyboard-frame">
+<div class="grid-container">
+<div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
+<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>
+</div>
+<div class="key slot-key" data-slot="url_1" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
+<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>
+</div>
+<div class="key" id="calcBtn" style="cursor:pointer;">
+<span class="label">계산기</span><span class="icon">🧮</span>
+</div>
+<div class="key blue-tint slot-key" data-slot="snippet_3" data-type="snippet" data-default='<span class="label" style="color:#1a73e8;">상용구</span><span class="plus" style="color:#1a73e8;">+</span>' style="grid-column:4 / 5; grid-row:1 / 2; height:100%;">
+<span class="label" style="color:#1a73e8;">상용구</span><span class="plus" style="color:#1a73e8;">+</span>
+</div>
+<div class="key slot-key" data-slot="url_4" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key slot-key" data-slot="url_5" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key" id="weatherBtn" style="cursor:pointer;">
+<span class="label">날씨</span><span class="icon">⛅</span>
+</div>
+<div class="key blue-tint slot-key" data-slot="snippet_7" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>' style="grid-column:4 / 5; grid-row:2 / 3; height:100%;">
+<span class="plus" style="color:#1a73e8;">+</span>
+</div>
+<div class="key slot-key" data-slot="url_8" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key slot-key" data-slot="url_9" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key slot-key" data-slot="url_10" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
+<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>
+</div>
+<div class="key slot-key" data-slot="url_12" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key slot-key" data-slot="url_13" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key slot-key" data-slot="url_14" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="right-split-area">
+<div class="key blue-tint slot-key" data-slot="snippet_13" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+<div class="key blue-tint slot-key" data-slot="snippet_14" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+<div class="key blue-tint slot-key" data-slot="snippet_15" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+<div class="key" id="homeBtn" style="background-color:#ffffff; justify-content:center; align-items:center;" onclick="switchToBoard('mainBoard')">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#4285f4"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 모달 창들 -->
+<div id="customSymbolModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span id="customSymbolModalTitle">사용자 기호 설정</span>
+<span class="modal-close" onclick="closeCustomSymbolModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;" id="customSymbolDesc">추가할 기호나 이모티콘을 입력해주세요.</div>
+<input type="text" id="customSymbolInput" class="modal-input" placeholder="기호 입력 (예: ★)">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomSymbolFromModal()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
+<button onclick="deleteCustomSymbolFromModal()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
+<button onclick="closeCustomSymbolModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">닫기</button>
+</div>
+</div>
+</div>
+
+<div id="slotModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span id="modalTitle">설정</span>
+<span class="modal-close" onclick="closeModal()">×</span>
+</div>
+<input type="text" id="snippetInput" class="modal-input" placeholder="상용구 입력...">
+<div id="urlFields" style="display:none;">
+<input type="text" id="urlTitle" class="modal-input" placeholder="표시할 제목 (예: 네이버)">
+<input type="text" id="urlAddr" class="modal-input" placeholder="이동할 주소 (예: https://www.naver.com)">
+</div>
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveData()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
+<button onclick="deleteData()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
+</div>
+</div>
+</div>
+
+<div id="calcModal" class="modal-overlay">
+<div class="modal-box" style="max-width:280px;">
+<div class="modal-header">
+<span>미니 계산기</span>
+<span class="modal-close" onclick="closeCalcModal()">×</span>
+</div>
+<input type="text" id="calcScreen" class="modal-input" style="font-size:18px; text-align:right;" readonly>
+<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
+<button onclick="calcInput('7')" style="padding:12px; font-weight:bold;">7</button>
+<button onclick="calcInput('8')" style="padding:12px; font-weight:bold;">8</button>
+<button onclick="calcInput('9')" style="padding:12px; font-weight:bold;">9</button>
+<button onclick="calcInput('/')" style="padding:12px; font-weight:bold; background:#eee;">÷</button>
+<button onclick="calcInput('4')" style="padding:12px; font-weight:bold;">4</button>
+<button onclick="calcInput('5')" style="padding:12px; font-weight:bold;">5</button>
+<button onclick="calcInput('6')" style="padding:12px; font-weight:bold;">6</button>
+<button onclick="calcInput('*')" style="padding:12px; font-weight:bold; background:#eee;">×</button>
+<button onclick="calcInput('1')" style="padding:12px; font-weight:bold;">1</button>
+<button onclick="calcInput('2')" style="padding:12px; font-weight:bold;">2</button>
+<button onclick="calcInput('3')" style="padding:12px; font-weight:bold;">3</button>
+<button onclick="calcInput('-')" style="padding:12px; font-weight:bold; background:#eee;">-</button>
+<button onclick="calcClear()" style="padding:12px; font-weight:bold; background:#ffdddd;">C</button>
+<button onclick="calcInput('0')" style="padding:12px; font-weight:bold;">0</button>
+<button onclick="calcResult()" style="padding:12px; font-weight:bold; background:#4285f4; color:#fff;">=</button>
+<button onclick="calcInput('+')" style="padding:12px; font-weight:bold; background:#eee;">+</button>
+</div>
+</div>
+</div>
+
+<div id="clipboardModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>클립보드 (최신 50개)</span>
+<span class="modal-close" onclick="closeClipboardModal()">×</span>
+</div>
+<div class="clipboard-list" id="clipboardListContainer"></div>
+</div>
+</div>
+
+<div id="addClipboardModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>사용자 클립보드(문구) 추가</span>
+<span class="modal-close" onclick="closeAddClipboardModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 문장이나 메모를 입력해주세요.</div>
+<input type="text" id="customClipText" class="modal-input" placeholder="저장할 텍스트 입력...">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddClipboardModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
+</div>
+</div>
+</div>
+
+<div id="emojiModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>이모티콘</span>
+<span class="modal-close" onclick="closeEmojiModal()">×</span>
+</div>
+<div class="emoji-list" id="emojiListContainer"></div>
+</div>
+</div>
+
+<div id="addEmojiModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>사용자 이모티콘 추가</span>
+<span class="modal-close" onclick="closeAddEmojiModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 이모티콘이나 텍스트 기호를 입력해주세요.</div>
+<input type="text" id="customEmojiChar" class="modal-input" placeholder="이모티콘 입력 (예: 🐱‍👤)">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomEmoji()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddEmojiModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
+</div>
+</div>
+</div>
+
+<div id="hanjaModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span id="hanjaModalTitle">한자 변환</span>
+<span class="modal-close" onclick="closeHanjaModal()">×</span>
+</div>
+<div class="hanja-grid" id="hanjaGridContainer"></div>
+</div>
+</div>
+
+<div id="addHanjaModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>사용자 한자 추가</span>
+<span class="modal-close" onclick="closeAddHanjaModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;" id="addHanjaTargetDesc"></div>
+<input type="text" id="customHanjaChar" class="modal-input" placeholder="한자 입력 (예: 金)">
+<input type="text" id="customHanjaMeaning" class="modal-input" placeholder="뜻/훈음 입력 (예: 성 김)">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomHanja()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddHanjaModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
 </div>
 </div>
 </div>
@@ -138,14 +971,23 @@ const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
 const okBtn = document.getElementById('confirmOkBtn');
 const cancelBtn = document.getElementById('confirmCancelBtn');
+
 msgEl.textContent = message;
 modal.style.display = 'flex';
+
 const newOk = okBtn.cloneNode(true);
 const newCancel = cancelBtn.cloneNode(true);
 okBtn.parentNode.replaceChild(newOk, okBtn);
 cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
-newOk.addEventListener('click', () => { modal.style.display = 'none'; onOk(); });
-newCancel.addEventListener('click', () => { modal.style.display = 'none'; });
+
+newOk.addEventListener('click', () => {
+modal.style.display = 'none';
+onOk();
+});
+
+newCancel.addEventListener('click', () => {
+modal.style.display = 'none';
+});
 }
 
 let toastTimer = null;
@@ -153,35 +995,95 @@ function showToast(msg) {
 toastMessage.textContent = msg;
 toastMessage.classList.add('show');
 if (toastTimer) clearTimeout(toastTimer);
-toastTimer = setTimeout(() => { toastMessage.classList.remove('show'); }, 2000);
+toastTimer = setTimeout(() => {
+toastMessage.classList.remove('show');
+}, 2000);
 }
 
 let isShiftActive = false;
 function switchToBoard(boardId) {
-[mainBoard, alphaBoard, symbolBoard1, symbolBoard2, twinBoard].forEach(board => { if (board) board.classList.remove('active'); });
+[mainBoard, alphaBoard, symbolBoard1, symbolBoard2, twinBoard].forEach(board => {
+if (board) board.classList.remove('active');
+});
 const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
 
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
-let aStartX = 0, aStartY = 0, isALong = false;
-toAlphaBtn.addEventListener('touchstart', (e) => { if(e.touches.length > 0) { aStartX = e.touches[0].clientX; aStartY = e.touches[0].clientY; isALong = false; } }, { passive: true });
-toAlphaBtn.addEventListener('touchmove', (e) => { if(e.touches.length > 0) { let diffY = e.touches[0].clientY - aStartY; if (diffY < -25) isALong = true; } }, { passive: true });
+let aStartX = 0, aStartY = 0;
+let isALong = false;
+toAlphaBtn.addEventListener('touchstart', (e) => {
+if(e.touches.length > 0) {
+aStartX = e.touches[0].clientX;
+aStartY = e.touches[0].clientY;
+isALong = false;
+}
+}, { passive: true });
+
+toAlphaBtn.addEventListener('touchmove', (e) => {
+if(e.touches.length > 0) {
+let diffY = e.touches[0].clientY - aStartY;
+if (diffY < -25) {
+isALong = true;
+}
+}
+}, { passive: true });
+
 toAlphaBtn.addEventListener('touchend', (e) => {
 if(e.changedTouches.length > 0) {
-let diffX = e.changedTouches[0].clientX - aStartX, diffY = e.changedTouches[0].clientY - aStartY;
-if (diffY < -25 && Math.abs(diffY) > Math.abs(diffX)) { window.open('https://endic.naver.com', '_blank'); if (navigator.vibrate) navigator.vibrate(30); return; }
+let endX = e.changedTouches[0].clientX;
+let endY = e.changedTouches[0].clientY;
+let diffX = endX - aStartX;
+let diffY = endY - aStartY;
+if (diffY < -25 && Math.abs(diffY) > Math.abs(diffX)) {
+window.open('https://endic.naver.com', '_blank');
+if (navigator.vibrate) navigator.vibrate(30);
+return;
 }
-if (!isALong) switchToBoard('alphaBoard');
+}
+if (!isALong) {
+switchToBoard('alphaBoard');
+}
 });
+
+function toggleShift(e) {
+if(e) e.preventDefault();
+isShiftActive = !isShiftActive;
+if (isShiftActive) {
+shiftBtn.classList.add('active-shift');
+} else {
+shiftBtn.classList.remove('active-shift');
+}
+document.querySelectorAll('.eng-long').forEach(key => {
+let charSpan = key.querySelector('.key-text');
+let baseChar = key.getAttribute('data-char');
+if (charSpan) {
+charSpan.textContent = isShiftActive ? baseChar.toUpperCase() : baseChar;
+}
+});
+}
+if (shiftBtn) {
+shiftBtn.addEventListener('touchend', toggleShift);
+shiftBtn.addEventListener('click', toggleShift);
+}
 
 const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const JUNGSUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
 const JONGSUNG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const SINGLE_JONGSUNG = {'ㄳ':'ㄱ', 'ㄵ':'ㄴ', 'ㄶ':'ㄴ', 'ㄺ':'ㄹ', 'ㄻ':'ㄹ', 'ㄼ':'ㄹ', 'ㄽ':'ㄹ', 'ㄾ':'ㄹ', 'ㄿ':'ㄹ', 'ㅀ':'ㄹ', 'ㅄ':'ㅂ'};
-const VOWEL_COMBINE = { 'ㅗ+ㅏ':'ㅘ', 'ㅗ+ㅐ':'ㅙ', 'ㅗ+ㅣ':'ㅚ', 'ㅜ+ㅓ':'ㅝ', 'ㅜ+ㅔ':'ㅞ', 'ㅜ+ㅣ':'ㅟ', 'ㅡ+ㅣ':'ㅢ', 'ㅏ+ㅣ':'ㅐ', 'ㅓ+ㅣ':'ㅔ', 'ㅑ+ㅣ':'ㅒ', 'ㅕ+ㅣ':'ㅖ', 'ㅘ+ㅣ':'ㅙ', 'ㅝ+ㅣ':'ㅞ' };
-const CONSONANT_COMBINE = { 'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ', 'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㅍ':'ㄿ', 'ㄹ+ㅎ':'ㅀ', 'ㅂ+ㅅ':'ㅄ' };
+const VOWEL_COMBINE = {
+'ㅗ+ㅏ':'ㅘ', 'ㅗ+ㅐ':'ㅙ', 'ㅗ+ㅣ':'ㅚ',
+'ㅜ+ㅓ':'ㅝ', 'ㅜ+ㅔ':'ㅞ', 'ㅜ+ㅣ':'ㅟ',
+'ㅡ+ㅣ':'ㅢ',
+'ㅏ+ㅣ':'ㅐ', 'ㅓ+ㅣ':'ㅔ', 'ㅑ+ㅣ':'ㅒ', 'ㅕ+ㅣ':'ㅖ',
+'ㅘ+ㅣ':'ㅙ', 'ㅝ+ㅣ':'ㅞ'
+};
+const CONSONANT_COMBINE = {
+'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ',
+'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㅍ':'ㄿ', 'ㄹ+ㅎ':'ㅀ',
+'ㅂ+ㅅ':'ㅄ'
+};
 
 let hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 let committedText = '';
@@ -189,24 +1091,37 @@ let lastSlideDir = '';
 let lastSlideTime = 0;
 let cursorPos = 0;
 
-function getCharLen(str) { return Array.from(str).length; }
+function getCharLen(str) {
+return Array.from(str).length;
+}
 
 function updateScreen() {
 let currentAssembled = assembleCurrent();
 let chars = Array.from(committedText);
 let beforeCursor = chars.slice(0, cursorPos).join('');
 let afterCursor = chars.slice(cursorPos).join('');
-screenTextWrap.innerHTML = escapeHtml(beforeCursor) + escapeHtml(currentAssembled) + '<span class="cursor-bar"></span>' + escapeHtml(afterCursor);
+
+screenTextWrap.innerHTML = 
+    escapeHtml(beforeCursor) + 
+    escapeHtml(currentAssembled) + 
+    '<span class="cursor-bar"></span>' + 
+    escapeHtml(afterCursor);
+
 if (window.AndroidBridge && window.AndroidBridge.setComposing) {
     window.AndroidBridge.setComposing(currentAssembled);
 }
 }
-function escapeHtml(str) { return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+function escapeHtml(str) {
+return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 function assembleCurrent() {
 let { cho, jung, jong } = hangulBuffer;
 if (cho === -1 && jung === -1 && jong === -1) return '';
-let c = cho !== -1 ? cho : 0, j = jung !== -1 ? jung : 0, o = jong !== -1 ? jong : 0;
+let c = cho !== -1 ? cho : 0;
+let j = jung !== -1 ? jung : 0;
+let o = jong !== -1 ? jong : 0;
 if (cho !== -1 && jung === -1 && jong === -1) return CHOSUNG[cho];
 if (cho === -1 && jung !== -1 && jong === -1) return JUNGSUNG[jung];
 return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
@@ -226,20 +1141,26 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 }
 
+function getJongIndex(char) { return JONGSUNG.indexOf(char); }
+
 function appendHangul(inputChar) {
-let choIdx = CHOSUNG.indexOf(inputChar), jungIdx = JUNGSUNG.indexOf(inputChar);
+let choIdx = CHOSUNG.indexOf(inputChar);
+let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
 lastSlideDir = '';
-if (hangulBuffer.cho === -1) hangulBuffer.cho = choIdx;
-else if (hangulBuffer.jung === -1) { commitCurrent(); hangulBuffer.cho = choIdx; }
-else if (hangulBuffer.jong === -1) {
-let jongTry = JONGSUNG.indexOf(inputChar);
-if (jongTry !== -1) hangulBuffer.jong = jongTry;
+if (hangulBuffer.cho === -1) {
+hangulBuffer.cho = choIdx;
+} else if (hangulBuffer.jung === -1) {
+commitCurrent();
+hangulBuffer.cho = choIdx;
+} else if (hangulBuffer.jong === -1) {
+let jongTry = getJongIndex(inputChar);
+if (jongTry !== -1) { hangulBuffer.jong = jongTry; }
 else { commitCurrent(); hangulBuffer.cho = choIdx; }
 } else {
 let prevChar = JONGSUNG[hangulBuffer.jong];
 let combined = CONSONANT_COMBINE[prevChar + '+' + inputChar];
-if (combined) hangulBuffer.jong = JONGSUNG.indexOf(combined);
+if (combined) { hangulBuffer.jong = getJongIndex(combined); }
 else { commitCurrent(); hangulBuffer.cho = choIdx; }
 }
 } else if (jungIdx !== -1) {
@@ -248,58 +1169,140 @@ let jongChar = JONGSUNG[hangulBuffer.jong];
 let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
 let remainingJong = '';
 for (let key in CONSONANT_COMBINE) {
-if (CONSONANT_COMBINE[key] === jongChar) { let parts = key.split('+'); remainingJong = parts[0]; splitCho = parts[1]; break; }
+if (CONSONANT_COMBINE[key] === jongChar) {
+let parts = key.split('+');
+remainingJong = parts[0];
+splitCho = parts[1];
+break;
 }
-hangulBuffer.jong = remainingJong ? JONGSUNG.indexOf(remainingJong) : -1;
+}
+hangulBuffer.jong = remainingJong ? getJongIndex(remainingJong) : -1;
 commitCurrent();
-hangulBuffer.cho = CHOSUNG.indexOf(splitCho); hangulBuffer.jung = jungIdx; hangulBuffer.jong = -1;
+hangulBuffer.cho = CHOSUNG.indexOf(splitCho);
+hangulBuffer.jung = jungIdx;
+hangulBuffer.jong = -1;
 lastSlideDir = '';
 } else {
 let prevVowel = hangulBuffer.jung !== -1 ? JUNGSUNG[hangulBuffer.jung] : '';
 let combinedVowel = prevVowel ? VOWEL_COMBINE[prevVowel + '+' + inputChar] : null;
-if (combinedVowel) { hangulBuffer.jung = JUNGSUNG.indexOf(combinedVowel); lastSlideDir = ''; }
-else { if (hangulBuffer.jung !== -1) commitCurrent(); hangulBuffer.jung = jungIdx; }
+if (combinedVowel) {
+hangulBuffer.jung = JUNGSUNG.indexOf(combinedVowel);
+lastSlideDir = '';
+} else {
+if (hangulBuffer.jung !== -1) commitCurrent();
+hangulBuffer.jung = jungIdx;
+}
 }
 }
 updateScreen();
 }
 
 function replaceLastVowel(newVowel) {
-if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) { hangulBuffer.jung = JUNGSUNG.indexOf(newVowel); updateScreen(); }
-else if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) { hangulBuffer.jung = JUNGSUNG.indexOf(newVowel); updateScreen(); }
-else { commitCurrent(); appendHangul(newVowel); }
+if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
+hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
+updateScreen();
+} else if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
+hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
+updateScreen();
+} else {
+commitCurrent();
+appendHangul(newVowel);
+}
 }
 
-// ⭐️ 핵심 수정된 백스페이스 함수 (시스템 키이벤트 브릿지 호출)
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.sendBackspace) {
-        window.AndroidBridge.sendBackspace();
-    }
     if (cursorPos > 0) {
         cursorPos--;
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            window.AndroidBridge.deleteText();
+        }
     }
 } else {
-if (hangulBuffer.jong !== -1) hangulBuffer.jong = -1;
-else if (hangulBuffer.jung !== -1) hangulBuffer.jung = -1;
-else if (hangulBuffer.cho !== -1) hangulBuffer.cho = -1;
+if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
+else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
+else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
 }
 lastSlideDir = '';
 updateScreen();
 }
 
+screenDiv.addEventListener('click', (e) => {
+commitCurrent();
+let fullText = committedText;
+if (fullText.length === 0) {
+cursorPos = 0;
+updateScreen();
+return;
+}
+
+let rect = screenTextWrap.getBoundingClientRect();
+let clickX = e.clientX - rect.left;
+
+let chars = Array.from(fullText);
+let closestIndex = chars.length;
+
+let tempSpan = document.createElement('span');
+tempSpan.style.font = window.getComputedStyle(screenDiv).font;
+tempSpan.style.visibility = 'hidden';
+tempSpan.style.position = 'absolute';
+document.body.appendChild(tempSpan);
+
+for (let i = 0; i <= chars.length; i++) {
+tempSpan.textContent = chars.slice(0, i).join('');
+let w = tempSpan.getBoundingClientRect().width;
+if (clickX <= w) {
+closestIndex = i;
+break;
+}
+}
+document.body.removeChild(tempSpan);
+
+cursorPos = closestIndex;
+updateScreen();
+});
+
 let bsTimer = null;
+let bsStartX = 0;
+
 document.querySelectorAll('.bs-key-common, #backspaceBtn').forEach(bsKey => {
-bsKey.addEventListener('touchstart', () => {
+bsKey.addEventListener('touchstart', (e) => {
+if (e.touches && e.touches.length > 0) {
+bsStartX = e.touches[0].clientX;
+}
 backspaceHangul();
 if (bsTimer) clearInterval(bsTimer);
-bsTimer = setInterval(() => { backspaceHangul(); }, 150);
+bsTimer = setInterval(() => {
+backspaceHangul();
+}, 150);
 }, { passive: true });
-bsKey.addEventListener('touchend', () => { if (bsTimer) { clearInterval(bsTimer); bsTimer = null; } });
-bsKey.addEventListener('touchcancel', () => { if (bsTimer) { clearInterval(bsTimer); bsTimer = null; } });
+
+bsKey.addEventListener('touchend', (e) => {
+if (bsTimer) {
+clearInterval(bsTimer);
+bsTimer = null;
+}
+if (e.changedTouches && e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+if (endX - bsStartX < -30) {
+hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+committedText = '';
+cursorPos = 0;
+updateScreen();
+return;
+}
+}
+});
+
+bsKey.addEventListener('touchcancel', () => {
+if (bsTimer) {
+clearInterval(bsTimer);
+bsTimer = null;
+}
+});
 });
 
 function appendSpecial(char) {
@@ -316,12 +1319,830 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
-// 나머지 버튼 이벤트 및 설정 코드는 기존과 동일하게 유지
-document.querySelectorAll('.enter-btn').forEach(btn => {
-btn.addEventListener('click', (e) => { e.preventDefault(); appendSpecial('\n'); });
-btn.addEventListener('touchend', (e) => { e.preventDefault(); appendSpecial('\n'); });
+document.querySelectorAll('.space-key-common, div.eng-key:not([data-char]), .sym-key').forEach(btn => {
+    if (btn.textContent.trim().toLowerCase() === 'space') {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            appendSpecial(' ');
+        });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            appendSpecial(' ');
+        });
+    }
 });
 
+document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
+    if (el.textContent.trim() === 'space') {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            appendSpecial(' ');
+        });
+        el.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            appendSpecial(' ');
+        });
+    }
+});
+
+document.querySelectorAll('.enter-btn').forEach(btn => {
+btn.addEventListener('click', (e) => {
+e.preventDefault();
+appendSpecial('\n');
+});
+btn.addEventListener('touchend', (e) => {
+e.preventDefault();
+appendSpecial('\n');
+});
+});
+
+const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
+function loadCustomSymbols() {
+let saved = localStorage.getItem('custom_symbols_v853');
+return saved ? JSON.parse(saved) : defaultCustomSymbols;
+}
+function saveCustomSymbols(arr) { localStorage.setItem('custom_symbols_v853', JSON.stringify(arr)); }
+
+let activeSymbolIndex = null;
+function openCustomSymbolModal(idx, currentVal) {
+activeSymbolIndex = idx;
+document.getElementById('customSymbolModalTitle').textContent = (idx + 1) + '번째 사용자 기호 설정';
+document.getElementById('customSymbolDesc').textContent = (idx + 1) + '번째 슬롯에 넣을 기호나 이모티콘을 입력하세요.';
+document.getElementById('customSymbolInput').value = (currentVal === '+') ? '' : currentVal;
+document.getElementById('customSymbolModal').style.display = 'flex';
+}
+function closeCustomSymbolModal() {
+document.getElementById('customSymbolModal').style.display = 'none';
+activeSymbolIndex = null;
+}
+function saveCustomSymbolFromModal() {
+if (activeSymbolIndex === null) return;
+let val = document.getElementById('customSymbolInput').value.trim();
+let symbols = loadCustomSymbols();
+symbols[activeSymbolIndex] = val === '' ? '+' : val;
+saveCustomSymbols(symbols);
+initCustomKeys();
+closeCustomSymbolModal();
+showToast("저장되었습니다");
+}
+function deleteCustomSymbolFromModal() {
+if (activeSymbolIndex === null) return;
+let symbols = loadCustomSymbols();
+symbols[activeSymbolIndex] = '+';
+saveCustomSymbols(symbols);
+initCustomKeys();
+closeCustomSymbolModal();
+showToast("삭제되었습니다");
+}
+
+function initCustomKeys() {
+let symbols = loadCustomSymbols();
+document.querySelectorAll('.custom-key').forEach((key, idx) => {
+key.textContent = symbols[idx] || '+';
+
+let timer = null;
+let isLong = false;
+
+let newKey = key.cloneNode(true);
+key.parentNode.replaceChild(newKey, key);
+
+newKey.addEventListener('touchstart', (e) => {
+isLong = false;
+timer = setTimeout(() => {
+isLong = true;
+openCustomSymbolModal(idx, symbols[idx]);
+if (navigator.vibrate) navigator.vibrate(40);
+}, 500);
+}, { passive: true });
+
+newKey.addEventListener('touchmove', () => {
+if (timer) {
+clearTimeout(timer);
+timer = null;
+isLong = true;
+}
+}, { passive: true });
+
+newKey.addEventListener('touchend', (e) => {
+if (timer) {
+clearTimeout(timer);
+timer = null;
+}
+if (!isLong) {
+e.preventDefault();
+if (symbols[idx] === '+') {
+openCustomSymbolModal(idx, symbols[idx]);
+} else {
+appendSpecial(symbols[idx]);
+}
+}
+});
+});
+}
+initCustomKeys();
+
+document.querySelectorAll('.eng-long').forEach(key => {
+let timer = null;
+let isLong = false;
+let char = key.getAttribute('data-char');
+let longChar = key.getAttribute('data-long');
+key.addEventListener('touchstart', (e) => {
+isLong = false;
+timer = setTimeout(() => {
+isLong = true;
+appendSpecial(longChar);
+if (navigator.vibrate) navigator.vibrate(40);
+}, 500);
+}, { passive: true });
+key.addEventListener('touchend', (e) => {
+if (timer) { clearTimeout(timer); timer = null; }
+if (!isLong) {
+let outputChar = isShiftActive ? char.toUpperCase() : char;
+appendSpecial(outputChar);
+if (isShiftActive) {
+isShiftActive = false;
+shiftBtn.classList.remove('active-shift');
+document.querySelectorAll('.eng-long').forEach(k => {
+let cs = k.querySelector('.key-text');
+let bc = k.getAttribute('data-char');
+if (cs) cs.textContent = bc;
+});
+}
+}
+});
+key.addEventListener('touchcancel', () => {
+if (timer) { clearTimeout(timer); timer = null; }
+isLong = false;
+});
+});
+
+function setupLongPressKey(keyElement, onShortAction) {
+let timer = null;
+let isLongPressed = false;
+let longChar = keyElement.getAttribute('data-long');
+keyElement.addEventListener('touchstart', (e) => {
+isLongPressed = false;
+if (!longChar) return;
+timer = setTimeout(() => {
+isLongPressed = true;
+appendSpecial(longChar);
+if (navigator.vibrate) navigator.vibrate(40);
+}, 500);
+}, { passive: true });
+keyElement.addEventListener('touchend', (e) => {
+if (timer) { clearTimeout(timer); timer = null; }
+if (!isLongPressed) { onShortAction(e); }
+});
+keyElement.addEventListener('touchcancel', () => {
+if (timer) { clearTimeout(timer); timer = null; }
+isLongPressed = false;
+});
+}
+
+let iStartX = 0, iStartY = 0;
+iKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+iStartX = e.touches[0].clientX;
+iStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupLongPressKey(iKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - iStartX;
+let diffY = t.clientY - iStartY;
+if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
+appendHangul('ㅣ');
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+appendHangul('ㅣ');
+}
+});
+
+let euStartX = 0, euStartY = 0;
+euKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+euStartX = e.touches[0].clientX;
+euStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupLongPressKey(euKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - euStartX;
+let diffY = t.clientY - euStartY;
+if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
+appendHangul('ㅡ');
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+appendHangul('ㅡ');
+}
+});
+
+document.querySelectorAll('.slide-con').forEach(key => {
+let startX = 0, startY = 0;
+key.addEventListener('touchstart', (e) => {
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+}, { passive: true });
+setupLongPressKey(key, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - startX;
+let diffY = t.clientY - startY;
+let base = key.getAttribute('data-base');
+let up = key.getAttribute('data-up');
+let right = key.getAttribute('data-right');
+
+if (Math.abs(diffX) > Math.abs(diffY) && diffX > 18 && right) {
+appendHangul(right);
+return;
+}
+if (Math.abs(diffY) > Math.abs(diffX) && diffY < -18 && up) {
+appendHangul(up);
+return;
+}
+if (diffY > 18 || diffX < -18) {
+return;
+}
+if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
+appendHangul(base);
+}
+});
+});
+
+let touchStartX = 0, touchStartY = 0;
+slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
+setupLongPressKey(slideKey, (e) => {
+let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
+if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
+let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
+let now = Date.now();
+let isDouble = (lastSlideDir === dir && now - lastSlideTime < 600);
+let target = '';
+if (!isDouble) {
+if (dir === 'right') target = 'ㅏ';
+else if (dir === 'left') target = 'ㅓ';
+else if (dir === 'up') target = 'ㅗ';
+else if (dir === 'down') target = 'ㅜ';
+if (target) { appendHangul(target); lastSlideDir = dir; lastSlideTime = now; }
+} else {
+if (dir === 'right') target = 'ㅑ';
+else if (dir === 'left') target = 'ㅕ';
+else if (dir === 'up') target = 'ㅛ';
+else if (dir === 'down') target = 'ㅠ';
+if (target) { replaceLastVowel(target); lastSlideDir = ''; lastSlideTime = 0; }
+}
+});
+
+let cbStartX = 0, cbStartY = 0;
+let cbTimer = null;
+let isCbLong = false;
+let isSwiping = false;
+
+const DEFAULT_CLIP_HISTORY = [
+"집필 중 참고할 첫 번째 문단 예시입니다.",
+"두 번째로 복사해 둔 핵심 문장입니다.",
+"세 번째 참고 자료 링크 또는 메모입니다."
+];
+
+function getMergedClipHistory() {
+let saved = localStorage.getItem('my_clip_history_v3');
+let history = saved ? JSON.parse(saved) : DEFAULT_CLIP_HISTORY;
+if (history.length > 50) {
+history = history.slice(0, 50);
+saveClipHistory(history);
+}
+return history;
+}
+function saveClipHistory(arr) {
+if (arr.length > 50) { arr = arr.slice(0, 50); }
+localStorage.setItem('my_clip_history_v3', JSON.stringify(arr));
+}
+
+clipboardKey.addEventListener('touchstart', function(e) {
+const touch = e.touches[0];
+cbStartX = touch.clientX;
+cbStartY = touch.clientY;
+isSwiping = false;
+isCbLong = false;
+cbTimer = setTimeout(function() {
+isCbLong = true;
+appendSpecial('#');
+if (navigator.vibrate) navigator.vibrate(40);
+}, 500);
+}, { passive: true });
+
+clipboardKey.addEventListener('touchmove', function(e) {
+const touch = e.touches[0];
+const diffX = touch.clientX - cbStartX;
+const diffY = touch.clientY - cbStartY;
+if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
+if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
+}
+}, { passive: true });
+
+clipboardKey.addEventListener('touchend', function(e) {
+if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
+if (isCbLong) return;
+const touch = e.changedTouches[0];
+const diffX = touch.clientX - cbStartX;
+const diffY = touch.clientY - cbStartY;
+if (diffX > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+isSwiping = true;
+renderEmojiModal();
+openEmojiModal();
+return;
+}
+if (diffX < -40 && Math.abs(diffX) > Math.abs(diffY)) {
+isSwiping = true;
+openHanjaModal();
+return;
+}
+}, { passive: true });
+
+clipboardKey.addEventListener('click', async function() {
+if (isSwiping || isCbLong) {
+isSwiping = false;
+isCbLong = false;
+return;
+}
+try {
+if (navigator.clipboard && navigator.clipboard.readText) {
+let clipboardText = await navigator.clipboard.readText();
+if (clipboardText && clipboardText.trim() !== "") {
+let history = getMergedClipHistory();
+history = history.filter(item => item !== clipboardText);
+history.unshift(clipboardText);
+saveClipHistory(history);
+}
+}
+} catch (err) {}
+renderClipHistory();
+openClipboardModal();
+});
+
+function renderClipHistory() {
+clipboardListContainer.innerHTML = "";
+let history = getMergedClipHistory();
+history.forEach((text, index) => {
+let div = document.createElement('div');
+div.className = 'clipboard-item';
+div.textContent = text;
+attachClipItemHandlers(div, text, index);
+clipboardListContainer.appendChild(div);
+});
+
+let addBtn = document.createElement('div');
+addBtn.className = 'clipboard-item';
+addBtn.style.background = '#e8f0fe';
+addBtn.style.color = '#1a73e8';
+addBtn.style.fontWeight = 'bold';
+addBtn.style.textAlign = 'center';
+addBtn.textContent = '+ 사용자 문구 추가하기';
+addBtn.onclick = () => {
+closeClipboardModal();
+openAddClipboardModal();
+};
+clipboardListContainer.appendChild(addBtn);
+}
+
+function attachClipItemHandlers(item, text, index) {
+let timer = null;
+let isLong = false;
+let startX = 0, startY = 0;
+let hasMoved = false;
+
+item.addEventListener('touchstart', (e) => {
+isLong = false;
+hasMoved = false;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+timer = setTimeout(() => {
+if (!hasMoved) {
+isLong = true;
+item.classList.add('deletable-active');
+if (navigator.vibrate) navigator.vibrate(40);
+confirmDeleteClip(index, text);
+}
+}, 550);
+}, { passive: true });
+
+item.addEventListener('touchmove', (e) => {
+let dx = e.touches[0].clientX - startX;
+let dy = e.touches[0].clientY - startY;
+if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+hasMoved = true;
+if (timer) { clearTimeout(timer); timer = null; }
+}
+}, { passive: true });
+
+item.addEventListener('touchend', (e) => {
+if (timer) { clearTimeout(timer); timer = null; }
+item.classList.remove('deletable-active');
+if (!isLong && !hasMoved) {
+appendSpecial(text);
+closeClipboardModal();
+}
+});
+}
+
+function confirmDeleteClip(index, text) {
+showCustomConfirm(`'${text}' 문구를 삭제할까요?`, () => {
+let history = getMergedClipHistory();
+history.splice(index, 1);
+saveClipHistory(history);
+showToast("삭제되었습니다");
+renderClipHistory();
+openClipboardModal();
+});
+}
+
+function openAddClipboardModal() {
+document.getElementById('customClipText').value = '';
+addClipboardModal.style.display = 'flex';
+}
+function closeAddClipboardModal() { addClipboardModal.style.display = 'none'; }
+
+function saveCustomClip() {
+let val = document.getElementById('customClipText').value.trim();
+if (!val) { alert('저장할 텍스트를 입력해주세요.'); return; }
+let history = getMergedClipHistory();
+history = history.filter(item => item !== val);
+history.unshift(val);
+saveClipHistory(history);
+closeAddClipboardModal();
+showToast("문구가 추가되었습니다");
+renderClipHistory();
+openClipboardModal();
+}
+
+function openClipboardModal() { clipboardModal.style.display = 'flex'; }
+function closeClipboardModal() { clipboardModal.style.display = 'none'; }
+function openEmojiModal() { emojiModal.style.display = 'flex'; }
+function closeEmojiModal() { emojiModal.style.display = 'none'; }
+
+const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🤍', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '✨', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
+
+function getMergedEmojis() {
+let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
+return [...DEFAULT_EMOJIS, ...custom];
+}
+
+function renderEmojiModal() {
+emojiListContainer.innerHTML = '';
+let list = getMergedEmojis();
+list.forEach((emoji, idx) => {
+let item = document.createElement('div');
+item.className = 'emoji-item';
+item.textContent = emoji;
+let isCustom = idx >= DEFAULT_EMOJIS.length;
+if (isCustom) {
+let customIndex = idx - DEFAULT_EMOJIS.length;
+attachCustomEmojiHandlers(item, emoji, customIndex);
+} else {
+item.onclick = () => selectEmoji(emoji);
+}
+emojiListContainer.appendChild(item);
+});
+
+let addBtn = document.createElement('div');
+addBtn.className = 'emoji-item';
+addBtn.style.background = '#e8f0fe';
+addBtn.style.color = '#1a73e8';
+addBtn.style.fontSize = '24px';
+addBtn.textContent = '+';
+addBtn.onclick = () => { closeEmojiModal(); openAddEmojiModal(); };
+emojiListContainer.appendChild(addBtn);
+}
+
+function attachCustomEmojiHandlers(item, emoji, customIndex) {
+let timer = null, isLong = false, startX = 0, startY = 0;
+item.addEventListener('touchstart', (e) => {
+isLong = false;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+timer = setTimeout(() => {
+isLong = true;
+item.classList.add('deletable-active');
+if (navigator.vibrate) navigator.vibrate(40);
+confirmDeleteCustomEmoji(customIndex, emoji);
+}, 550);
+}, { passive: true });
+item.addEventListener('touchend', (e) => {
+if (timer) { clearTimeout(timer); timer = null; }
+item.classList.remove('deletable-active');
+if (!isLong) selectEmoji(emoji);
+});
+}
+
+function confirmDeleteCustomEmoji(customIndex, emoji) {
+showCustomConfirm(`'${emoji}' 이모티콘을 삭제할까요?`, () => {
+let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
+if (customIndex >= 0 && customIndex < custom.length) {
+custom.splice(customIndex, 1);
+localStorage.setItem('user_custom_emojis_v1', JSON.stringify(custom));
+showToast("삭제되었습니다");
+}
+renderEmojiModal();
+openEmojiModal();
+});
+}
+
+function openAddEmojiModal() { document.getElementById('customEmojiChar').value = ''; addEmojiModal.style.display = 'flex'; }
+function closeAddEmojiModal() { addEmojiModal.style.display = 'none'; }
+function saveCustomEmoji() {
+let val = document.getElementById('customEmojiChar').value.trim();
+if (!val) { alert('이모티콘을 입력해주세요.'); return; }
+let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
+if (!custom.includes(val)) {
+custom.push(val);
+localStorage.setItem('user_custom_emojis_v1', JSON.stringify(custom));
+}
+closeAddEmojiModal();
+showToast("추가되었습니다");
+renderEmojiModal();
+openEmojiModal();
+}
+function selectEmoji(emoji) {
+commitCurrent();
+lastSlideDir = '';
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, emoji);
+committedText = chars.join('');
+cursorPos += getCharLen(emoji);
+updateScreen();
+closeEmojiModal();
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
+    window.AndroidBridge.commitText(emoji);
+}
+}
+
+const DEFAULT_HANJA_DICT = {
+'가': [{c:'加', m:'더할 가'}, {c:'家', m:'집 가'}, {c:'歌', m:'노래 가'}, {c:'可', m:'옳을 가'}],
+'김': [{c:'金', m:'성 김'}]
+};
+
+function getMergedHanjaDict() {
+let custom = JSON.parse(localStorage.getItem('user_custom_hanja_v1')) || {};
+let merged = JSON.parse(JSON.stringify(DEFAULT_HANJA_DICT));
+for (let key in custom) {
+if (!merged[key]) merged[key] = [];
+custom[key].forEach(newItem => {
+if (!merged[key].some(existing => existing.c === newItem.c)) merged[key].push(newItem);
+});
+}
+return merged;
+}
+
+let targetHanjaCharForAdd = '';
+function openHanjaModal() {
+commitCurrent();
+let chars = Array.from(committedText);
+let lastChar = chars[cursorPos - 1] || chars[chars.length - 1] || '';
+targetHanjaCharForAdd = lastChar;
+hanjaGridContainer.innerHTML = "";
+let dict = getMergedHanjaDict();
+let list = dict[lastChar];
+
+if (!list || list.length === 0) {
+hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+let emptyDiv = document.createElement('div');
+emptyDiv.style.gridColumn = "span 2";
+emptyDiv.style.padding = "15px";
+emptyDiv.style.textAlign = "center";
+emptyDiv.style.color = "#777";
+emptyDiv.innerHTML = `등록된 한자가 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한자 추가하기</button>`;
+hanjaGridContainer.appendChild(emptyDiv);
+document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
+} else {
+hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+list.forEach(item => {
+let div = document.createElement('div');
+div.className = 'hanja-item';
+div.innerHTML = `<span class="hanja-char">${item.c}</span> <span>${item.m}</span>`;
+div.onclick = () => { replaceLastCharWithHanja(item.c); closeHanjaModal(); };
+hanjaGridContainer.appendChild(div);
+});
+}
+hanjaModal.style.display = 'flex';
+}
+function closeHanjaModal() { hanjaModal.style.display = 'none'; }
+function openAddHanjaModal(char) {
+addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한자와 뜻을 입력해주세요.`;
+addHanjaModal.style.display = 'flex';
+}
+function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
+function saveCustomHanja() {
+let cInput = document.getElementById('customHanjaChar').value.trim();
+let mInput = document.getElementById('customHanjaMeaning').value.trim();
+if (!cInput || !mInput) return;
+let custom = JSON.parse(localStorage.getItem('user_custom_hanja_v1')) || {};
+if (!custom[targetHanjaCharForAdd]) custom[targetHanjaCharForAdd] = [];
+custom[targetHanjaCharForAdd].push({ c: cInput, m: mInput });
+localStorage.setItem('user_custom_hanja_v1', JSON.stringify(custom));
+closeAddHanjaModal();
+showToast("추가되었습니다");
+openHanjaModal();
+}
+function replaceLastCharWithHanja(hanjaChar) {
+if (cursorPos > 0) {
+let chars = Array.from(committedText);
+chars[cursorPos - 1] = hanjaChar;
+committedText = chars.join('');
+updateScreen();
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(hanjaChar);
+    }
+}
+}
+}
+
+clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
+addClipboardModal.addEventListener('click', (e) => { if (e.target === addClipboardModal) closeAddClipboardModal(); });
+emojiModal.addEventListener('click', (e) => { if (e.target === emojiModal) closeEmojiModal(); });
+addEmojiModal.addEventListener('click', (e) => { if (e.target === addEmojiModal) closeAddEmojiModal(); });
+hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) closeHanjaModal(); });
+addHanjaModal.addEventListener('click', (e) => { if (e.target === addHanjaModal) closeAddHanjaModal(); });
+
+let topX = 0, topY = 0, topTimer = null, topLong = false;
+topSymbolKey.addEventListener('touchstart', (e) => {
+topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
+topTimer = setTimeout(() => { topLong = true; appendSpecial('•'); }, 500);
+}, { passive: true });
+topSymbolKey.addEventListener('touchend', (e) => {
+if (topTimer) { clearTimeout(topTimer); topTimer = null; }
+if (topLong) return;
+let t = e.changedTouches[0], dx = t.clientX - topX, dy = t.clientY - topY;
+if (Math.hypot(dx, dy) < 15) { appendSpecial('.'); return; }
+let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+if (angle >= -22.5 && angle < 22.5) appendSpecial(',');
+else if (angle >= 22.5 && angle < 67.5) appendSpecial('!');
+else if (angle >= 67.5 && angle < 112.5) appendSpecial('?');
+else if (angle >= 112.5 && angle < 157.5) appendSpecial('/');
+else if (angle >= 157.5 || angle < -157.5) appendSpecial(':');
+else if (angle >= -157.5 && angle < -112.5) appendSpecial('~');
+else if (angle >= -112.5 && angle < -67.5) appendSpecial('^');
+else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
+});
+
+let symX = 0, symY = 0, symTimer = null, symLong = false;
+symbolKey.addEventListener('touchstart', (e) => {
+symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
+symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); }, 500);
+}, { passive: true });
+symbolKey.addEventListener('touchend', (e) => {
+if (symTimer) { clearTimeout(symTimer); symTimer = null; }
+if (symLong) return;
+let t = e.changedTouches[0], dx = t.clientX - symX, dy = t.clientY - symY;
+if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) appendSpecial(dx > 0 ? ')' : '(');
+else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 ? '♡' : '→');
+else switchToBoard('symbolBoard1');
+});
+
+let sX = 0, sY = 0;
+settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY = e.touches[0].clientY; }, { passive: true });
+settingBtn.addEventListener('touchend', (e) => {
+let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
+if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
+commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
+}
+if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
+commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); return;
+}
+if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
+mainBoard.classList.remove('active'); twinBoard.classList.add('active');
+} else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+appendSpecial(' ');
+}
+});
+
+let twinStartX = 0, twinStartY = 0;
+twinBoard.addEventListener('touchstart', (e) => { twinStartX = e.touches[0].clientX; twinStartY = e.touches[0].clientY; }, { passive: true });
+twinBoard.addEventListener('touchend', (e) => {
+let t = e.changedTouches[0], dx = t.clientX - twinStartX, dy = t.clientY - twinStartY;
+if (dy > 25 && Math.abs(dy) > Math.abs(dx)) { twinBoard.classList.remove('active'); mainBoard.classList.add('active'); }
+});
+
+let currentSlot = null, currentType = 'url';
+function getDB() { let data = localStorage.getItem('fresh_design_db_v1'); return data ? JSON.parse(data) : {}; }
+function saveDB(db) { localStorage.setItem('fresh_design_db_v1', JSON.stringify(db)); }
+function renderSlots() {
+let db = getDB();
+document.querySelectorAll('.slot-key').forEach(el => {
+let slotKey = el.getAttribute('data-slot');
+let defaultHtml = el.getAttribute('data-default');
+let val = db[slotKey];
+if (val) {
+let temp = document.createElement('div'); temp.innerHTML = defaultHtml;
+let staticHtml = '';
+let lbl = temp.querySelector('.label'), ico = temp.querySelector('.icon');
+if (lbl) staticHtml += lbl.outerHTML;
+if (ico) staticHtml += ico.outerHTML;
+let labelText = (typeof val === 'object' && val.title) ? val.title : val;
+el.innerHTML = staticHtml + `<span class="content-text">${labelText}</span>`;
+} else { el.innerHTML = defaultHtml; }
+});
+}
+
+document.querySelectorAll('.slot-key').forEach(el => {
+let slotKey = el.getAttribute('data-slot'), type = el.getAttribute('data-type');
+let pressTimer = null, isLongPress = false;
+el.addEventListener('touchstart', (e) => {
+isLongPress = false;
+if (pressTimer) clearTimeout(pressTimer);
+pressTimer = setTimeout(() => { isLongPress = true; openModal(slotKey, type); }, 550);
+}, { passive: true });
+el.addEventListener('touchend', (e) => {
+if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+if (isLongPress) { isLongPress = false; return; }
+let db = getDB(), val = db[slotKey];
+if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
+if (type === 'url' && val && typeof val === 'object' && val.url) {
+window.open(val.url.startsWith('http') ? val.url : 'https://' + val.url, '_blank');
+return;
+}
+if (type === 'snippet' && val) { 
+    commitCurrent();
+    let chars = Array.from(committedText);
+    chars.splice(cursorPos, 0, val);
+    committedText = chars.join('');
+    cursorPos += getCharLen(val);
+    updateScreen();
+    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(val);
+    }
+    return; 
+}
+});
+});
+
+document.getElementById('calcBtn').addEventListener('click', () => {
+document.getElementById('calcScreen').value = '';
+document.getElementById('calcModal').style.display = 'flex';
+});
+function closeCalcModal() { document.getElementById('calcModal').style.display = 'none'; }
+function calcInput(val) { document.getElementById('calcScreen').value += val; }
+function calcClear() { document.getElementById('calcScreen').value = ''; }
+function calcResult() {
+try {
+let res = eval(document.getElementById('calcScreen').value);
+document.getElementById('calcScreen').value = res;
+commitCurrent();
+let resStr = String(res);
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, resStr);
+committedText = chars.join('');
+cursorPos += getCharLen(resStr);
+updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
+    window.AndroidBridge.commitText(resStr);
+}
+} catch(e) { document.getElementById('calcScreen').value = '오류'; }
+}
+document.getElementById('weatherBtn').addEventListener('click', () => {
+window.open('https://search.naver.com/search.naver?query=날씨', '_blank');
+});
+
+function openModal(slotKey, type) {
+currentSlot = slotKey; currentType = type;
+let db = getDB(), val = db[slotKey] || {};
+let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
+if (type === 'url') {
+sInput.style.display = 'none'; uFields.style.display = 'block';
+document.getElementById('urlTitle').value = val.title || '';
+document.getElementById('urlAddr').value = val.url || '';
+document.getElementById('modalTitle').textContent = 'URL 설정';
+} else {
+sInput.style.display = 'block'; uFields.style.display = 'none';
+sInput.value = (typeof val === 'string') ? val : '';
+document.getElementById('modalTitle').textContent = '상용구 설정';
+}
+document.getElementById('slotModal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('slotModal').style.display = 'none'; currentSlot = null; }
+function saveData() {
+if (!currentSlot) return;
+let db = getDB();
+if (currentType === 'url') {
+let title = document.getElementById('urlTitle').value.trim();
+let url = document.getElementById('urlAddr').value.trim();
+if (title && url) db[currentSlot] = { title: title, url: url };
+else delete db[currentSlot];
+} else {
+let text = document.getElementById('snippetInput').value.trim();
+if (text) db[currentSlot] = text;
+else delete db[currentSlot];
+}
+saveDB(db); renderSlots(); closeModal();
+}
+function deleteData() {
+if (!currentSlot) return;
+let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal();
+}
+
+renderSlots();
 updateScreen();
 </script>
 </body>
