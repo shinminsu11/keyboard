@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.90 - 삭제 버그 수정 최종 통합본</title>
+<title>쓸기자판 v8.91 - 삭제 커서 싱크 완벽 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1107,8 +1107,14 @@ screenTextWrap.innerHTML =
     '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
 
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    window.AndroidBridge.setComposing(currentAssembled);
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.setComposing) {
+        window.AndroidBridge.setComposing(currentAssembled);
+    }
+    // ⭐️ 외부 앱과 커서 위치(인덱스) 싱크 동기화 전달
+    if (window.AndroidBridge.updateSelection) {
+        window.AndroidBridge.updateSelection(cursorPos);
+    }
 }
 }
 
