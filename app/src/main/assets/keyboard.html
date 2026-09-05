@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 백스페이스 연동 수정본</title>
+<title>쓸기자판 v8.88 - 백스페이스 커서 위치 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1212,15 +1212,15 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+    // ⭐️ 안드로이드 코틀린의 deleteText()를 곧바로 호출하여 시스템 커서 기준 글자 삭제
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
     if (cursorPos > 0) {
         cursorPos--;
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
-        // ⭐️ sendBackspace 브릿지 호출로 수정 완료
-        if (window.AndroidBridge && window.AndroidBridge.sendBackspace) {
-            window.AndroidBridge.sendBackspace();
-        }
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
@@ -1949,10 +1949,9 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
-// ⭐️ 한자 변환 시 sendBackspace 브릿지 연동
 if (window.AndroidBridge) {
-    if (window.AndroidBridge.sendBackspace) {
-        window.AndroidBridge.sendBackspace();
+    if (window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
     }
     if (window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(hanjaChar);
