@@ -1091,6 +1091,14 @@ let lastSlideDir = '';
 let lastSlideTime = 0;
 let cursorPos = 0;
 
+// Android 입력창과 HTML 화면을 동기화합니다.
+window.setAndroidEditorState = function(beforeText, afterText) {
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    committedText = String(beforeText || '') + String(afterText || '');
+    cursorPos = Array.from(String(beforeText || '')).length;
+    updateScreen();
+};
+
 function getCharLen(str) {
 return Array.from(str).length;
 }
@@ -1222,7 +1230,7 @@ if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong ===
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
         if (window.AndroidBridge && window.AndroidBridge.deleteTextAt) {
-            window.AndroidBridge.deleteTextAt(deleteAt, committedText);
+            window.AndroidBridge.deleteTextAt(deleteAt, committedText + '');
         }
     }
 } else {
@@ -1267,7 +1275,16 @@ document.body.removeChild(tempSpan);
 
 cursorPos = closestIndex;
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setCursorPosition) {
+    window.AndroidBridge.setCursorPosition(cursorPos, committedText);
+}
 });
+
+setTimeout(() => {
+    if (window.AndroidBridge && window.AndroidBridge.requestEditorState) {
+        window.AndroidBridge.requestEditorState();
+    }
+}, 150);
 
 let bsTimer = null;
 let bsStartX = 0;
