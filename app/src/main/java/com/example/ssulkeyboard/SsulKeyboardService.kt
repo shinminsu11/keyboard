@@ -1,7 +1,6 @@
 package com.example.ssulkeyboard
 
 import android.inputmethodservice.InputMethodService
-import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -62,19 +61,12 @@ class SsulKeyboardService : InputMethodService() {
             inputConnection.setComposingText(text, 1)
         }
 
-        @JavascriptInterface
-        fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.deleteSurroundingText(1, 0)
-        }
-
-        // ⭐️ 시스템에 진짜 백스페이스 키벤트를 직접 날려 커서 위치를 정확히 맞추는 함수
+        // ⭐️ deleteSurroundingText(1, 0) 방식을 사용하여 커서 바로 앞 글자를 정확히 타격하여 삭제
         @JavascriptInterface
         fun sendBackspace() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
-            inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+            inputConnection.deleteSurroundingText(1, 0)
         }
     }
 
