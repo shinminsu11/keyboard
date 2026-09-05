@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 이모티콘/한자 브릿지 완벽 연동본</title>
+<title>쓸기자판 v8.88 - 백스페이스 연동 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -581,7 +581,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:9px; color:#555; margin-right:1px;">천</span><span style="font-size:9px; color:#555;">←</span>
 <span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:1px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -1091,14 +1091,6 @@ let lastSlideDir = '';
 let lastSlideTime = 0;
 let cursorPos = 0;
 
-// Android 입력창과 HTML 화면을 동기화합니다.
-window.setAndroidEditorState = function(beforeText, afterText) {
-    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-    committedText = String(beforeText || '') + String(afterText || '');
-    cursorPos = Array.from(String(beforeText || '')).length;
-    updateScreen();
-};
-
 function getCharLen(str) {
 return Array.from(str).length;
 }
@@ -1109,17 +1101,14 @@ let chars = Array.from(committedText);
 let beforeCursor = chars.slice(0, cursorPos).join('');
 let afterCursor = chars.slice(cursorPos).join('');
 
-screenTextWrap.innerHTML =
-    escapeHtml(beforeCursor) +
-    escapeHtml(currentAssembled) +
-    '<span class="cursor-bar"></span>' +
+screenTextWrap.innerHTML = 
+    escapeHtml(beforeCursor) + 
+    escapeHtml(currentAssembled) + 
+    '<span class="cursor-bar"></span>' + 
     escapeHtml(afterCursor);
 
 if (window.AndroidBridge && window.AndroidBridge.setComposing) {
     window.AndroidBridge.setComposing(currentAssembled);
-}
-if (window.AndroidBridge && window.AndroidBridge.setCursorPosition) {
-    window.AndroidBridge.setCursorPosition(cursorPos, committedText + currentAssembled);
 }
 }
 
@@ -1224,13 +1213,13 @@ appendHangul(newVowel);
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
-        const deleteAt = cursorPos;
         cursorPos--;
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
-        if (window.AndroidBridge && window.AndroidBridge.deleteTextAt) {
-            window.AndroidBridge.deleteTextAt(deleteAt, committedText + '');
+        // ⭐️ sendBackspace 브릿지 호출로 수정 완료
+        if (window.AndroidBridge && window.AndroidBridge.sendBackspace) {
+            window.AndroidBridge.sendBackspace();
         }
     }
 } else {
@@ -1275,16 +1264,7 @@ document.body.removeChild(tempSpan);
 
 cursorPos = closestIndex;
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.setCursorPosition) {
-    window.AndroidBridge.setCursorPosition(cursorPos, committedText);
-}
 });
-
-setTimeout(() => {
-    if (window.AndroidBridge && window.AndroidBridge.requestEditorState) {
-        window.AndroidBridge.requestEditorState();
-    }
-}, 150);
 
 let bsTimer = null;
 let bsStartX = 0;
@@ -1891,7 +1871,6 @@ committedText = chars.join('');
 cursorPos += getCharLen(emoji);
 updateScreen();
 closeEmojiModal();
-// ⭐️ 이모티콘 브릿지 연동
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
@@ -1970,10 +1949,10 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
-// ⭐️ 한자 변환 브릿지 연동 (한글 1글자 삭제 후 한자 전송)
+// ⭐️ 한자 변환 시 sendBackspace 브릿지 연동
 if (window.AndroidBridge) {
-    if (window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+    if (window.AndroidBridge.sendBackspace) {
+        window.AndroidBridge.sendBackspace();
     }
     if (window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(hanjaChar);
