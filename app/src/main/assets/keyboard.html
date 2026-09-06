@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 백스페이스 커서 위치 수정본</title>
+<title>쓸기자판 v8.88 - 커서 동기화 완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -745,7 +745,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1212,7 +1212,7 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    // ⭐️ 안드로이드 코틀린의 deleteText()를 곧바로 호출하여 시스템 커서 기준 글자 삭제
+    // ⭐️ 안드로이드 시스템에 직접 1글자 삭제 요청
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
     }
@@ -1221,6 +1221,10 @@ if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong ===
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
+        // ⭐️ 커서 이동 후 시스템 커서 위치 동기화
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(cursorPos, cursorPos);
+        }
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
@@ -1231,12 +1235,16 @@ lastSlideDir = '';
 updateScreen();
 }
 
+// ⭐️ 화면을 탭해 커서를 중간으로 옮길 때 안드로이드 시스템 커서도 함께 동기화
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
 if (fullText.length === 0) {
 cursorPos = 0;
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
 return;
 }
 
@@ -1264,6 +1272,11 @@ document.body.removeChild(tempSpan);
 
 cursorPos = closestIndex;
 updateScreen();
+
+// ⭐️ 바뀐 커서 위치를 안드로이드 시스템에 즉시 전달하여 동기화
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
 });
 
 let bsTimer = null;
@@ -1293,6 +1306,9 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
 cursorPos = 0;
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
 return;
 }
 }
@@ -1317,6 +1333,10 @@ cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
+}
+// ⭐️ 글자 입력 후 커서 위치 동기화
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
 }
 }
 
@@ -1874,6 +1894,9 @@ closeEmojiModal();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
 }
 
 const DEFAULT_HANJA_DICT = {
@@ -1956,6 +1979,9 @@ if (window.AndroidBridge) {
     if (window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(hanjaChar);
     }
+    if (window.AndroidBridge.setSelection) {
+        window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    }
 }
 }
 }
@@ -2007,10 +2033,18 @@ settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY
 settingBtn.addEventListener('touchend', (e) => {
 let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
-commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
+commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); 
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
+return;
 }
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
-commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); return;
+commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); 
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
+return;
 }
 if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
 mainBoard.classList.remove('active'); twinBoard.classList.add('active');
@@ -2074,6 +2108,9 @@ if (type === 'snippet' && val) {
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(val);
     }
+    if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+        window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    }
     return; 
 }
 });
@@ -2099,6 +2136,9 @@ cursorPos += getCharLen(resStr);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
+}
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
 }
 } catch(e) { document.getElementById('calcScreen').value = '오류'; }
 }
