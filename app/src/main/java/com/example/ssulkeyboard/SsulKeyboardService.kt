@@ -143,9 +143,13 @@ class SsulKeyboardService : InputMethodService() {
                     .setNegativeButton("취소", null)
                     .create()
 
-                dialog.window?.let { window ->
-                    window.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
-                    token?.let { window.attributes.token = it }
+                // 🌟 window token 오류 해결부
+                dialog.window?.let { win ->
+                    win.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
+                    val windowToken = window.window?.decorView?.windowToken
+                    if (windowToken != null) {
+                        win.attributes?.token = windowToken
+                    }
                 }
 
                 dialog.show()
