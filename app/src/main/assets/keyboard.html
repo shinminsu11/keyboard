@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.97 - 모달 강제 키보드 호출 고정본</title>
+<title>쓸기자판 v8.98 - 초슬림 모달 적용본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -296,26 +296,30 @@ transition: opacity 0.3s ease;
 opacity: 1;
 }
 
+/* ⭐️ 초슬림 모달 스타일 적용 (자판 바로 위 공간에 얇게 배치) */
 .modal-overlay {
 position: fixed;
 top: 0;
 left: 0;
 width: 100%;
 height: 100%;
-background: rgba(0,0,0,0.5);
+background: rgba(0,0,0,0.3);
 display: none;
 justify-content: center;
-align-items: center;
+align-items: flex-end; 
+padding-bottom: 240px; 
 z-index: 100;
 touch-action: auto;
 }
 .modal-box {
 background: #fff;
-width: 90%;
-max-width: 340px;
-border-radius: 12px;
-padding: 16px;
-box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+width: 95%;
+max-width: 380px;
+max-height: 120px;
+overflow-y: auto;
+border-radius: 8px;
+padding: 8px 10px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 display: flex;
 flex-direction: column;
 color: #333;
@@ -324,8 +328,8 @@ touch-action: auto;
 }
 .modal-header {
 font-weight: bold;
-font-size: 16px;
-margin-bottom: 10px;
+font-size: 13px;
+margin-bottom: 4px;
 display: flex;
 justify-content: space-between;
 align-items: center;
@@ -333,19 +337,20 @@ color: #333;
 }
 .modal-close {
 cursor: pointer;
-font-size: 28px;
+font-size: 20px;
 color: #777;
-padding: 0 5px;
+padding: 0 4px;
 line-height: 1;
 }
 .modal-input {
 width: 100%;
-padding: 10px;
-font-size: 14px;
+padding: 6px 8px;
+font-size: 13px;
 border: 1px solid #ccc;
-border-radius: 6px;
-margin-bottom: 8px;
+border-radius: 4px;
+margin-bottom: 4px;
 }
+
 .clipboard-list {
 display: flex;
 flex-direction: column;
@@ -803,12 +808,12 @@ background: #e2e8f0;
 <span id="customSymbolModalTitle">사용자 기호 설정</span>
 <span class="modal-close" onclick="closeCustomSymbolModal()">×</span>
 </div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;" id="customSymbolDesc">추가할 기호나 이모티콘을 입력해주세요.</div>
+<div style="font-size:12px; color:#666; margin-bottom:4px;" id="customSymbolDesc">추가할 기호나 이모티콘을 입력해주세요.</div>
 <input type="text" id="customSymbolInput" class="modal-input" placeholder="기호 입력 (예: ★)">
-<div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveCustomSymbolFromModal()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
-<button onclick="deleteCustomSymbolFromModal()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
-<button onclick="closeCustomSymbolModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">닫기</button>
+<div style="display:flex; gap:6px;">
+<button onclick="saveCustomSymbolFromModal()" style="flex:1; padding:6px; background:#4285f4; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">저장</button>
+<button onclick="deleteCustomSymbolFromModal()" style="padding:6px 10px; background:#e63935; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">삭제</button>
+<button onclick="closeCustomSymbolModal()" style="padding:6px 10px; background:#888; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">닫기</button>
 </div>
 </div>
 </div>
@@ -824,43 +829,43 @@ background: #e2e8f0;
 <input type="text" id="urlTitle" class="modal-input" placeholder="표시할 제목 (예: 네이버)">
 <input type="text" id="urlAddr" class="modal-input" placeholder="이동할 주소 (예: https://www.naver.com)">
 </div>
-<div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveData()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
-<button onclick="deleteData()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
+<div style="display:flex; gap:6px;">
+<button onclick="saveData()" style="flex:1; padding:6px; background:#4285f4; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">저장</button>
+<button onclick="deleteData()" style="padding:6px 10px; background:#e63935; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">삭제</button>
 </div>
 </div>
 </div>
 
 <div id="calcModal" class="modal-overlay">
-<div class="modal-box" style="max-width:280px;">
+<div class="modal-box" style="max-width:280px; max-height:240px;">
 <div class="modal-header">
 <span>미니 계산기</span>
 <span class="modal-close" onclick="closeCalcModal()">×</span>
 </div>
-<input type="text" id="calcScreen" class="modal-input" style="font-size:18px; text-align:right;" readonly>
-<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
-<button onclick="calcInput('7')" style="padding:12px; font-weight:bold;">7</button>
-<button onclick="calcInput('8')" style="padding:12px; font-weight:bold;">8</button>
-<button onclick="calcInput('9')" style="padding:12px; font-weight:bold;">9</button>
-<button onclick="calcInput('/')" style="padding:12px; font-weight:bold; background:#eee;">÷</button>
-<button onclick="calcInput('4')" style="padding:12px; font-weight:bold;">4</button>
-<button onclick="calcInput('5')" style="padding:12px; font-weight:bold;">5</button>
-<button onclick="calcInput('6')" style="padding:12px; font-weight:bold;">6</button>
-<button onclick="calcInput('*')" style="padding:12px; font-weight:bold; background:#eee;">×</button>
-<button onclick="calcInput('1')" style="padding:12px; font-weight:bold;">1</button>
-<button onclick="calcInput('2')" style="padding:12px; font-weight:bold;">2</button>
-<button onclick="calcInput('3')" style="padding:12px; font-weight:bold;">3</button>
-<button onclick="calcInput('-')" style="padding:12px; font-weight:bold; background:#eee;">-</button>
-<button onclick="calcClear()" style="padding:12px; font-weight:bold; background:#ffdddd;">C</button>
-<button onclick="calcInput('0')" style="padding:12px; font-weight:bold;">0</button>
-<button onclick="calcResult()" style="padding:12px; font-weight:bold; background:#4285f4; color:#fff;">=</button>
-<button onclick="calcInput('+')" style="padding:12px; font-weight:bold; background:#eee;">+</button>
+<input type="text" id="calcScreen" class="modal-input" style="font-size:16px; text-align:right;" readonly>
+<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;">
+<button onclick="calcInput('7')" style="padding:8px; font-weight:bold;">7</button>
+<button onclick="calcInput('8')" style="padding:8px; font-weight:bold;">8</button>
+<button onclick="calcInput('9')" style="padding:8px; font-weight:bold;">9</button>
+<button onclick="calcInput('/')" style="padding:8px; font-weight:bold; background:#eee;">÷</button>
+<button onclick="calcInput('4')" style="padding:8px; font-weight:bold;">4</button>
+<button onclick="calcInput('5')" style="padding:8px; font-weight:bold;">5</button>
+<button onclick="calcInput('6')" style="padding:8px; font-weight:bold;">6</button>
+<button onclick="calcInput('*')" style="padding:8px; font-weight:bold; background:#eee;">×</button>
+<button onclick="calcInput('1')" style="padding:8px; font-weight:bold;">1</button>
+<button onclick="calcInput('2')" style="padding:8px; font-weight:bold;">2</button>
+<button onclick="calcInput('3')" style="padding:8px; font-weight:bold;">3</button>
+<button onclick="calcInput('-')" style="padding:8px; font-weight:bold; background:#eee;">-</button>
+<button onclick="calcClear()" style="padding:8px; font-weight:bold; background:#ffdddd;">C</button>
+<button onclick="calcInput('0')" style="padding:8px; font-weight:bold;">0</button>
+<button onclick="calcResult()" style="padding:8px; font-weight:bold; background:#4285f4; color:#fff;">=</button>
+<button onclick="calcInput('+')" style="padding:8px; font-weight:bold; background:#eee;">+</button>
 </div>
 </div>
 </div>
 
 <div id="clipboardModal" class="modal-overlay">
-<div class="modal-box">
+<div class="modal-box" style="max-height:220px;">
 <div class="modal-header">
 <span>클립보드 (최신 50개)</span>
 <span class="modal-close" onclick="closeClipboardModal()">×</span>
@@ -875,17 +880,17 @@ background: #e2e8f0;
 <span>사용자 클립보드(문구) 추가</span>
 <span class="modal-close" onclick="closeAddClipboardModal()">×</span>
 </div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 문장이나 메모를 입력해주세요.</div>
+<div style="font-size:12px; color:#666; margin-bottom:4px;">자주 쓰는 문장이나 메모를 입력해주세요.</div>
 <input type="text" id="customClipText" class="modal-input" placeholder="저장할 텍스트 입력...">
-<div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
-<button onclick="closeAddClipboardModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
+<div style="display:flex; gap:6px;">
+<button onclick="saveCustomClip()" style="flex:1; padding:6px; background:#4285f4; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddClipboardModal()" style="padding:6px 10px; background:#888; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">취소</button>
 </div>
 </div>
 </div>
 
 <div id="emojiModal" class="modal-overlay">
-<div class="modal-box">
+<div class="modal-box" style="max-height:220px;">
 <div class="modal-header">
 <span>이모티콘</span>
 <span class="modal-close" onclick="closeEmojiModal()">×</span>
@@ -900,17 +905,17 @@ background: #e2e8f0;
 <span>사용자 이모티콘 추가</span>
 <span class="modal-close" onclick="closeAddEmojiModal()">×</span>
 </div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 이모티콘이나 텍스트 기호를 입력해주세요.</div>
+<div style="font-size:12px; color:#666; margin-bottom:4px;">자주 쓰는 이모티콘이나 텍스트 기호를 입력해주세요.</div>
 <input type="text" id="customEmojiChar" class="modal-input" placeholder="이모티콘 입력 (예: 🐱‍👤)">
-<div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveCustomEmoji()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
-<button onclick="closeAddEmojiModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
+<div style="display:flex; gap:6px;">
+<button onclick="saveCustomEmoji()" style="flex:1; padding:6px; background:#4285f4; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddEmojiModal()" style="padding:6px 10px; background:#888; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">취소</button>
 </div>
 </div>
 </div>
 
 <div id="hanjaModal" class="modal-overlay">
-<div class="modal-box">
+<div class="modal-box" style="max-height:220px;">
 <div class="modal-header">
 <span id="hanjaModalTitle">한자 변환</span>
 <span class="modal-close" onclick="closeHanjaModal()">×</span>
@@ -925,12 +930,12 @@ background: #e2e8f0;
 <span>사용자 한자 추가</span>
 <span class="modal-close" onclick="closeAddHanjaModal()">×</span>
 </div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;" id="addHanjaTargetDesc"></div>
+<div style="font-size:12px; color:#666; margin-bottom:4px;" id="addHanjaTargetDesc"></div>
 <input type="text" id="customHanjaChar" class="modal-input" placeholder="한자 입력 (예: 金)">
 <input type="text" id="customHanjaMeaning" class="modal-input" placeholder="뜻/훈음 입력 (예: 성 김)">
-<div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveCustomHanja()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
-<button onclick="closeAddHanjaModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
+<div style="display:flex; gap:6px;">
+<button onclick="saveCustomHanja()" style="flex:1; padding:6px; background:#4285f4; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddHanjaModal()" style="padding:6px 10px; background:#888; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">취소</button>
 </div>
 </div>
 </div>
