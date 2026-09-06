@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.93 - 계산기 영역 최적화</title>
+<title>쓸기자판 v8.93 - 새창 잔재 방지 완료</title>
 <style>
 * {
 box-sizing: border-box;
@@ -795,7 +795,7 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 🌟 계산기 모달 (높이 및 버튼 패딩 최적화 완료) -->
+<!-- 계산기 모달 -->
 <div id="calcModal" class="modal-overlay">
 <div class="modal-box" style="max-width:270px; padding:10px;">
 <div class="modal-header" style="margin-bottom:6px; font-size:15px;">
@@ -931,6 +931,17 @@ const hanjaGridContainer = document.getElementById('hanjaGridContainer');
 const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
+
+// 🌟 새창 진입 시 버퍼 및 잔재 글자('공' 등) 방지를 위한 강제 초기화 함수
+function resetKeyboardBuffer() {
+    committedText = '';
+    cursorPos = 0;
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    if (typeof updateScreen === 'function') {
+        updateScreen();
+    }
+}
+window.resetKeyboardBuffer = resetKeyboardBuffer;
 
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
