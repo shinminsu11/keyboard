@@ -84,6 +84,11 @@ class SsulKeyboardService : InputMethodService() {
         fun showSoftInput() {
             val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
             inputMethodManager?.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+            window.window?.let { w ->
+                w.decorView.post {
+                    w.decorView.requestLayout()
+                }
+            }
         }
 
         @JavascriptInterface
