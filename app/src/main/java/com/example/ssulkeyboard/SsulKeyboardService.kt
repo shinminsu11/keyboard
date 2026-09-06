@@ -23,6 +23,7 @@ class SsulKeyboardService : InputMethodService() {
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             orientation = LinearLayout.VERTICAL
+            // ⭐️ 자판 배경색(#d1d8e0)과 동일하게 설정하여 상단 경계선 감추기
             setBackgroundColor(Color.parseColor("#d1d8e0"))
         }
 
