@@ -22,6 +22,8 @@ class SsulKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
         }
 
+        // ⭐️ 까만창(.output-screen)이 숨겨졌으므로 
+        // 웹뷰 전체 높이를 자판 영역 크기(235dp)에 맞추어 여백을 없앱니다.
         val heightDp = 235
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
