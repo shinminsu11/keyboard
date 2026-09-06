@@ -6,6 +6,7 @@ import android.inputmethodservice.InputMethodService
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -77,6 +78,12 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
             inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        @JavascriptInterface
+        fun showSoftInput() {
+            val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+            inputMethodManager?.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
         }
 
         @JavascriptInterface
