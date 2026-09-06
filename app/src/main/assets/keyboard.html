@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.95 - 모달 키보드 포커스 최종 수정본</title>
+<title>쓸기자판 v8.96 - 모달 키보드 완벽 고정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -2223,7 +2223,17 @@ function openModal(slotKey, type) {
                 window.AndroidBridge.showSoftInput();
             }
         }
-    }, 150);
+    }, 50);
+
+    setTimeout(() => {
+        let targetInput = (type === 'url') ? document.getElementById('urlTitle') : sInput;
+        if (targetInput) {
+            targetInput.focus();
+            if (window.AndroidBridge && window.AndroidBridge.showSoftInput) {
+                window.AndroidBridge.showSoftInput();
+            }
+        }
+    }, 200);
 }
 
 document.querySelectorAll('.modal-input').forEach(input => {
