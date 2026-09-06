@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.93 - 네이티브 상용구 연동완료</title>
+<title>쓸기자판 v8.93 - 상용구 완벽 해결</title>
 <style>
 * {
 box-sizing: border-box;
@@ -119,16 +119,6 @@ grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
 }
-
-.grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
-.grid-eng-container .eng-key:nth-child(22) { grid-column: 2 / 3; }
-.grid-eng-container .eng-key:nth-child(23) { grid-column: 3 / 4; }
-.grid-eng-container .eng-key:nth-child(24) { grid-column: 4 / 5; }
-.grid-eng-container .eng-key:nth-child(25) { grid-column: 5 / 6; }
-.grid-eng-container .eng-key:nth-child(26) { grid-column: 6 / 7; }
-.grid-eng-container .eng-key:nth-child(27) { grid-column: 7 / 8; }
-.grid-eng-container .eng-key:nth-child(28) { grid-column: 8 / 9; }
-.grid-eng-container .eng-key:nth-child(29) { grid-column: 9 / 10; }
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -428,7 +418,7 @@ touch-action: manipulation;
 background: #e2e8f0;
 }
 
-/* ===== 영문판 좌우 대칭 구도 ===== */
+/* 영문판 좌우 대칭 구도 */
 #alphaBoard .grid-eng-container {
   grid-template-columns: repeat(20, minmax(0, 1fr));
 }
@@ -453,41 +443,15 @@ background: #e2e8f0;
 #alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
 #alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
 #alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
-#alphaBoard .grid-eng-container > :nth-child(30) {
-  display: none;
-}
-#alphaBoard .grid-eng-container > :nth-child(31) {
-  grid-column: 1 / span 3 !important;
-  grid-row: 4;
-}
-#alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) {
-  grid-column: span 2;
-  grid-row: 4;
-}
-#alphaBoard .grid-eng-container > :nth-child(39) {
-  grid-column: 18 / span 3 !important;
-  grid-row: 4;
-}
-#alphaBoard .grid-eng-container > :nth-child(40) {
-  grid-column: 1 / span 4 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(41) {
-  grid-column: 5 / span 2 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(42) {
-  grid-column: 7 / span 8 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(43) {
-  grid-column: 15 / span 2 !important;
-  grid-row: 5;
-}
-#alphaBoard .grid-eng-container > :nth-child(44) {
-  grid-column: 17 / span 4 !important;
-  grid-row: 5;
-}
+#alphaBoard .grid-eng-container > :nth-child(30) { display: none; }
+#alphaBoard .grid-eng-container > :nth-child(31) { grid-column: 1 / span 3 !important; grid-row: 4; }
+#alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) { grid-column: span 2; grid-row: 4; }
+#alphaBoard .grid-eng-container > :nth-child(39) { grid-column: 18 / span 3 !important; grid-row: 4; }
+#alphaBoard .grid-eng-container > :nth-child(40) { grid-column: 1 / span 4 !important; grid-row: 5; }
+#alphaBoard .grid-eng-container > :nth-child(41) { grid-column: 5 / span 2 !important; grid-row: 5; }
+#alphaBoard .grid-eng-container > :nth-child(42) { grid-column: 7 / span 8 !important; grid-row: 5; }
+#alphaBoard .grid-eng-container > :nth-child(43) { grid-column: 15 / span 2 !important; grid-row: 5; }
+#alphaBoard .grid-eng-container > :nth-child(44) { grid-column: 17 / span 4 !important; grid-row: 5; }
 </style>
 </head>
 <body>
@@ -813,7 +777,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 웹 fallback용 기존 모달 (네이티브 브릿지 없을 때 대비용) -->
 <div id="slotModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -2197,81 +2160,30 @@ if (window.AndroidBridge && window.AndroidBridge.openUrl) {
 }
 });
 
-// 🌟 네이티브 다이얼로그 호출 함수 (기존 openModal 대체)
 function openModal(slotKey, type) {
-    currentSlot = slotKey; 
-    currentType = type;
-    let db = getDB();
-    let val = db[slotKey] || {};
-    
-    let currentText = '';
-    let currentTitle = '';
-    
+currentSlot = slotKey; currentType = type;
+let db = getDB(), val = db[slotKey] || {};
+let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
+if (type === 'url') {
+sInput.style.display = 'none'; uFields.style.display = 'block';
+document.getElementById('urlTitle').value = (typeof val === 'object' && val !== null) ? (val.title || '') : '';
+document.getElementById('urlAddr').value = (typeof val === 'object' && val !== null) ? (val.url || '') : (typeof val === 'string' ? val : '');
+document.getElementById('modalTitle').textContent = 'URL 설정';
+} else {
+sInput.style.display = 'block'; uFields.style.display = 'none';
+sInput.value = (typeof val === 'string') ? val : ((typeof val === 'object' && val !== null) ? (val.title || '') : '');
+document.getElementById('modalTitle').textContent = '상용구 설정';
+}
+document.getElementById('slotModal').style.display = 'flex';
+
+setTimeout(() => {
     if (type === 'url') {
-        if (typeof val === 'object' && val !== null) {
-            currentTitle = val.title || '';
-            currentText = val.url || '';
-        } else if (typeof val === 'string') {
-            currentText = val;
-        }
+        document.getElementById('urlTitle').focus();
     } else {
-        currentText = (typeof val === 'string') ? val : (val.title || '');
+        sInput.focus();
     }
-
-    // 안드로이드 코틀린 네이티브 다이얼로그 호출
-    if (window.AndroidBridge && window.AndroidBridge.openNativeSnippetModal) {
-        window.AndroidBridge.openNativeSnippetModal(slotKey, currentText, type, currentTitle);
-    } else {
-        fallbackWebModal(slotKey, type, currentText, currentTitle);
-    }
+}, 50);
 }
-
-// 🌟 네이티브에서 저장 신호가 올 때 처리하는 함수
-function saveSnippetFromNative(slotKey, title, urlOrSnippet, type) {
-    let db = getDB();
-    if (type === 'url') {
-        if (title && urlOrSnippet) {
-            db[slotKey] = { title: title, url: urlOrSnippet };
-        } else {
-            delete db[slotKey];
-        }
-    } else {
-        if (urlOrSnippet) {
-            db[slotKey] = urlOrSnippet;
-        } else {
-            delete db[slotKey];
-        }
-    }
-    saveDB(db);
-    renderSlots();
-    showToast("저장되었습니다");
-}
-
-// 🌟 네이티브에서 삭제 신호가 올 때 처리하는 함수
-function deleteSnippetFromNative(slotKey) {
-    let db = getDB();
-    delete db[slotKey];
-    saveDB(db);
-    renderSlots();
-    showToast("삭제되었습니다");
-}
-
-// 웹 브라우저 테스트 환경용 폴백 모달
-function fallbackWebModal(slotKey, type, currentText, currentTitle) {
-    let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
-    if (type === 'url') {
-        sInput.style.display = 'none'; uFields.style.display = 'block';
-        document.getElementById('urlTitle').value = currentTitle;
-        document.getElementById('urlAddr').value = currentText;
-        document.getElementById('modalTitle').textContent = 'URL 설정';
-    } else {
-        sInput.style.display = 'block'; uFields.style.display = 'none';
-        sInput.value = currentText;
-        document.getElementById('modalTitle').textContent = '상용구 설정';
-    }
-    document.getElementById('slotModal').style.display = 'flex';
-}
-
 function closeModal() { document.getElementById('slotModal').style.display = 'none'; currentSlot = null; }
 function saveData() {
 if (!currentSlot) return;
