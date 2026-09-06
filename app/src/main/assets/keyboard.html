@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 상단 그림자 제거본</title>
+<title>쓸기자판 v8.88 - 상단 경계선 완전 제거본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -14,7 +14,7 @@ width: 100%;
 height: 100%;
 margin: 0;
 padding: 0;
-background-color: #2b3137;
+background-color: #d1d8e0; /* ⭐️ 바디 배경도 자판 배경색과 일치시킴 */
 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 overflow: hidden;
 position: fixed;
@@ -83,10 +83,11 @@ max-width: 530px;
 height: 230px;
 margin-bottom: 0;
 flex-shrink: 0;
+background-color: #d1d8e0;
 }
 .keyboard-frame {
 background-color: #d1d8e0;
-border-radius: 14px 14px 0 0;
+border-radius: 0; /* ⭐️ 모서리 둥글기를 없애 상단 선 느낌 완전 차단 */
 padding: 4px;
 width: 100%;
 max-width: 530px;
@@ -94,7 +95,7 @@ position: absolute;
 top: auto;
 bottom: 0;
 left: 0;
-box-shadow: none; /* ⭐️ 자판 상단의 검은 선(그림자) 제거 */
+box-shadow: none;
 display: none;
 opacity: 0;
 transition: opacity 0.2s ease;
@@ -490,7 +491,7 @@ background: #e2e8f0;
 </style>
 </head>
 <body>
-<div id="screen" class="output-screen">
+<div id="screen" class="output-screen" style="display:none;">
   <div class="screen-text-wrap" id="screenTextWrap"></div>
 </div>
 
