@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 영문 l 길게 누르기 수정본</title>
+<title>쓸기자판 v8.90 - 터치 커서 인식 및 l키 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -622,7 +622,6 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<!-- ⭐️ l 키 길게 누르기 값을 ')' 로 수정 -->
 <div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
@@ -1239,10 +1238,12 @@ lastSlideDir = '';
 updateScreen();
 }
 
+// ⭐️ 화면 톡 터치 시 터치한 위치를 정확한 커서 위치로 반영하도록 보완된 클릭 리스너
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
-if (fullText.length === 0) {
+let chars = Array.from(fullText);
+if (chars.length === 0) {
 cursorPos = 0;
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
@@ -1254,9 +1255,7 @@ return;
 let rect = screenTextWrap.getBoundingClientRect();
 let clickX = e.clientX - rect.left;
 
-let chars = Array.from(fullText);
 let closestIndex = chars.length;
-
 let tempSpan = document.createElement('span');
 tempSpan.style.font = window.getComputedStyle(screenDiv).font;
 tempSpan.style.visibility = 'hidden';
