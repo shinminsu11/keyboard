@@ -61,18 +61,9 @@ class SsulKeyboardService : InputMethodService() {
             inputConnection.setComposingText(text, 1)
         }
 
-        // ⭐️ 실제 앱의 커서 위치를 HTML의 cursorPos와 일치시키는 동기화 함수
-        @JavascriptInterface
-        fun setSelection(start: Int, end: Int) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.setSelection(start, end)
-        }
-
-        // ⭐️ 현재 커서 위치를 기준으로 앞 글자 1개를 깔끔하게 지우는 함수
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
             inputConnection.deleteSurroundingText(1, 0)
         }
     }
