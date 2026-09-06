@@ -94,6 +94,9 @@ class SsulKeyboardService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        // 새창이나 포커스가 새로 잡힐 때 웹뷰의 입력 버퍼를 초기화하도록 신호 전달
+        webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
+        
         window.window?.let { window ->
             window.decorView.let { decorView ->
                 decorView.requestLayout()
