@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.1 - 커서 이동 복구본</title>
+<title>쓸기자판 v8.88 - 커서 동기화 및 URL 완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -118,6 +118,16 @@ grid-template-rows: repeat(5, 42px);
 gap: 3px;
 width: 100%;
 }
+
+.grid-eng-container .eng-key:nth-child(21) { grid-column: 1 / 2; }
+.grid-eng-container .eng-key:nth-child(22) { grid-column: 2 / 3; }
+.grid-eng-container .eng-key:nth-child(23) { grid-column: 3 / 4; }
+.grid-eng-container .eng-key:nth-child(24) { grid-column: 4 / 5; }
+.grid-eng-container .eng-key:nth-child(25) { grid-column: 5 / 6; }
+.grid-eng-container .eng-key:nth-child(26) { grid-column: 6 / 7; }
+.grid-eng-container .eng-key:nth-child(27) { grid-column: 7 / 8; }
+.grid-eng-container .eng-key:nth-child(28) { grid-column: 8 / 9; }
+.grid-eng-container .eng-key:nth-child(29) { grid-column: 9 / 10; }
 .grid-symbol-container {
 display: grid;
 grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -1210,6 +1220,9 @@ if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong ===
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(cursorPos, cursorPos);
+        }
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
@@ -1226,6 +1239,9 @@ let fullText = committedText;
 if (fullText.length === 0) {
 cursorPos = 0;
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
 return;
 }
 
@@ -1253,6 +1269,10 @@ document.body.removeChild(tempSpan);
 
 cursorPos = closestIndex;
 updateScreen();
+
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
 });
 
 let bsTimer = null;
@@ -1282,6 +1302,9 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
 cursorPos = 0;
 updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
 return;
 }
 }
@@ -1306,6 +1329,9 @@ cursorPos += getCharLen(char);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
+}
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
 }
 }
 
@@ -1863,6 +1889,9 @@ closeEmojiModal();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
 }
 
 const DEFAULT_HANJA_DICT = {
@@ -1938,11 +1967,16 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-    window.AndroidBridge.deleteText();
-}
-if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText(hanjaChar);
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(hanjaChar);
+    }
+    if (window.AndroidBridge.setSelection) {
+        window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    }
 }
 }
 }
@@ -1993,12 +2027,19 @@ let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY = e.touches[0].clientY; }, { passive: true });
 settingBtn.addEventListener('touchend', (e) => {
 let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
-// ⭐️ 설정 버튼 좌우 스와이프를 통한 커서 이동 기능 복구
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
-commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
+commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); 
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
+return;
 }
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx > 0) {
-commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); return;
+commitCurrent(); if (cursorPos < getCharLen(committedText)) cursorPos++; updateScreen(); 
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+}
+return;
 }
 if (dy > 25 && Math.abs(dy) > Math.abs(dx)) {
 mainBoard.classList.remove('active'); twinBoard.classList.add('active');
@@ -2048,19 +2089,32 @@ if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
 if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
-if (type === 'url' && val && typeof val === 'object' && val.url) {
-window.open(val.url.startsWith('http') ? val.url : 'https://' + val.url, '_blank');
+if (type === 'url') {
+let targetUrl = '';
+if (typeof val === 'object' && val !== null) {
+targetUrl = val.url || val.title || '';
+} else if (typeof val === 'string') {
+targetUrl = val;
+}
+if (targetUrl) {
+let finalUrl = targetUrl.startsWith('http') ? targetUrl : 'https://' + targetUrl;
+window.open(finalUrl, '_blank');
 return;
+}
 }
 if (type === 'snippet' && val) { 
     commitCurrent();
+    let textVal = (typeof val === 'object' && val.title) ? val.title : val;
     let chars = Array.from(committedText);
-    chars.splice(cursorPos, 0, val);
+    chars.splice(cursorPos, 0, textVal);
     committedText = chars.join('');
-    cursorPos += getCharLen(val);
+    cursorPos += getCharLen(textVal);
     updateScreen();
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText(val);
+        window.AndroidBridge.commitText(textVal);
+    }
+    if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+        window.AndroidBridge.setSelection(cursorPos, cursorPos);
     }
     return; 
 }
@@ -2087,6 +2141,9 @@ cursorPos += getCharLen(resStr);
 updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
+}
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(cursorPos, cursorPos);
 }
 } catch(e) { document.getElementById('calcScreen').value = '오류'; }
 }
