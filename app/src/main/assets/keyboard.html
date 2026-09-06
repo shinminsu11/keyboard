@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.89 - 블록 지정 삭제 지원본</title>
+<title>쓸기자판 v8.88 - 영문 l 길게 누르기 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -51,7 +51,6 @@ overflow-x: auto;
 white-space: pre-wrap;
 cursor: text;
 flex-shrink: 0;
-user-select: text; /* ⭐️ 블록 지정 선택이 가능하도록 설정 */
 }
 .output-screen::-webkit-scrollbar {
 display: none;
@@ -62,7 +61,6 @@ align-items: center;
 position: relative;
 height: 100%;
 white-space: pre-wrap;
-user-select: text;
 }
 .cursor-bar {
 display: inline-block;
@@ -90,7 +88,7 @@ background-color: #d1d8e0;
 .keyboard-frame {
 background-color: #d1d8e0;
 border-radius: 0;
-padding: 6px 4px 4px 4px;
+padding: 4px;
 width: 100%;
 max-width: 530px;
 position: absolute;
@@ -624,7 +622,8 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<div class="eng-key eng-long" data-char="l" data-long)"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<!-- ⭐️ l 키 길게 누르기 값을 ')' 로 수정 -->
+<div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
@@ -1217,43 +1216,7 @@ appendHangul(newVowel);
 }
 }
 
-// ⭐️ 블록 지정 범위 삭제 처리가 가능하도록 보완된 백스페이스 로직
 function backspaceHangul() {
-commitCurrent(); // 조합 중인 글자가 있으면 먼저 확정
-
-let selection = window.getSelection();
-if (selection && !selection.isCollapsed) {
-    // 1. 유저가 화면에서 텍스트를 드래그하여 블록(범위)을 지정한 경우
-    let selectedStr = selection.toString();
-    if (selectedStr.length > 0) {
-        let fullChars = Array.from(committedText);
-        
-        // 간단하게 전체 텍스트 내에서 선택된 문자열을 찾아 삭제하거나 
-        // 텍스트 인덱스 기준으로 제거 처리 수행
-        let plainText = committedText;
-        // 선택된 영역을 양방향 대조하여 제거
-        let selRange = selection.getRangeAt(0);
-        let preCaretRange = selRange.cloneRange();
-        preCaretRange.selectNodeContents(screenTextWrap);
-        preCaretRange.setEnd(selRange.startContainer, selRange.startOffset);
-        let startIdx = Array.from(preCaretRange.toString()).length;
-        let selectLen = Array.from(selectedStr).length;
-
-        fullChars.splice(startIdx, selectLen);
-        committedText = fullChars.join('');
-        cursorPos = Math.max(0, startIdx);
-        
-        selection.removeAllRanges();
-        updateScreen();
-        
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(cursorPos, cursorPos);
-        }
-        return;
-    }
-}
-
-// 2. 일반적인 커서 기준 백스페이스 처리
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
@@ -1364,14 +1327,6 @@ bsTimer = null;
 function appendSpecial(char) {
 if (!char) return;
 commitCurrent();
-let selection = window.getSelection();
-if (selection && !selection.isCollapsed) {
-    // 글자 입력 시 블록이 지정되어 있다면 선택된 영역을 덮어쓰기(삭제 후 삽입)
-    let selectedStr = selection.toString();
-    if (selectedStr.length > 0) {
-        backspaceHangul();
-    }
-}
 lastSlideDir = '';
 let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, char);
