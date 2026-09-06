@@ -1,5 +1,7 @@
 package com.example.ssulkeyboard
 
+import android.content.Intent
+import android.net.Uri
 import android.inputmethodservice.InputMethodService
 import android.view.View
 import android.view.ViewGroup
@@ -22,10 +24,13 @@ class SsulKeyboardService : InputMethodService() {
             orientation = LinearLayout.VERTICAL
         }
 
+        val heightDp = 235
+        val heightPx = (heightDp * resources.displayMetrics.density).toInt()
+
         webView = WebView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                800
+                heightPx
             )
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -59,9 +64,29 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
+        fun setSelection(start: Int, end: Int) {
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.setSelection(start, end)
+        }
+
+        @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
             inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        // ⭐️ 안드로이드 시스템 브라우저를 통해 URL을 여는 브릿지 함수
+        @JavascriptInterface
+        fun openUrl(url: String) {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
