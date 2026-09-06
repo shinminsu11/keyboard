@@ -92,6 +92,12 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
+        fun forceShowKeyboard() {
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+        }
+
+        @JavascriptInterface
         fun openUrl(url: String) {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
