@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 커서 이동 및 URL 완성본</title>
+<title>쓸기자판 v8.88 - 기호판 전환 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -745,7 +745,8 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<!-- ⭐️ 기호판2에서 기호판1로 돌아가도록 수정된 부분 -->
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1965,18 +1966,6 @@ closeAddHanjaModal();
 showToast("추가되었습니다");
 openHanjaModal();
 }
-function saveCustomHanja() {
-let cInput = document.getElementById('customHanjaChar').value.trim();
-let mInput = document.getElementById('customHanjaMeaning').value.trim();
-if (!cInput || !mInput) return;
-let custom = JSON.parse(localStorage.getItem('user_custom_hanja_v1')) || {};
-if (!custom[targetHanjaCharForAdd]) custom[targetHanjaCharForAdd] = [];
-custom[targetHanjaCharForAdd].push({ c: cInput, m: mInput });
-localStorage.setItem('user_custom_hanja_v1', JSON.stringify(custom));
-closeAddHanjaModal();
-showToast("추가되었습니다");
-openHanjaModal();
-}
 function replaceLastCharWithHanja(hanjaChar) {
 if (cursorPos > 0) {
 let chars = Array.from(committedText);
@@ -2129,7 +2118,6 @@ targetUrl = val;
 }
 if (targetUrl) {
 let finalUrl = targetUrl.startsWith('http') ? targetUrl : 'https://' + targetUrl;
-// ⭐️ 안드로이드 브릿지를 통한 URL 오픈 적용
 if (window.AndroidBridge && window.AndroidBridge.openUrl) {
     window.AndroidBridge.openUrl(finalUrl);
 } else {
