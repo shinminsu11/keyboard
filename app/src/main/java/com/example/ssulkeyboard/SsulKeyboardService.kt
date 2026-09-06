@@ -11,11 +11,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
 import android.graphics.Color
-import android.app.AlertDialog
-import android.widget.EditText
-import android.view.WindowManager
-import android.os.Handler
-import android.os.Looper
 
 class SsulKeyboardService : InputMethodService() {
 
@@ -93,66 +88,6 @@ class SsulKeyboardService : InputMethodService() {
                 startActivity(intent)
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }
-
-        // 🌟 자판 바깥(시스템 창 레이어)에 띄우는 네이티브 상용구/URL 설정 다이얼로그
-        @JavascriptInterface
-        fun openNativeSnippetModal(slotKey: String, currentText: String, modalType: String, currentTitle: String) {
-            val context = this@SsulKeyboardService
-            
-            Handler(Looper.getMainLooper()).post {
-                val layout = LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(50, 40, 50, 20)
-                }
-
-                val titleInput = if (modalType == "url") {
-                    EditText(context).apply {
-                        setText(currentTitle)
-                        hint = "표시할 제목 (예: 네이버)"
-                        setPadding(30, 25, 30, 25)
-                    }.also { layout.addView(it) }
-                } else null
-
-                val contentInput = EditText(context).apply {
-                    setText(currentText)
-                    hint = if (modalType == "url") "이동할 주소 (예: https://www.naver.com)" else "상용구 입력..."
-                    setPadding(30, 25, 30, 25)
-                }.also { layout.addView(it) }
-
-                val dialogTitle = if (modalType == "url") "URL 설정" else "상용구 설정"
-
-                val dialog = AlertDialog.Builder(context, android.R.style.Theme_DeviceDefault_Light_Dialog_Alert)
-                    .setTitle(dialogTitle)
-                    .setView(layout)
-                    .setPositiveButton("저장") { _, _ ->
-                        val text1 = contentInput.text.toString().trim()
-                        val text2 = titleInput?.text?.toString()?.trim() ?: ""
-                        
-                        val jsCode = if (modalType == "url") {
-                            "saveSnippetFromNative('$slotKey', '$text2', '$text1', 'url')"
-                        } else {
-                            "saveSnippetFromNative('$slotKey', '', '$text1', 'snippet')"
-                        }
-                        webView.evaluateJavascript("javascript:$jsCode", null)
-                    }
-                    .setNeutralButton("삭제") { _, _ ->
-                        webView.evaluateJavascript("javascript:deleteSnippetFromNative('$slotKey')", null)
-                    }
-                    .setNegativeButton("취소", null)
-                    .create()
-
-                // 🌟 window token 오류 해결부
-                dialog.window?.let { win ->
-                    win.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
-                    val windowToken = window.window?.decorView?.windowToken
-                    if (windowToken != null) {
-                        win.attributes?.token = windowToken
-                    }
-                }
-
-                dialog.show()
             }
         }
     }
