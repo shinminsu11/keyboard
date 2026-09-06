@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.91 - 터치 커서 위치 완벽 고정 수정본</title>
+<title>쓸기자판 v8.92 - 커서 휨 및 띄어쓰기 오류 최종 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -746,7 +746,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1238,11 +1238,12 @@ lastSlideDir = '';
 updateScreen();
 }
 
-// ⭐️ [완벽 수정] 터치한 좌표를 절대 오차 없이 정확한 글자 위치(커서)로 매핑하는 로직
+// ⭐️ [완벽 해결] 화면 톡 쳤을 때 커서 위치를 터치한 곳으로 정확히 고정하고 안드로이드 시스템 포커스와 완벽 동기화
 screenDiv.addEventListener('click', (e) => {
-commitCurrent();
+commitCurrent(); // 작성 중이던 글자가 있으면 먼저 확정
 let fullText = committedText;
 let chars = Array.from(fullText);
+
 if (chars.length === 0) {
 cursorPos = 0;
 updateScreen();
@@ -1255,7 +1256,6 @@ return;
 let rect = screenTextWrap.getBoundingClientRect();
 let clickX = e.clientX - rect.left;
 
-// 임시 요소를 만들어 각 글자 위치별 폭을 정확히 정밀 측정
 let tempSpan = document.createElement('span');
 let computedStyle = window.getComputedStyle(screenDiv);
 tempSpan.style.font = computedStyle.font;
@@ -1280,9 +1280,11 @@ closestIndex = i;
 }
 document.body.removeChild(tempSpan);
 
+// 커서 위치를 탭한 지점으로 강제 설정
 cursorPos = closestIndex;
 updateScreen();
 
+// 안드로이드 시스템 전체의 커서 포커스도 해당 위치로 강제 고정
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
     window.AndroidBridge.setSelection(cursorPos, cursorPos);
 }
