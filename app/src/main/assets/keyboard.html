@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.0 - 기준 안정본</title>
+<title>쓸기자판 v8.1 - 커서 이동 복구본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1993,6 +1993,7 @@ let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { sX = e.touches[0].clientX; sY = e.touches[0].clientY; }, { passive: true });
 settingBtn.addEventListener('touchend', (e) => {
 let t = e.changedTouches[0], dx = t.clientX - sX, dy = t.clientY - sY;
+// ⭐️ 설정 버튼 좌우 스와이프를 통한 커서 이동 기능 복구
 if (Math.abs(dx) > 25 && Math.abs(dx) > Math.abs(dy) && dx < 0) {
 commitCurrent(); if (cursorPos > 0) cursorPos--; updateScreen(); return;
 }
