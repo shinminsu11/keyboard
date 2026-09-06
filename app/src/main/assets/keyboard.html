@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 기호판 전환 수정본</title>
+<title>쓸기자판 v8.88 - 상단 그림자 제거본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -94,7 +94,7 @@ position: absolute;
 top: auto;
 bottom: 0;
 left: 0;
-box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+box-shadow: none; /* ⭐️ 자판 상단의 검은 선(그림자) 제거 */
 display: none;
 opacity: 0;
 transition: opacity 0.2s ease;
@@ -745,7 +745,6 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<!-- ⭐️ 기호판2에서 기호판1로 돌아가도록 수정된 부분 -->
 <div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
