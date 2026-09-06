@@ -76,7 +76,6 @@ class SsulKeyboardService : InputMethodService() {
             inputConnection.deleteSurroundingText(1, 0)
         }
 
-        // ⭐️ 안드로이드 시스템 브라우저를 통해 URL을 여는 브릿지 함수
         @JavascriptInterface
         fun openUrl(url: String) {
             try {
