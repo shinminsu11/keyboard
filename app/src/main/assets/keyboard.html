@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.90 - 터치 커서 인식 및 l키 수정본</title>
+<title>쓸기자판 v8.91 - 터치 커서 위치 완벽 고정 수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1238,7 +1238,7 @@ lastSlideDir = '';
 updateScreen();
 }
 
-// ⭐️ 화면 톡 터치 시 터치한 위치를 정확한 커서 위치로 반영하도록 보완된 클릭 리스너
+// ⭐️ [완벽 수정] 터치한 좌표를 절대 오차 없이 정확한 글자 위치(커서)로 매핑하는 로직
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
@@ -1255,19 +1255,27 @@ return;
 let rect = screenTextWrap.getBoundingClientRect();
 let clickX = e.clientX - rect.left;
 
-let closestIndex = chars.length;
+// 임시 요소를 만들어 각 글자 위치별 폭을 정확히 정밀 측정
 let tempSpan = document.createElement('span');
-tempSpan.style.font = window.getComputedStyle(screenDiv).font;
+let computedStyle = window.getComputedStyle(screenDiv);
+tempSpan.style.font = computedStyle.font;
+tempSpan.style.fontSize = computedStyle.fontSize;
+tempSpan.style.fontFamily = computedStyle.fontFamily;
+tempSpan.style.letterSpacing = computedStyle.letterSpacing;
 tempSpan.style.visibility = 'hidden';
 tempSpan.style.position = 'absolute';
 document.body.appendChild(tempSpan);
 
+let closestIndex = 0;
+let minDiff = Infinity;
+
 for (let i = 0; i <= chars.length; i++) {
 tempSpan.textContent = chars.slice(0, i).join('');
 let w = tempSpan.getBoundingClientRect().width;
-if (clickX <= w) {
+let diff = Math.abs(clickX - w);
+if (diff < minDiff) {
+minDiff = diff;
 closestIndex = i;
-break;
 }
 }
 document.body.removeChild(tempSpan);
