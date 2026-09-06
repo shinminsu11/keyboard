@@ -96,7 +96,7 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // 🌟 자판 바깥(시스템 창)에 네이티브 상용구 입력창 띄우기
+        // 🌟 자판 바깥(시스템 창 레이어)에 띄우는 네이티브 상용구/URL 설정 다이얼로그
         @JavascriptInterface
         fun openNativeSnippetModal(slotKey: String, currentText: String, modalType: String, currentTitle: String) {
             val context = this@SsulKeyboardService
@@ -130,7 +130,6 @@ class SsulKeyboardService : InputMethodService() {
                         val text1 = contentInput.text.toString().trim()
                         val text2 = titleInput?.text?.toString()?.trim() ?: ""
                         
-                        // 자바스크립트로 저장 내용 전달
                         val jsCode = if (modalType == "url") {
                             "saveSnippetFromNative('$slotKey', '$text2', '$text1', 'url')"
                         } else {
@@ -144,7 +143,6 @@ class SsulKeyboardService : InputMethodService() {
                     .setNegativeButton("취소", null)
                     .create()
 
-                // 키보드 서비스 윈도우 위에 다이얼로그가 안정적으로 뜨도록 설정
                 dialog.window?.let { window ->
                     window.setType(WindowManager.LayoutParams.TYPE_APPLICATION_ATTACHED_DIALOG)
                     token?.let { window.attributes.token = it }
