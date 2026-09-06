@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.88 - 영문 l 길게 누르기 수정본</title>
+<title>쓸기자판 v8.92 - 이모티콘 및 유니코드 인덱스 완벽 동기화</title>
 <style>
 * {
 box-sizing: border-box;
@@ -622,7 +622,6 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<!-- ⭐️ l 키 길게 누르기 값을 ')' 로 수정 -->
 <div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
@@ -747,7 +746,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1101,6 +1100,12 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
+// ⭐️ 자바스크립트 글자(Glyph) 단위 인덱스를 안드로이드 호환 UTF-16 단위로 엄격히 변환하는 함수
+function getUtf16Index(arr, glyphIndex) {
+    let subStr = arr.slice(0, glyphIndex).join('');
+    return subStr.length;
+}
+
 function updateScreen() {
 let currentAssembled = assembleCurrent();
 let chars = Array.from(committedText);
@@ -1226,8 +1231,10 @@ if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong ===
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
+        
+        let utf16Idx = getUtf16Index(chars, cursorPos);
         if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(cursorPos, cursorPos);
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
         }
     }
 } else {
@@ -1242,21 +1249,17 @@ updateScreen();
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
-if (fullText.length === 0) {
+let chars = Array.from(fullText);
+if (chars.length === 0) {
 cursorPos = 0;
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(0, 0);
-}
 return;
 }
 
 let rect = screenTextWrap.getBoundingClientRect();
 let clickX = e.clientX - rect.left;
 
-let chars = Array.from(fullText);
 let closestIndex = chars.length;
-
 let tempSpan = document.createElement('span');
 tempSpan.style.font = window.getComputedStyle(screenDiv).font;
 tempSpan.style.visibility = 'hidden';
@@ -1276,8 +1279,9 @@ document.body.removeChild(tempSpan);
 cursorPos = closestIndex;
 updateScreen();
 
+let utf16Idx = getUtf16Index(chars, cursorPos);
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
 }
 });
 
@@ -1333,11 +1337,13 @@ chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
+
+let utf16Idx = getUtf16Index(chars, cursorPos);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
 }
 }
 
@@ -1892,11 +1898,13 @@ committedText = chars.join('');
 cursorPos += getCharLen(emoji);
 updateScreen();
 closeEmojiModal();
+
+let utf16Idx = getUtf16Index(chars, cursorPos);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
 }
 }
 
@@ -1973,6 +1981,7 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
+let utf16Idx = getUtf16Index(chars, cursorPos);
 if (window.AndroidBridge) {
     if (window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
@@ -1981,7 +1990,7 @@ if (window.AndroidBridge) {
         window.AndroidBridge.commitText(hanjaChar);
     }
     if (window.AndroidBridge.setSelection) {
-        window.AndroidBridge.setSelection(cursorPos, cursorPos);
+        window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
     }
 }
 }
@@ -2029,7 +2038,6 @@ else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 
 else switchToBoard('symbolBoard1');
 });
 
-// 설정 버튼 좌우 스와이프 커서 이동 및 아래로 밀기(쌍둥이판)
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { 
     sX = e.touches[0].clientX; 
@@ -2045,17 +2053,21 @@ settingBtn.addEventListener('touchend', (e) => {
         commitCurrent(); 
         if (cursorPos > 0) cursorPos--; 
         updateScreen(); 
+        let chars = Array.from(committedText);
+        let utf16Idx = getUtf16Index(chars, cursorPos);
         if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(cursorPos, cursorPos);
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
         }
         return;
     }
     if (dx > 15 && Math.abs(dx) > Math.abs(dy)) {
         commitCurrent(); 
-        if (cursorPos < getCharLen(committedText)) cursorPos++; 
+        let chars = Array.from(committedText);
+        if (cursorPos < chars.length) cursorPos++; 
         updateScreen(); 
+        let utf16Idx = getUtf16Index(chars, cursorPos);
         if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(cursorPos, cursorPos);
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
         }
         return;
     }
@@ -2135,11 +2147,13 @@ if (type === 'snippet' && val) {
     committedText = chars.join('');
     cursorPos += getCharLen(textVal);
     updateScreen();
+    
+    let utf16Idx = getUtf16Index(chars, cursorPos);
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(textVal);
     }
     if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-        window.AndroidBridge.setSelection(cursorPos, cursorPos);
+        window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
     }
     return; 
 }
@@ -2164,11 +2178,13 @@ chars.splice(cursorPos, 0, resStr);
 committedText = chars.join('');
 cursorPos += getCharLen(resStr);
 updateScreen();
+
+let utf16Idx = getUtf16Index(chars, cursorPos);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
 }
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(cursorPos, cursorPos);
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
 }
 } catch(e) { document.getElementById('calcScreen').value = '오류'; }
 }
