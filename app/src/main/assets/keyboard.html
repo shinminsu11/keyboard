@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.93 - 상용구 완벽 해결</title>
+<title>쓸기자판 v8.93 - 계산기 영역 최적화</title>
 <style>
 * {
 box-sizing: border-box;
@@ -795,30 +795,31 @@ background: #e2e8f0;
 </div>
 </div>
 
+<!-- 🌟 계산기 모달 (높이 및 버튼 패딩 최적화 완료) -->
 <div id="calcModal" class="modal-overlay">
-<div class="modal-box" style="max-width:280px;">
-<div class="modal-header">
+<div class="modal-box" style="max-width:270px; padding:10px;">
+<div class="modal-header" style="margin-bottom:6px; font-size:15px;">
 <span>미니 계산기</span>
-<span class="modal-close" onclick="closeCalcModal()">×</span>
+<span class="modal-close" onclick="closeCalcModal()" style="font-size:24px;">×</span>
 </div>
-<input type="text" id="calcScreen" class="modal-input" style="font-size:18px; text-align:right;" readonly>
-<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
-<button onclick="calcInput('7')" style="padding:12px; font-weight:bold;">7</button>
-<button onclick="calcInput('8')" style="padding:12px; font-weight:bold;">8</button>
-<button onclick="calcInput('9')" style="padding:12px; font-weight:bold;">9</button>
-<button onclick="calcInput('/')" style="padding:12px; font-weight:bold; background:#eee;">÷</button>
-<button onclick="calcInput('4')" style="padding:12px; font-weight:bold;">4</button>
-<button onclick="calcInput('5')" style="padding:12px; font-weight:bold;">5</button>
-<button onclick="calcInput('6')" style="padding:12px; font-weight:bold;">6</button>
-<button onclick="calcInput('*')" style="padding:12px; font-weight:bold; background:#eee;">×</button>
-<button onclick="calcInput('1')" style="padding:12px; font-weight:bold;">1</button>
-<button onclick="calcInput('2')" style="padding:12px; font-weight:bold;">2</button>
-<button onclick="calcInput('3')" style="padding:12px; font-weight:bold;">3</button>
-<button onclick="calcInput('-')" style="padding:12px; font-weight:bold; background:#eee;">-</button>
-<button onclick="calcClear()" style="padding:12px; font-weight:bold; background:#ffdddd;">C</button>
-<button onclick="calcInput('0')" style="padding:12px; font-weight:bold;">0</button>
-<button onclick="calcResult()" style="padding:12px; font-weight:bold; background:#4285f4; color:#fff;">=</button>
-<button onclick="calcInput('+')" style="padding:12px; font-weight:bold; background:#eee;">+</button>
+<input type="text" id="calcScreen" class="modal-input" style="font-size:16px; text-align:right; margin-bottom:6px; padding:6px;" readonly>
+<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px;">
+<button onclick="calcInput('7')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">7</button>
+<button onclick="calcInput('8')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">8</button>
+<button onclick="calcInput('9')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">9</button>
+<button onclick="calcInput('/')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#eee;">÷</button>
+<button onclick="calcInput('4')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">4</button>
+<button onclick="calcInput('5')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">5</button>
+<button onclick="calcInput('6')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">6</button>
+<button onclick="calcInput('*')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#eee;">×</button>
+<button onclick="calcInput('1')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">1</button>
+<button onclick="calcInput('2')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">2</button>
+<button onclick="calcInput('3')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">3</button>
+<button onclick="calcInput('-')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#eee;">-</button>
+<button onclick="calcClear()" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#ffdddd;">C</button>
+<button onclick="calcInput('0')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#f9f9f9;">0</button>
+<button onclick="calcResult()" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#4285f4; color:#fff;">=</button>
+<button onclick="calcInput('+')" style="padding:9px; font-weight:bold; font-size:14px; border:1px solid #ccc; border-radius:4px; background:#eee;">+</button>
 </div>
 </div>
 </div>
