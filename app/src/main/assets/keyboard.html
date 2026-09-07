@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.93 - 새창 잔재 방지 완료</title>
+<title>쓸기자판 v8.94 - 커서 동기화 완료</title>
 <style>
 * {
 box-sizing: border-box;
@@ -932,7 +932,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-// 🌟 새창 진입 시 버퍼 및 잔재 글자('공' 등) 방지를 위한 강제 초기화 함수
 function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
@@ -1123,6 +1122,10 @@ cursorPos += getCharLen(current);
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
+let utf16Idx = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+}
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 }
@@ -1198,18 +1201,25 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-    }
     if (cursorPos > 0) {
-        cursorPos--;
         let chars = Array.from(committedText);
+        // 삭제 전 현재 커서 위치를 네이티브 커서에 먼저 정확히 동기화
+        let utf16IdxBefore = getUtf16Index(chars, cursorPos);
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(utf16IdxBefore, utf16IdxBefore);
+        }
+
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            window.AndroidBridge.deleteText();
+        }
+
+        cursorPos--;
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
         
-        let utf16Idx = getUtf16Index(chars, cursorPos);
+        let utf16IdxAfter = getUtf16Index(chars, cursorPos);
         if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+            window.AndroidBridge.setSelection(utf16IdxAfter, utf16IdxAfter);
         }
     }
 } else {
@@ -1306,8 +1316,13 @@ bsTimer = null;
 function appendSpecial(char) {
 if (!char) return;
 commitCurrent();
-lastSlideDir = '';
 let chars = Array.from(committedText);
+// 특수문자나 기호를 삽입하기 전에도 현재 커서 위치를 네이티브 커서에 먼저 동기화
+let utf16Before = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Before, utf16Before);
+}
+
 chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
 cursorPos += getCharLen(char);
@@ -1866,8 +1881,12 @@ openEmojiModal();
 }
 function selectEmoji(emoji) {
 commitCurrent();
-lastSlideDir = '';
 let chars = Array.from(committedText);
+let utf16Before = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Before, utf16Before);
+}
+
 chars.splice(cursorPos, 0, emoji);
 committedText = chars.join('');
 cursorPos += getCharLen(emoji);
@@ -1953,6 +1972,11 @@ openHanjaModal();
 function replaceLastCharWithHanja(hanjaChar) {
 if (cursorPos > 0) {
 let chars = Array.from(committedText);
+let utf16Before = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Before, utf16Before);
+}
+
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
@@ -2096,7 +2120,11 @@ el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
-if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
+if (!val) { 
+    e.preventDefault(); 
+    showToast("길게 누르세요"); 
+    return; 
+}
 if (type === 'url') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
@@ -2118,6 +2146,11 @@ if (type === 'snippet' && val) {
     commitCurrent();
     let textVal = (typeof val === 'object' && val.title) ? val.title : val;
     let chars = Array.from(committedText);
+    let utf16Before = getUtf16Index(chars, cursorPos);
+    if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+        window.AndroidBridge.setSelection(utf16Before, utf16Before);
+    }
+
     chars.splice(cursorPos, 0, textVal);
     committedText = chars.join('');
     cursorPos += getCharLen(textVal);
@@ -2149,6 +2182,11 @@ document.getElementById('calcScreen').value = res;
 commitCurrent();
 let resStr = String(res);
 let chars = Array.from(committedText);
+let utf16Before = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Before, utf16Before);
+}
+
 chars.splice(cursorPos, 0, resStr);
 committedText = chars.join('');
 cursorPos += getCharLen(resStr);
