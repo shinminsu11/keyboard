@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.96 - 클로드 진단 반영 클린 버전</title>
+<title>쓸기자판 v8.96 - 기호판 수정 완성 버전</title>
 <style>
 * {
 box-sizing: border-box;
@@ -684,7 +684,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('⊃')">⊃</div>
 <div class="sym-key" onclick="appendSpecial('∑')">∑</div>
 <div class="sym-key" onclick="appendSpecial('▷')">▷</div>
-<div class="sym-key" onclick="appendSpecial('♨')">♨</div>
+<div class="sym-key" onclick="appendSpecial('✈')">✈</div>
 <div class="sym-key" onclick="appendSpecial('·')">·</div>
 <div class="sym-key" onclick="appendSpecial('↑')">↑</div>
 <div class="sym-key" onclick="appendSpecial('↓')">↓</div>
@@ -696,7 +696,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('º')">º</div>
 <div class="sym-key" onclick="appendSpecial('☞')">☞</div>
 <div class="sym-key" onclick="appendSpecial('◎')">◎</div>
-<div class="sym-key func" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" onclick="switchToBoard('alphaBoard')">ABC</div>
 <div class="sym-key" onclick="appendSpecial('≠')">≠</div>
 <div class="sym-key" onclick="appendSpecial('∞')">∞</div>
 <div class="sym-key" onclick="appendSpecial('‘')">‘</div>
@@ -1113,7 +1113,6 @@ if (cho === -1 && jung !== -1 && jong === -1) return JUNGSUNG[jung];
 return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 }
 
-// [클로드 분석 반영] 입력/확정 시에는 setSelection을 날리지 않고 시스템 자동 커서 이동에 맡김
 function commitCurrent() {
 let current = assembleCurrent();
 if (current) {
@@ -1197,7 +1196,6 @@ appendHangul(newVowel);
 }
 }
 
-// [클로드 분석 반영] 삭제 시에도 setSelection 호출 제거 (시스템이 삭제 및 커서 이동을 담당)
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
@@ -1218,7 +1216,6 @@ lastSlideDir = '';
 updateScreen();
 }
 
-// [핵심] 오직 사용자가 화면을 직접 터치해서 커서를 옮길 때만 setSelection 호출 허용
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
@@ -1999,7 +1996,6 @@ else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 
 else switchToBoard('symbolBoard1');
 });
 
-// [좌우 커서 이동 제어] 설정 버튼 스와이프를 통한 커서 이동 시에만 setSelection 허용
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { 
     sX = e.touches[0].clientX; 
