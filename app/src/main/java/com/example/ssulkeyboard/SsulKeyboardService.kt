@@ -5,7 +5,6 @@ import android.net.Uri
 import android.inputmethodservice.InputMethodService
 import android.view.View
 import android.view.ViewGroup
-import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -94,13 +93,12 @@ class SsulKeyboardService : InputMethodService() {
             val action = imeOptions and EditorInfo.IME_MASK_ACTION
             val inputType = editorInfo?.inputType ?: 0
             
+            // 멀티라인 입력창(재미나이 등)이거나 액션이 없는 경우 2칸 중복 개행을 막기 위해 단일 줄바꿈 적용 및 자판 유지
             val isMultiLine = (inputType and EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
                               (imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
 
             if (isMultiLine || action == EditorInfo.IME_ACTION_NONE) {
-                // 문자열 개행 대신 실제 엔터 키 이벤트를 전송하여 웹 에디터가 정확히 한 칸만 이동하도록 처리
-                inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
-                inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+                inputConnection.commitText("\n", 1)
             } else {
                 inputConnection.performEditorAction(action)
             }
