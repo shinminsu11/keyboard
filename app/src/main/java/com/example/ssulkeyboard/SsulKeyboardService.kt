@@ -54,6 +54,8 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     inner class KeyboardBridge {
+        private var lastEnterTime = 0L
+
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
@@ -85,6 +87,13 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun onEnter() {
+            // touchend와 click 중복 발생으로 인한 2칸 이동(더블 탭)을 막기 위한 300ms 디바운스 처리
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastEnterTime < 300) {
+                return
+            }
+            lastEnterTime = currentTime
+
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
             
