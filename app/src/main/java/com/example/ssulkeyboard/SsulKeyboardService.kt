@@ -11,6 +11,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 
 class SsulKeyboardService : InputMethodService() {
 
@@ -79,12 +81,22 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
-
-            // 중간 커서 삭제를 위해 HTML에서 setSelection()으로
-            // 맞춘 실제 Android 커서 위치를 그대로 유지합니다.
-            // finishComposingText()를 여기서 호출하면 커서 위치가
-            // 다시 바뀔 수 있으므로 호출하지 않습니다.
             inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        @JavascriptInterface
+        fun deleteTextAtCursor(position: Int) {
+            // JavascriptInterface 메서드는 WebView의 별도 스레드에서 호출될 수 있습니다.
+            // 따라서 커서 이동과 삭제를 Android 메인 스레드에서 한 번에 처리합니다.
+            Handler(Looper.getMainLooper()).post {
+                val inputConnection = currentInputConnection ?: return@post
+                try {
+                    inputConnection.setSelection(position, position)
+                    inputConnection.deleteSurroundingText(1, 0)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
 
         @JavascriptInterface
