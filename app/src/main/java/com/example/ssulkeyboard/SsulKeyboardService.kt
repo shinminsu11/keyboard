@@ -37,7 +37,7 @@ class SsulKeyboardService : InputMethodService() {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             setBackgroundColor(Color.TRANSPARENT)
-            
+
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
             loadUrl("file:///android_asset/keyboard.html")
@@ -79,23 +79,12 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
-            // 기존 일반 삭제: 현재 실제 커서 바로 앞의 한 글자를 삭제
-            inputConnection.deleteSurroundingText(1, 0)
-        }
 
-        @JavascriptInterface
-        fun deleteTextAtCursor(position: Int) {
-            val inputConnection = currentInputConnection ?: return
-            try {
-                // 조합을 먼저 종료한 다음 커서를 지정합니다.
-                // 이렇게 해야 finishComposingText() 때문에 커서가 끝으로 돌아가는 것을 막을 수 있습니다.
-                inputConnection.finishComposingText()
-                inputConnection.setSelection(position, position)
-                inputConnection.deleteSurroundingText(1, 0)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // 중간 커서 삭제를 위해 HTML에서 setSelection()으로
+            // 맞춘 실제 Android 커서 위치를 그대로 유지합니다.
+            // finishComposingText()를 여기서 호출하면 커서 위치가
+            // 다시 바뀔 수 있으므로 호출하지 않습니다.
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
@@ -114,7 +103,7 @@ class SsulKeyboardService : InputMethodService() {
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
-        
+
         window.window?.let { window ->
             window.decorView.let { decorView ->
                 decorView.requestLayout()
