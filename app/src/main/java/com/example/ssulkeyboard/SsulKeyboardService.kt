@@ -89,13 +89,19 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
             
-            val action = currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) 
-                ?: EditorInfo.IME_ACTION_NONE
-                
-            if (action != EditorInfo.IME_ACTION_NONE) {
-                inputConnection.performEditorAction(action)
+            val editorInfo = currentInputEditorInfo
+            val imeOptions = editorInfo?.imeOptions ?: 0
+            val action = imeOptions and EditorInfo.IME_MASK_ACTION
+            val inputType = editorInfo?.inputType ?: 0
+            
+            // 멀티라인 입력창(재미나이 등)이거나 강제 개행 플래그가 있는 경우 줄바꿈 처리하여 자판 유지
+            val isMultiLine = (inputType and EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
+                              (imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
+
+            if (isMultiLine || action == EditorInfo.IME_ACTION_NONE) {
+                inputConnection.commitText("\n", 1)
             } else {
-                inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+                inputConnection.performEditorAction(action)
             }
         }
 
