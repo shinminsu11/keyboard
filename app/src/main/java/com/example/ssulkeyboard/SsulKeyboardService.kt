@@ -3,6 +3,8 @@ package com.example.ssulkeyboard
 import android.content.Intent
 import android.net.Uri
 import android.inputmethodservice.InputMethodService
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -11,12 +13,13 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
 import android.graphics.Color
-import android.os.Handler
-import android.os.Looper
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
@@ -56,47 +59,122 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     inner class KeyboardBridge {
+
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.commitText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.setComposingText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setSelection(start: Int, end: Int) {
-            val inputConnection = currentInputConnection ?: return
-            try {
-                inputConnection.setSelection(start, end)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            runOnMainSync {
+                val inputConnection = currentInputConnection ?: return@runOnMainSync
+                if (text == "\n" || text.contains("\n")) {
+                    inputConnection.sendKeyEvent(
+                        android.view.KeyEvent(
+                            android.view.KeyEvent.ACTION_DOWN,
+                            android.view.KeyEvent.KEYCODE_ENTER
+                        )
+                    )
+                    inputConnection.sendKeyEvent(
+                        android.view.KeyEvent(
+                            android.view.KeyEvent.ACTION_UP,
+                            android.view.KeyEvent.KEYCODE_ENTER
+                        )
+                    )
+                    inputConnection.performEditorAction(EditorInfo.IME_ACTION_UNSPECIFIED)
+                } else {
+                    inputConnection.commitText(text, 1)
+                }
             }
         }
 
         @JavascriptInterface
-        fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.deleteSurroundingText(1, 0)
+        fun setComposing(text: String) {
+            runOnMainSync {
+                val inputConnection = currentInputConnection ?: return@runOnMainSync
+                inputConnection.setComposingText(text, 1)
+            }
+        }
+
+        /**
+         * 중요: WebView JavascriptInterface에서 호출된 뒤 바로 다음 JS가 실행되므로
+         * 단순 Handler.post()만 하면 커서 이동보다 삭제/입력이 먼저 실행될 수 있습니다.
+         * 따라서 메인 스레드에서 처리한 뒤 JS 호출이 끝날 때까지 기다립니다.
+         */
+        @JavascriptInterface
+        fun setSelection(start: Int, end: Int): Boolean {
+            return runOnMainSync {
+                val inputConnection = currentInputConnection ?: return@runOnMainSync false
+                try {
+                    inputConnection.setSelection(start, end)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            } ?: false
         }
 
         @JavascriptInterface
-        fun deleteTextAtCursor(position: Int) {
-            // JavascriptInterface 메서드는 WebView의 별도 스레드에서 호출될 수 있습니다.
-            // 따라서 커서 이동과 삭제를 Android 메인 스레드에서 한 번에 처리합니다.
-            Handler(Looper.getMainLooper()).post {
-                val inputConnection = currentInputConnection ?: return@post
+        fun deleteText() {
+            runOnMainSync {
+                val inputConnection = currentInputConnection ?: return@runOnMainSync
                 try {
-                    inputConnection.setSelection(position, position)
                     inputConnection.deleteSurroundingText(1, 0)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
+        }
+
+        /**
+         * HTML의 커서 위치를 먼저 실제 Android 커서로 옮긴 다음,
+         * 같은 메인 스레드 작업 안에서 바로 앞 글자를 삭제합니다.
+         * setSelection()과 delete() 사이에 다른 작업이 끼어들지 않습니다.
+         */
+        @JavascriptInterface
+        fun deleteTextAtCursor(position: Int): Boolean {
+            return runOnMainSync {
+                val inputConnection = currentInputConnection ?: return@runOnMainSync false
+                try {
+                    val moved = inputConnection.setSelection(position, position)
+
+                    // setSelection을 지원하지 않는 일부 입력창을 대비해
+                    // 현재 커서 위치를 확인합니다.
+                    val before = inputConnection.getTextBeforeCursor(100000, 0)?.toString() ?: ""
+                    val actualPosition = before.length
+
+                    if (moved && actualPosition == position) {
+                        inputConnection.deleteSurroundingText(1, 0)
+                        true
+                    } else {
+                        // 입력창이 setSelection을 제대로 적용하지 못하는 경우
+                        // 현재 커서에서 목표 위치까지 왼쪽으로 이동한 뒤 삭제합니다.
+                        val after = inputConnection.getTextAfterCursor(100000, 0)?.toString() ?: ""
+                        val totalLength = actualPosition + after.length
+                        val moveLeft = totalLength - position
+
+                        if (moveLeft >= 0 && moveLeft <= 100000) {
+                            repeat(moveLeft) {
+                                inputConnection.sendKeyEvent(
+                                    android.view.KeyEvent(
+                                        android.view.KeyEvent.ACTION_DOWN,
+                                        android.view.KeyEvent.KEYCODE_DPAD_LEFT
+                                    )
+                                )
+                                inputConnection.sendKeyEvent(
+                                    android.view.KeyEvent(
+                                        android.view.KeyEvent.ACTION_UP,
+                                        android.view.KeyEvent.KEYCODE_DPAD_LEFT
+                                    )
+                                )
+                            }
+                            inputConnection.deleteSurroundingText(1, 0)
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
+            } ?: false
         }
 
         @JavascriptInterface
@@ -112,9 +190,40 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
+    /**
+     * WebView bridge 호출을 Android 메인 스레드에서 동기적으로 실행합니다.
+     * 이미 메인 스레드라면 바로 실행합니다.
+     */
+    private fun <T> runOnMainSync(block: () -> T): T? {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            return block()
+        }
+
+        var result: T? = null
+        val latch = CountDownLatch(1)
+
+        mainHandler.post {
+            try {
+                result = block()
+            } finally {
+                latch.countDown()
+            }
+        }
+
+        return try {
+            if (latch.await(1000, TimeUnit.MILLISECONDS)) result else null
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            null
+        }
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
+        webView.evaluateJavascript(
+            "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
+            null
+        )
 
         window.window?.let { window ->
             window.decorView.let { decorView ->
