@@ -1339,16 +1339,20 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 검색창 등에서 줄바꿈이 입력되어 아래로 내려가는 현상을 막기 위한 엔터 처리 분기
 document.querySelectorAll('.enter-btn').forEach(btn => {
 btn.addEventListener('click', (e) => {
 e.preventDefault();
 commitCurrent();
-if (window.AndroidBridge && window.AndroidBridge.onEnter) {
-    window.AndroidBridge.onEnter();
-} else if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    // 검색창 등에서는 개행 대신 완료 액션을 유도하거나 빈 문자열 처리
-    window.AndroidBridge.commitText('\n');
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.onEnter) {
+        window.AndroidBridge.onEnter();
+    }
+    if (window.AndroidBridge.performEditorAction) {
+        window.AndroidBridge.performEditorAction("search");
+    }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText('\n');
+    }
 } else {
     appendSpecial('\n');
 }
@@ -1356,10 +1360,16 @@ if (window.AndroidBridge && window.AndroidBridge.onEnter) {
 btn.addEventListener('touchend', (e) => {
 e.preventDefault();
 commitCurrent();
-if (window.AndroidBridge && window.AndroidBridge.onEnter) {
-    window.AndroidBridge.onEnter();
-} else if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText('\n');
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.onEnter) {
+        window.AndroidBridge.onEnter();
+    }
+    if (window.AndroidBridge.performEditorAction) {
+        window.AndroidBridge.performEditorAction("search");
+    }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText('\n');
+    }
 } else {
     appendSpecial('\n');
 }
