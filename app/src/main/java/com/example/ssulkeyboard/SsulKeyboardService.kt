@@ -69,13 +69,18 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.setSelection(start, end)
+            try {
+                inputConnection.setSelection(start, end)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
+            // 주변 텍스트 삭제 시 현재 커서 기준으로 앞 글자 하나를 정확히 삭제
             inputConnection.deleteSurroundingText(1, 0)
         }
 
@@ -94,7 +99,6 @@ class SsulKeyboardService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        // 새창이나 포커스가 새로 잡힐 때 웹뷰의 입력 버퍼를 초기화하도록 신호 전달
         webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
         
         window.window?.let { window ->
