@@ -93,7 +93,6 @@ class SsulKeyboardService : InputMethodService() {
             val action = imeOptions and EditorInfo.IME_MASK_ACTION
             val inputType = editorInfo?.inputType ?: 0
             
-            // 멀티라인 입력창(재미나이 등)이거나 액션이 없는 경우 2칸 중복 개행을 막기 위해 단일 줄바꿈 적용 및 자판 유지
             val isMultiLine = (inputType and EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
                               (imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
 
