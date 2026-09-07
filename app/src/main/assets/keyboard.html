@@ -1203,20 +1203,23 @@ function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
         let chars = Array.from(committedText);
-        // 삭제 전 현재 커서 위치를 네이티브 커서에 먼저 정확히 동기화
-        let utf16IdxBefore = getUtf16Index(chars, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(utf16IdxBefore, utf16IdxBefore);
-        }
 
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
+        // 삭제하기 전의 커서 위치를 UTF-16 기준으로 계산합니다.
+        let utf16IdxBefore = getUtf16Index(chars, cursorPos);
 
         cursorPos--;
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
-        
+
+        // 조합 종료 후 실제 Android 커서를 삭제 전 위치로 맞춘 뒤 삭제합니다.
+        if (window.AndroidBridge && window.AndroidBridge.deleteTextAtCursor) {
+            window.AndroidBridge.deleteTextAtCursor(utf16IdxBefore);
+        } else if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
+            window.AndroidBridge.setSelection(utf16IdxBefore, utf16IdxBefore);
+            window.AndroidBridge.deleteText();
+        }
+
+        // 삭제 후 실제 Android 커서를 HTML 커서 위치와 다시 맞춥니다.
         let utf16IdxAfter = getUtf16Index(chars, cursorPos);
         if (window.AndroidBridge && window.AndroidBridge.setSelection) {
             window.AndroidBridge.setSelection(utf16IdxAfter, utf16IdxAfter);
