@@ -132,44 +132,54 @@ class SsulKeyboardService : InputMethodService() {
             return runOnMainSync {
                 val inputConnection = currentInputConnection ?: return@runOnMainSync false
                 try {
-                    val moved = inputConnection.setSelection(position, position)
+                    // 이 버전에서는 setSelection()에 의존하지 않습니다.
+                    // 현재 입력창의 실제 텍스트를 읽고, 커서를 끝으로 보낸 뒤
+                    // 목표 위치까지 DPAD_LEFT로 직접 이동해서 삭제합니다.
+                    inputConnection.finishComposingText()
 
-                    // setSelection을 지원하지 않는 일부 입력창을 대비해
-                    // 현재 커서 위치를 확인합니다.
                     val before = inputConnection.getTextBeforeCursor(100000, 0)?.toString() ?: ""
-                    val actualPosition = before.length
+                    val after = inputConnection.getTextAfterCursor(100000, 0)?.toString() ?: ""
+                    val fullText = before + after
 
-                    if (moved && actualPosition == position) {
-                        inputConnection.deleteSurroundingText(1, 0)
-                        true
-                    } else {
-                        // 입력창이 setSelection을 제대로 적용하지 못하는 경우
-                        // 현재 커서에서 목표 위치까지 왼쪽으로 이동한 뒤 삭제합니다.
-                        val after = inputConnection.getTextAfterCursor(100000, 0)?.toString() ?: ""
-                        val totalLength = actualPosition + after.length
-                        val moveLeft = totalLength - position
+                    if (position <= 0 || position > fullText.length) return@runOnMainSync false
 
-                        if (moveLeft >= 0 && moveLeft <= 100000) {
-                            repeat(moveLeft) {
-                                inputConnection.sendKeyEvent(
-                                    android.view.KeyEvent(
-                                        android.view.KeyEvent.ACTION_DOWN,
-                                        android.view.KeyEvent.KEYCODE_DPAD_LEFT
-                                    )
-                                )
-                                inputConnection.sendKeyEvent(
-                                    android.view.KeyEvent(
-                                        android.view.KeyEvent.ACTION_UP,
-                                        android.view.KeyEvent.KEYCODE_DPAD_LEFT
-                                    )
-                                )
-                            }
-                            inputConnection.deleteSurroundingText(1, 0)
-                            true
-                        } else {
-                            false
-                        }
+                    val safePosition = position.coerceAtMost(fullText.length)
+                    val rightText = fullText.substring(safePosition)
+                    val moveLeftCount = rightText.codePointCount(0, rightText.length)
+
+                    // 먼저 실제 입력 커서를 문장 끝으로 확실히 이동합니다.
+                    inputConnection.sendKeyEvent(
+                        android.view.KeyEvent(
+                            android.view.KeyEvent.ACTION_DOWN,
+                            android.view.KeyEvent.KEYCODE_MOVE_END
+                        )
+                    )
+                    inputConnection.sendKeyEvent(
+                        android.view.KeyEvent(
+                            android.view.KeyEvent.ACTION_UP,
+                            android.view.KeyEvent.KEYCODE_MOVE_END
+                        )
+                    )
+
+                    // 목표 위치까지 왼쪽으로 이동합니다.
+                    repeat(moveLeftCount) {
+                        inputConnection.sendKeyEvent(
+                            android.view.KeyEvent(
+                                android.view.KeyEvent.ACTION_DOWN,
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT
+                            )
+                        )
+                        inputConnection.sendKeyEvent(
+                            android.view.KeyEvent(
+                                android.view.KeyEvent.ACTION_UP,
+                                android.view.KeyEvent.KEYCODE_DPAD_LEFT
+                            )
+                        )
                     }
+
+                    // 이제 실제 Android 커서 바로 앞의 문자 1개를 삭제합니다.
+                    inputConnection.deleteSurroundingText(1, 0)
+                    true
                 } catch (e: Exception) {
                     e.printStackTrace()
                     false
