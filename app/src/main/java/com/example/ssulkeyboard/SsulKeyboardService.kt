@@ -85,6 +85,21 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
+        fun onEnter() {
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            
+            val action = currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) 
+                ?: EditorInfo.IME_ACTION_NONE
+                
+            if (action != EditorInfo.IME_ACTION_NONE) {
+                inputConnection.performEditorAction(action)
+            } else {
+                inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+            }
+        }
+
+        @JavascriptInterface
         fun openUrl(url: String) {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
