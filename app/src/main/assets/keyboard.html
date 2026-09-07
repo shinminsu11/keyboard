@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.95 - 절대 커서 동기화</title>
+<title>쓸기자판 v8.96 - 클로드 진단 반영 클린 버전</title>
 <style>
 * {
 box-sizing: border-box;
@@ -932,6 +932,7 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
+// 새창 진입 시 초기화 함수
 function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
@@ -1080,15 +1081,6 @@ function getUtf16Index(arr, glyphIndex) {
     return subStr.length;
 }
 
-// [핵심] 어떤 액션이든 실행하기 직전 안드로이드 네이티브 커서를 현재 cursorPos 위치로 완벽히 강제 동기화
-function forceSyncNativeCursor() {
-    let chars = Array.from(committedText);
-    let utf16Idx = getUtf16Index(chars, cursorPos);
-    if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-        window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-    }
-}
-
 function updateScreen() {
 let currentAssembled = assembleCurrent();
 let chars = Array.from(committedText);
@@ -1121,19 +1113,17 @@ if (cho === -1 && jung !== -1 && jong === -1) return JUNGSUNG[jung];
 return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 }
 
+// [클로드 분석 반영] 입력/확정 시에는 setSelection을 날리지 않고 시스템 자동 커서 이동에 맡김
 function commitCurrent() {
 let current = assembleCurrent();
 if (current) {
-forceSyncNativeCursor(); // 글자 확정 전 위치 강제 동기화
 let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
-
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
-forceSyncNativeCursor(); // 확정 후 위치 재동기화
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 }
@@ -1141,7 +1131,6 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 
 function appendHangul(inputChar) {
-forceSyncNativeCursor(); // 한글 입력 직전 절대 커서 동기화
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 if (choIdx !== -1 && jungIdx === -1) {
@@ -1196,7 +1185,6 @@ updateScreen();
 }
 
 function replaceLastVowel(newVowel) {
-forceSyncNativeCursor();
 if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
 hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
 updateScreen();
@@ -1209,23 +1197,17 @@ appendHangul(newVowel);
 }
 }
 
+// [클로드 분석 반영] 삭제 시에도 setSelection 호출 제거 (시스템이 삭제 및 커서 이동을 담당)
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
     if (cursorPos > 0) {
-        // [핵심] 삭제 실행 직전 무조건 안드로이드 네이티브 커서를 현재 cursorPos로 강제 일치시킴
-        forceSyncNativeCursor();
-
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
-
         cursorPos--;
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
-        
-        // 삭제 후 위치 재동기화
-        forceSyncNativeCursor();
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
@@ -1236,6 +1218,7 @@ lastSlideDir = '';
 updateScreen();
 }
 
+// [핵심] 오직 사용자가 화면을 직접 터치해서 커서를 옮길 때만 setSelection 호출 허용
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
@@ -1243,7 +1226,6 @@ let chars = Array.from(fullText);
 if (chars.length === 0) {
 cursorPos = 0;
 updateScreen();
-forceSyncNativeCursor();
 return;
 }
 
@@ -1269,8 +1251,11 @@ document.body.removeChild(tempSpan);
 
 cursorPos = closestIndex;
 updateScreen();
-// [핵심] 손으로 톡 찍은 그 자리를 네이티브 커서 위치로 절대 고정
-forceSyncNativeCursor();
+
+let utf16Idx = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+}
 });
 
 let bsTimer = null;
@@ -1300,7 +1285,9 @@ hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
 cursorPos = 0;
 updateScreen();
-forceSyncNativeCursor();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
 return;
 }
 }
@@ -1317,9 +1304,7 @@ bsTimer = null;
 function appendSpecial(char) {
 if (!char) return;
 commitCurrent();
-// 특수문자 입력 직전 절대 동기화
-forceSyncNativeCursor();
-
+lastSlideDir = '';
 let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
@@ -1329,7 +1314,6 @@ updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
-forceSyncNativeCursor();
 }
 
 document.querySelectorAll('.space-key-common, div.eng-key:not([data-char]), .sym-key').forEach(btn => {
@@ -1876,8 +1860,7 @@ openEmojiModal();
 }
 function selectEmoji(emoji) {
 commitCurrent();
-forceSyncNativeCursor();
-
+lastSlideDir = '';
 let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, emoji);
 committedText = chars.join('');
@@ -1888,7 +1871,6 @@ closeEmojiModal();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(emoji);
 }
-forceSyncNativeCursor();
 }
 
 const DEFAULT_HANJA_DICT = {
@@ -1960,12 +1942,10 @@ openHanjaModal();
 }
 function replaceLastCharWithHanja(hanjaChar) {
 if (cursorPos > 0) {
-forceSyncNativeCursor();
 let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
-
 if (window.AndroidBridge) {
     if (window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
@@ -1973,7 +1953,6 @@ if (window.AndroidBridge) {
     if (window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(hanjaChar);
     }
-    forceSyncNativeCursor();
 }
 }
 }
@@ -2020,6 +1999,7 @@ else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 
 else switchToBoard('symbolBoard1');
 });
 
+// [좌우 커서 이동 제어] 설정 버튼 스와이프를 통한 커서 이동 시에만 setSelection 허용
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { 
     sX = e.touches[0].clientX; 
@@ -2035,7 +2015,11 @@ settingBtn.addEventListener('touchend', (e) => {
         commitCurrent(); 
         if (cursorPos > 0) cursorPos--; 
         updateScreen(); 
-        forceSyncNativeCursor();
+        let chars = Array.from(committedText);
+        let utf16Idx = getUtf16Index(chars, cursorPos);
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+        }
         return;
     }
     if (dx > 15 && Math.abs(dx) > Math.abs(dy)) {
@@ -2043,7 +2027,11 @@ settingBtn.addEventListener('touchend', (e) => {
         let chars = Array.from(committedText);
         if (cursorPos < chars.length) cursorPos++; 
         updateScreen(); 
-        forceSyncNativeCursor();
+        let charsList = Array.from(committedText);
+        let utf16Idx = getUtf16Index(charsList, cursorPos);
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+        }
         return;
     }
     if (dy > 20 && Math.abs(dy) > Math.abs(dx)) {
@@ -2096,11 +2084,7 @@ el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
-if (!val) { 
-    e.preventDefault(); 
-    showToast("길게 누르세요"); 
-    return; 
-}
+if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
 if (type === 'url') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
@@ -2120,8 +2104,6 @@ return;
 }
 if (type === 'snippet' && val) { 
     commitCurrent();
-    forceSyncNativeCursor();
-
     let textVal = (typeof val === 'object' && val.title) ? val.title : val;
     let chars = Array.from(committedText);
     chars.splice(cursorPos, 0, textVal);
@@ -2132,7 +2114,6 @@ if (type === 'snippet' && val) {
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(textVal);
     }
-    forceSyncNativeCursor();
     return; 
 }
 });
@@ -2150,8 +2131,6 @@ try {
 let res = eval(document.getElementById('calcScreen').value);
 document.getElementById('calcScreen').value = res;
 commitCurrent();
-forceSyncNativeCursor();
-
 let resStr = String(res);
 let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, resStr);
@@ -2162,7 +2141,6 @@ updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
 }
-forceSyncNativeCursor();
 } catch(e) { document.getElementById('calcScreen').value = '오류'; }
 }
 document.getElementById('weatherBtn').addEventListener('click', () => {
