@@ -1116,6 +1116,14 @@ function commitCurrent() {
 let current = assembleCurrent();
 if (current) {
 let chars = Array.from(committedText);
+
+// HTML 커서 위치를 실제 Android 입력 커서에 먼저 동기화합니다.
+// 이 호출은 Kotlin에서 동기적으로 끝난 뒤 다음 줄로 넘어갑니다.
+let utf16Before = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Before, utf16Before);
+}
+
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
@@ -1203,12 +1211,13 @@ function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
         let chars = Array.from(committedText);
-        // AndroidBridge 호출을 따로 하지 않고, 네이티브에서
-        // "커서 이동 + 앞 글자 삭제"를 한 번에 처리합니다.
         let utf16IdxBefore = getUtf16Index(chars, cursorPos);
+
+        // 커서 이동과 삭제를 Kotlin에서 한 번의 동기 작업으로 처리합니다.
         if (window.AndroidBridge && window.AndroidBridge.deleteTextAtCursor) {
             window.AndroidBridge.deleteTextAtCursor(utf16IdxBefore);
-        } else if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        } else if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
+            window.AndroidBridge.setSelection(utf16IdxBefore, utf16IdxBefore);
             window.AndroidBridge.deleteText();
         }
 
@@ -1261,12 +1270,14 @@ break;
 document.body.removeChild(tempSpan);
 
 cursorPos = closestIndex;
-updateScreen();
 
 let utf16Idx = getUtf16Index(chars, cursorPos);
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
     window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
 }
+
+// 실제 Android 커서가 동기화된 뒤 화면의 composing 상태를 갱신합니다.
+updateScreen();
 });
 
 let bsTimer = null;
@@ -2259,4 +2270,3 @@ updateScreen();
 </script>
 </body>
 </html>
-
