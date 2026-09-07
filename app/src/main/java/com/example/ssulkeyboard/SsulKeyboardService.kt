@@ -80,7 +80,7 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            // 강제로 지정된 커서 위치 기준 바로 앞 글자 단일 삭제
+            // 주변 텍스트 삭제 시 현재 커서 기준으로 앞 글자 하나를 정확히 삭제
             inputConnection.deleteSurroundingText(1, 0)
         }
 
