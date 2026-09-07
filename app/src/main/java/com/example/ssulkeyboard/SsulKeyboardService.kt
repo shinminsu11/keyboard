@@ -80,8 +80,22 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            // 주변 텍스트 삭제 시 현재 커서 기준으로 앞 글자 하나를 정확히 삭제
+            // 기존 일반 삭제: 현재 실제 커서 바로 앞의 한 글자를 삭제
             inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        @JavascriptInterface
+        fun deleteTextAtCursor(position: Int) {
+            val inputConnection = currentInputConnection ?: return
+            try {
+                // 조합을 먼저 종료한 다음 커서를 지정합니다.
+                // 이렇게 해야 finishComposingText() 때문에 커서가 끝으로 돌아가는 것을 막을 수 있습니다.
+                inputConnection.finishComposingText()
+                inputConnection.setSelection(position, position)
+                inputConnection.deleteSurroundingText(1, 0)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
         @JavascriptInterface
