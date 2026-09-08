@@ -80,8 +80,18 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            // ⭐️ 클로드의 분석대로 중복 계산을 없애고 1유닛씩 안전하게 지우도록 단순화
-            inputConnection.deleteSurroundingText(1, 0)
+            
+            val textBefore = inputConnection.getTextBeforeCursor(2, 0)
+            if (!textBefore.isNullOrEmpty() && textBefore.length >= 1) {
+                val lastChar = textBefore.last()
+                if (Character.isSurrogate(lastChar) || textBefore.length > 1) {
+                    inputConnection.deleteSurroundingText(2, 0)
+                } else {
+                    inputConnection.deleteSurroundingText(1, 0)
+                }
+            } else {
+                inputConnection.deleteSurroundingText(1, 0)
+            }
         }
 
         @JavascriptInterface
