@@ -1188,15 +1188,24 @@ appendHangul(newVowel);
 }
 }
 
+// ⭐️ [이모티콘 뒤 백스페이스 깨짐 완벽 해결 포인트] ⭐️
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-    }
     if (cursorPos > 0) {
-        cursorPos--;
+        let subStr = committedText.substring(0, cursorPos);
+        let codePoints = Array.from(subStr);
+        let lastChar = codePoints[codePoints.length - 1]; // 커서 앞의 온전한 글자 (이모지 포함)
+        let lastCharLen = lastChar.length; // 메모리 상 길이 (일반 글자 1, 이모지 2 이상)
+
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            for (let i = 0; i < lastCharLen; i++) {
+                window.AndroidBridge.deleteText();
+            }
+        }
+
+        cursorPos -= lastCharLen;
         let chars = Array.from(committedText);
-        chars.splice(cursorPos, 1);
+        chars.splice(cursorPos, lastCharLen);
         committedText = chars.join('');
     }
 } else {
@@ -1932,15 +1941,13 @@ showToast("추가되었습니다");
 openHanjaModal();
 }
 
-// ⭐️ [이모티콘 한자 깨짐 완벽 해결 포인트] ⭐️
 function replaceLastCharWithHanja(hanjaChar) {
     if (cursorPos > 0) {
         let subStr = committedText.substring(0, cursorPos);
         let codePoints = Array.from(subStr);
-        let lastChar = codePoints[codePoints.length - 1]; // 커서 앞의 실제 글자 (이모지 포함)
-        let lastCharLen = lastChar.length; // 메모리 상 길이 (일반글자 1, 이모지 2 이상)
+        let lastChar = codePoints[codePoints.length - 1];
+        let lastCharLen = lastChar.length;
 
-        // 안드로이드 네이티브 측에서도 이모지 크기만큼 정확히 지우도록 반복 호출
         if (window.AndroidBridge && window.AndroidBridge.deleteText) {
             for (let i = 0; i < lastCharLen; i++) {
                 window.AndroidBridge.deleteText();
