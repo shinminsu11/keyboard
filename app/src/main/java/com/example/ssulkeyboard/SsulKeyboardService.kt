@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.webkit.JavascriptInterface
-import android.webkit.WebView
+importandroid.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
 import android.graphics.Color
@@ -80,14 +80,13 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            // 주변 텍스트 삭제 시 현재 커서 기준으로 앞 글자 하나를 정확히 삭제
             inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-            // 엔터 입력 시 검색(또는 액션) 수행
+            // 엔터 입력 시 검색 액션 수행
             inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         }
 
