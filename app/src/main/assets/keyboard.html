@@ -653,7 +653,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1146,6 +1146,7 @@ if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong !==
 let jongChar = JONGSUNG[hangulBuffer.jong];
 let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
 let remainingJong = '';
+let partsKey = '';
 for (let key in CONSONANT_COMBINE) {
 if (CONSONANT_COMBINE[key] === jongChar) {
 let parts = key.split('+');
@@ -1188,7 +1189,6 @@ appendHangul(newVowel);
 }
 }
 
-// ⭐️ [도전 버전] 백스페이스 함수 적용
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
@@ -1197,6 +1197,7 @@ if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong ===
         let lastChar = codePoints[codePoints.length - 1];
         let lastCharLen = lastChar.length;
 
+        // ⭐️ 클로드의 분석 반영: 자바스크립트가 지울 글자의 유닛 수만큼 deleteText 호출
         if (window.AndroidBridge && window.AndroidBridge.deleteText) {
             for (let i = 0; i < lastCharLen; i++) {
                 window.AndroidBridge.deleteText();
@@ -1278,6 +1279,7 @@ bsTimer = null;
 }
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
+// ⭐️ 왼쪽으로 30픽셀 이상 밀면 전체 삭제
 if (endX - bsStartX < -30) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
@@ -1286,6 +1288,7 @@ updateScreen();
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
     window.AndroidBridge.setSelection(0, 0);
 }
+showToast("전체 삭제되었습니다");
 return;
 }
 }
