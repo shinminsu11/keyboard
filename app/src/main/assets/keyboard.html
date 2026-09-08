@@ -265,22 +265,24 @@ align-items: center;
 justify-content: center;
 }
 
+/* 자판 내부 위치로 수정된 토스트 메시지 */
 #toastMessage {
-position: fixed;
-bottom: 250px;
+position: absolute;
+bottom: 60px;
 left: 50%;
 transform: translateX(-50%);
-background: rgba(30, 34, 39, 0.95);
+background: rgba(30, 34, 39, 0.9);
 color: #ffffff;
-padding: 10px 20px;
-border-radius: 20px;
-font-size: 14px;
+padding: 6px 14px;
+border-radius: 16px;
+font-size: 13px;
 font-weight: bold;
-box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 z-index: 1000;
 pointer-events: none;
 opacity: 0;
 transition: opacity 0.3s ease;
+white-space: nowrap;
 }
 #toastMessage.show {
 opacity: 1;
@@ -459,8 +461,6 @@ background: #e2e8f0;
   <div class="screen-text-wrap" id="screenTextWrap"></div>
 </div>
 
-<div id="toastMessage">길게 누르세요</div>
-
 <div id="customConfirmModal" class="modal-overlay" style="z-index: 2000;">
 <div class="modal-box" style="max-width:300px; text-align:center;">
 <div class="modal-header" style="justify-content:center; margin-bottom:12px;">
@@ -475,6 +475,9 @@ background: #e2e8f0;
 </div>
 
 <div class="keyboard-container">
+<!-- 자판 내부 토스트 엘리먼트 -->
+<div id="toastMessage">길게 누르세요</div>
+
 <!-- 메인 자판 -->
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
@@ -1339,13 +1342,13 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 엔터 버튼 중복 개행(2칸 이동) 방지 및 네이티브 단독 호출 구조
+// 엔터 버튼 클릭 시 개행 대신 네이티브 검색(performSearch) 호출
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
-        if (window.AndroidBridge && window.AndroidBridge.onEnter) {
-            window.AndroidBridge.onEnter();
+        if (window.AndroidBridge && window.AndroidBridge.performSearch) {
+            window.AndroidBridge.performSearch();
         } else {
             appendSpecial('\n');
         }
