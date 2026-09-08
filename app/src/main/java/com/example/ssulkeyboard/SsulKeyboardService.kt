@@ -80,25 +80,13 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            
-            // 커서 앞의 텍스트를 읽어와 이모티콘(서러그게이트 페어) 여부에 따라 안전하게 삭제
-            val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-            if (!textBefore.isNullOrEmpty() && textBefore.length >= 1) {
-                val lastChar = textBefore.last()
-                if (Character.isSurrogate(lastChar) || textBefore.length > 1) {
-                    inputConnection.deleteSurroundingText(2, 0)
-                } else {
-                    inputConnection.deleteSurroundingText(1, 0)
-                }
-            } else {
-                inputConnection.deleteSurroundingText(1, 0)
-            }
+            // ⭐️ 클로드의 분석대로 중복 계산을 없애고 1유닛씩 안전하게 지우도록 단순화
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-            // 엔터 입력 시 검색 액션 수행
             inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         }
 
