@@ -1188,14 +1188,14 @@ appendHangul(newVowel);
 }
 }
 
-// ⭐️ [이모티콘 뒤 백스페이스 깨짐 완벽 해결 포인트] ⭐️
+// ⭐️ [도전 버전] 백스페이스 함수 적용
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
         let subStr = committedText.substring(0, cursorPos);
         let codePoints = Array.from(subStr);
-        let lastChar = codePoints[codePoints.length - 1]; // 커서 앞의 온전한 글자 (이모지 포함)
-        let lastCharLen = lastChar.length; // 메모리 상 길이 (일반 글자 1, 이모지 2 이상)
+        let lastChar = codePoints[codePoints.length - 1];
+        let lastCharLen = lastChar.length;
 
         if (window.AndroidBridge && window.AndroidBridge.deleteText) {
             for (let i = 0; i < lastCharLen; i++) {
