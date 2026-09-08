@@ -54,8 +54,6 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     inner class KeyboardBridge {
-        private var lastEnterTime = 0L
-
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
@@ -82,34 +80,15 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
+            // 주변 텍스트 삭제 시 현재 커서 기준으로 앞 글자 하나를 정확히 삭제
             inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
-        fun onEnter() {
-            // touchend와 click 중복 발생으로 인한 2칸 이동(더블 탭)을 막기 위한 300ms 디바운스 처리
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastEnterTime < 300) {
-                return
-            }
-            lastEnterTime = currentTime
-
+        fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
-            
-            val editorInfo = currentInputEditorInfo
-            val imeOptions = editorInfo?.imeOptions ?: 0
-            val action = imeOptions and EditorInfo.IME_MASK_ACTION
-            val inputType = editorInfo?.inputType ?: 0
-            
-            val isMultiLine = (inputType and EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
-                              (imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
-
-            if (isMultiLine || action == EditorInfo.IME_ACTION_NONE) {
-                inputConnection.commitText("\n", 1)
-            } else {
-                inputConnection.performEditorAction(action)
-            }
+            // 엔터 입력 시 검색(또는 액션) 수행
+            inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         }
 
         @JavascriptInterface
