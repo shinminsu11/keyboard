@@ -1339,41 +1339,20 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
+// 엔터 버튼 중복 개행(2칸 이동) 방지 및 네이티브 단독 호출 구조
 document.querySelectorAll('.enter-btn').forEach(btn => {
-btn.addEventListener('click', (e) => {
-e.preventDefault();
-commitCurrent();
-if (window.AndroidBridge) {
-    if (window.AndroidBridge.onEnter) {
-        window.AndroidBridge.onEnter();
-    }
-    if (window.AndroidBridge.performEditorAction) {
-        window.AndroidBridge.performEditorAction("search");
-    }
-    if (window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText('\n');
-    }
-} else {
-    appendSpecial('\n');
-}
-});
-btn.addEventListener('touchend', (e) => {
-e.preventDefault();
-commitCurrent();
-if (window.AndroidBridge) {
-    if (window.AndroidBridge.onEnter) {
-        window.AndroidBridge.onEnter();
-    }
-    if (window.AndroidBridge.performEditorAction) {
-        window.AndroidBridge.performEditorAction("search");
-    }
-    if (window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText('\n');
-    }
-} else {
-    appendSpecial('\n');
-}
-});
+    const handleEnter = (e) => {
+        e.preventDefault();
+        commitCurrent();
+        if (window.AndroidBridge && window.AndroidBridge.onEnter) {
+            window.AndroidBridge.onEnter();
+        } else {
+            appendSpecial('\n');
+        }
+    };
+
+    btn.addEventListener('click', handleEnter);
+    btn.addEventListener('touchend', handleEnter);
 });
 
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
