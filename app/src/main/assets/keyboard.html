@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.20</title>
+<title>쓸기자판 v9.21</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1146,7 +1146,6 @@ if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong !==
 let jongChar = JONGSUNG[hangulBuffer.jong];
 let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
 let remainingJong = '';
-let partsKey = '';
 for (let key in CONSONANT_COMBINE) {
 if (CONSONANT_COMBINE[key] === jongChar) {
 let parts = key.split('+');
@@ -1197,7 +1196,6 @@ if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong ===
         let lastChar = codePoints[codePoints.length - 1];
         let lastCharLen = lastChar.length;
 
-        // ⭐️ 클로드의 분석 반영: 자바스크립트가 지울 글자의 유닛 수만큼 deleteText 호출
         if (window.AndroidBridge && window.AndroidBridge.deleteText) {
             for (let i = 0; i < lastCharLen; i++) {
                 window.AndroidBridge.deleteText();
@@ -1218,6 +1216,7 @@ lastSlideDir = '';
 updateScreen();
 }
 
+// ⭐️ [커서 인식 보정 버전] 클릭 시 스크롤 오프셋과 패딩을 반영하여 정확한 인덱스 계산
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
@@ -1229,11 +1228,14 @@ return;
 }
 
 let rect = screenTextWrap.getBoundingClientRect();
-let clickX = e.clientX - rect.left;
+// 스크롤된 거리(scrollLeft)와 패딩 위치를 고려한 상대  클릭 X 좌표 계산
+let clickX = e.clientX - rect.left + screenDiv.scrollLeft;
 
 let closestIndex = chars.length;
 let tempSpan = document.createElement('span');
-tempSpan.style.font = window.getComputedStyle(screenDiv).font;
+let computedStyle = window.getComputedStyle(screenDiv);
+tempSpan.style.font = computedStyle.font;
+tempSpan.style.letterSpacing = computedStyle.letterSpacing;
 tempSpan.style.visibility = 'hidden';
 tempSpan.style.position = 'absolute';
 document.body.appendChild(tempSpan);
@@ -1276,21 +1278,6 @@ bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
-}
-if (e.changedTouches && e.changedTouches.length > 0) {
-let endX = e.changedTouches[0].clientX;
-// ⭐️ 왼쪽으로 30픽셀 이상 밀면 전체 삭제
-if (endX - bsStartX < -30) {
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-committedText = '';
-cursorPos = 0;
-updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(0, 0);
-}
-showToast("전체 삭제되었습니다");
-return;
-}
 }
 });
 
