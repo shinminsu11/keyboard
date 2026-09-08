@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.99</title>
+<title>쓸기자판 v9.20</title>
 <style>
 * {
 box-sizing: border-box;
@@ -265,7 +265,6 @@ align-items: center;
 justify-content: center;
 }
 
-/* 자판 내부 위치로 수정된 토스트 메시지 */
 #toastMessage {
 position: absolute;
 bottom: 60px;
@@ -420,7 +419,6 @@ touch-action: manipulation;
 background: #e2e8f0;
 }
 
-/* 영문판 좌우 대칭 구도 */
 #alphaBoard .grid-eng-container {
   grid-template-columns: repeat(20, minmax(0, 1fr));
 }
@@ -475,10 +473,8 @@ background: #e2e8f0;
 </div>
 
 <div class="keyboard-container">
-<!-- 자판 내부 토스트 엘리먼트 -->
 <div id="toastMessage">길게 누르세요</div>
 
-<!-- 메인 자판 -->
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
 <div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
@@ -558,7 +554,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 영문판 -->
 <div id="alphaBoard" class="keyboard-frame">
 <div class="grid-eng-container">
 <div class="eng-key" onclick="appendSpecial('1')">1</div>
@@ -589,7 +584,7 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<div class="eng-key eng-long" data-char="l" data-long)"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
@@ -612,7 +607,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -666,7 +660,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 2 -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -720,7 +713,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 쌍둥이판 -->
 <div id="twinBoard" class="keyboard-frame">
 <div class="grid-container">
 <div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
@@ -763,7 +755,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 모달 창들 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -798,7 +789,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 계산기 모달 -->
 <div id="calcModal" class="modal-overlay">
 <div class="modal-box" style="max-width:270px; padding:10px;">
 <div class="modal-header" style="margin-bottom:6px; font-size:15px;">
@@ -935,7 +925,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-// 새창 진입 시 초기화 함수
 function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
@@ -1342,21 +1331,15 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 엔터 버튼 클릭 시 줄바꿈(개행)과 검색(performSearch) 기능이 동시 수행되도록 수정
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
-        
-        // 1단계: 텍스트 개행(칸 바뀜) 반영
         appendSpecial('\n');
-
-        // 2단계: 안드로이드 네이티브 검색 트리거 동시 수행
         if (window.AndroidBridge && window.AndroidBridge.performSearch) {
             window.AndroidBridge.performSearch();
         }
     };
-
     btn.addEventListener('click', handleEnter);
     btn.addEventListener('touchend', handleEnter);
 });
@@ -1948,21 +1931,32 @@ closeAddHanjaModal();
 showToast("추가되었습니다");
 openHanjaModal();
 }
+
+// ⭐️ [이모티콘 한자 깨짐 완벽 해결 포인트] ⭐️
 function replaceLastCharWithHanja(hanjaChar) {
-if (cursorPos > 0) {
-let chars = Array.from(committedText);
-chars[cursorPos - 1] = hanjaChar;
-committedText = chars.join('');
-updateScreen();
-if (window.AndroidBridge) {
-    if (window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+    if (cursorPos > 0) {
+        let subStr = committedText.substring(0, cursorPos);
+        let codePoints = Array.from(subStr);
+        let lastChar = codePoints[codePoints.length - 1]; // 커서 앞의 실제 글자 (이모지 포함)
+        let lastCharLen = lastChar.length; // 메모리 상 길이 (일반글자 1, 이모지 2 이상)
+
+        // 안드로이드 네이티브 측에서도 이모지 크기만큼 정확히 지우도록 반복 호출
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            for (let i = 0; i < lastCharLen; i++) {
+                window.AndroidBridge.deleteText();
+            }
+        }
+
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos - lastCharLen, lastCharLen, hanjaChar);
+        committedText = chars.join('');
+        cursorPos = cursorPos - lastCharLen + hanjaChar.length;
+        updateScreen();
+
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(hanjaChar);
+        }
     }
-    if (window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText(hanjaChar);
-    }
-}
-}
 }
 
 clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
