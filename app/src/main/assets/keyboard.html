@@ -1342,15 +1342,18 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 엔터 버튼 클릭 시 개행 대신 네이티브 검색(performSearch) 호출
+// 엔터 버튼 클릭 시 줄바꿈(개행)과 검색(performSearch) 기능이 동시 수행되도록 수정
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
+        
+        // 1단계: 텍스트 개행(칸 바뀜) 반영
+        appendSpecial('\n');
+
+        // 2단계: 안드로이드 네이티브 검색 트리거 동시 수행
         if (window.AndroidBridge && window.AndroidBridge.performSearch) {
             window.AndroidBridge.performSearch();
-        } else {
-            appendSpecial('\n');
         }
     };
 
