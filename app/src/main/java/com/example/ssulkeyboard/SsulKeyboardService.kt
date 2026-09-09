@@ -93,7 +93,7 @@ class SsulKeyboardService : InputMethodService() {
         fun openUrl(url: String) {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.ACTION_ACTIVITY_NEW_TASK)
                 }
                 startActivity(intent)
             } catch (e: Exception) {
