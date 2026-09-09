@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.25 최적화</title>
+<title>쓸기자판 v9.26 최적화</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1185,26 +1185,83 @@ appendHangul(newVowel);
 }
 }
 
+// 백스페이스 초/중/종성 역순 삭제 및 기조합 텍스트 처리 로직
 function backspaceHangul() {
-if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+if (hangulBuffer.jong !== -1) {
+    let jongChar = JONGSUNG[hangulBuffer.jong];
+    let splitList = Object.entries(CONSONANT_COMBINE).find(([k, v]) => v === jongChar);
+    if (splitList) {
+        let parts = splitList[0].split('+');
+        hangulBuffer.jong = getJongIndex(parts[0]);
+    } else {
+        hangulBuffer.jong = -1;
     }
-    if (cursorPos > 0) {
-        cursorPos--;
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, 1);
-        committedText = chars.join('');
+} else if (hangulBuffer.jung !== -1) {
+    let jungChar = JUNGSUNG[hangulBuffer.jung];
+    let splitVowel = Object.entries(VOWEL_COMBINE).find(([k, v]) => v === jungChar);
+    if (splitVowel) {
+        let parts = splitVowel[0].split('+');
+        hangulBuffer.jung = JUNGSUNG.indexOf(parts[0]);
+    } else {
+        hangulBuffer.jung = -1;
     }
+} else if (hangulBuffer.cho !== -1) {
+    hangulBuffer.cho = -1;
 } else {
-if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
-else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
-else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
+    // 버퍼가 비어있을 때는 커서 위치 앞의 이미 확정된 텍스트(초/중/종성 분해 삭제 지원)를 삭제
+    if (cursorPos > 0) {
+        let chars = Array.from(committedText);
+        let targetChar = chars[cursorPos - 1];
+        let code = targetChar.charCodeAt(0);
+
+        // 한글 완성형 글자인 경우 초/중/종성 단위로 분해해서 역순 삭제
+        if (code >= 0xAC00 && code <= 0xD7A3) {
+            let base = code - 0xAC00;
+            let choIdx = Math.floor(base / (21 * 28));
+            let jungIdx = Math.floor((base % (21 * 28)) / 28);
+            let jongIdx = base % 28;
+
+            chars.splice(cursorPos - 1, 1);
+            committedText = chars.join('');
+            cursorPos--;
+
+            if (jongIdx > 0) {
+                let jongChar = JONGSUNG[jongIdx];
+                let splitList = Object.entries(CONSONANT_COMBINE).find(([k, v]) => v === jongChar);
+                if (splitList) {
+                    let parts = splitList[0].split('+');
+                    hangulBuffer = { cho: choIdx, jung: jungIdx, jong: getJongIndex(parts[0]) };
+                } else {
+                    hangulBuffer = { cho: choIdx, jung: jungIdx, jong: -1 };
+                }
+            } else if (jungIdx >= 0) {
+                let jungChar = JUNGSUNG[jungIdx];
+                let splitVowel = Object.entries(VOWEL_COMBINE).find(([k, v]) => v === jungChar);
+                if (splitVowel) {
+                    let parts = splitVowel[0].split('+');
+                    hangulBuffer = { cho: choIdx, jung: JUNGSUNG.indexOf(parts[0]), jong: -1 };
+                } else {
+                    hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
+                }
+            } else {
+                hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+            }
+        } else {
+            // 일반 문자(영어, 이모지, 특수문자 등)는 그대로 한 글자씩 삭제
+            if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+                window.AndroidBridge.deleteText();
+            }
+            cursorPos--;
+            chars.splice(cursorPos, 1);
+            committedText = chars.join('');
+        }
+    }
 }
 lastSlideDir = '';
 updateScreen();
 }
 
+// 화면 터치 시 정확한 커서 위치 인식 개선
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
@@ -1219,6 +1276,7 @@ let rect = screenTextWrap.getBoundingClientRect();
 let clickX = e.clientX - rect.left;
 
 let closestIndex = chars.length;
+let minDiff = Infinity;
 let tempSpan = document.createElement('span');
 tempSpan.style.font = window.getComputedStyle(screenDiv).font;
 tempSpan.style.visibility = 'hidden';
@@ -1228,9 +1286,10 @@ document.body.appendChild(tempSpan);
 for (let i = 0; i <= chars.length; i++) {
 tempSpan.textContent = chars.slice(0, i).join('');
 let w = tempSpan.getBoundingClientRect().width;
-if (clickX <= w) {
+let diff = Math.abs(clickX - w);
+if (diff < minDiff) {
+minDiff = diff;
 closestIndex = i;
-break;
 }
 }
 document.body.removeChild(tempSpan);
@@ -1484,7 +1543,7 @@ isLongPressed = false;
 });
 }
 
-// ㅣ 키: 톡 치는 단독 입력 기능 제거 (길게 누르거나 슬라이드만 허용)
+// ㅣ 키: 톡 치는 단독 입력 제거
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1500,10 +1559,9 @@ let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 appendHangul('ㅣ');
 }
-// 톡 칠 때는 아무 동작도 하지 않도록 단독 입력 제거 완료
 });
 
-// ㅡ 키: 톡 치는 단독 입력 기능 제거 (길게 누르거나 슬라이드만 허용)
+// ㅡ 키: 톡 치는 단독 입력 제거
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1519,7 +1577,6 @@ let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
 appendHangul('ㅡ');
 }
-// 톡 칠 때는 아무 동작도 하지 않도록 단독 입력 제거 완료
 });
 
 document.querySelectorAll('.slide-con').forEach(key => {
