@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.21</title>
+<title>쓸기자판 v9.20</title>
 <style>
 * {
 box-sizing: border-box;
@@ -584,7 +584,7 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<div class="eng-key eng-long" data-char="l" data-long)"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<div class="eng-key eng-long" data-char="l" data-long)")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
@@ -1188,7 +1188,7 @@ appendHangul(newVowel);
 }
 }
 
-// ⭐️ [클로드 방식 적용된 백스페이스] JS가 지울 글자의 유닛 수를 계산하여 네이티브 deleteText를 정확한 횟수만큼 호출
+// ⭐️ [도전 버전] 백스페이스 함수 적용
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
@@ -1275,6 +1275,19 @@ bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
+}
+if (e.changedTouches && e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+if (endX - bsStartX < -30) {
+hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+committedText = '';
+cursorPos = 0;
+updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
+return;
+}
 }
 });
 
