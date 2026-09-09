@@ -653,7 +653,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1188,6 +1188,7 @@ appendHangul(newVowel);
 }
 }
 
+// ⭐️ [클로드 방식 적용된 백스페이스] JS가 지울 글자의 유닛 수를 계산하여 네이티브 deleteText를 정확한 횟수만큼 호출
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     if (cursorPos > 0) {
@@ -1216,7 +1217,6 @@ lastSlideDir = '';
 updateScreen();
 }
 
-// ⭐️ [커서 인식 보정 버전] 클릭 시 스크롤 오프셋과 패딩을 반영하여 정확한 인덱스 계산
 screenDiv.addEventListener('click', (e) => {
 commitCurrent();
 let fullText = committedText;
@@ -1228,14 +1228,11 @@ return;
 }
 
 let rect = screenTextWrap.getBoundingClientRect();
-// 스크롤된 거리(scrollLeft)와 패딩 위치를 고려한 상대  클릭 X 좌표 계산
-let clickX = e.clientX - rect.left + screenDiv.scrollLeft;
+let clickX = e.clientX - rect.left;
 
 let closestIndex = chars.length;
 let tempSpan = document.createElement('span');
-let computedStyle = window.getComputedStyle(screenDiv);
-tempSpan.style.font = computedStyle.font;
-tempSpan.style.letterSpacing = computedStyle.letterSpacing;
+tempSpan.style.font = window.getComputedStyle(screenDiv).font;
 tempSpan.style.visibility = 'hidden';
 tempSpan.style.position = 'absolute';
 document.body.appendChild(tempSpan);
