@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.99</title>
+<title>쓸기자판 v7.1.1</title>
 <style>
 * {
 box-sizing: border-box;
@@ -621,7 +621,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
 <div class="sym-key" onclick="appendSpecial('`')">`</div>
-<div class="sym-key" onclick="appendSpecial('|')">|</div>
+<div class="sym-key" onclick="appendSpecial('.')">.</div>
 <div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial('√')">√</div>
 <div class="sym-key" onclick="appendSpecial('π')">π</div>
@@ -1501,8 +1501,6 @@ let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 appendHangul('ㅣ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-appendHangul('ㅣ');
 }
 });
 
@@ -1519,8 +1517,6 @@ let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
-appendHangul('ㅡ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅡ');
 }
 });
