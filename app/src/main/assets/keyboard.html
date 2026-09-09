@@ -1259,13 +1259,21 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 function moveCursorByOne(direction) {
     commitCurrent();
     let chars = Array.from(committedText);
+
     if (direction === 'left') {
         if (cursorPos > 0) cursorPos--;
     } else if (direction === 'right') {
         if (cursorPos < chars.length) cursorPos++;
     }
+
     updateScreen();
-    let utf16Idx = getUtf16Index(chars, cursorPos);
+
+    // Array.from 기준 커서 위치를 Android의 UTF-16 위치로 변환
+    let utf16Idx = 0;
+    for (let i = 0; i < cursorPos; i++) {
+        utf16Idx += chars[i].length;
+    }
+
     if (window.AndroidBridge && window.AndroidBridge.setSelection) {
         window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
     }
@@ -1281,6 +1289,12 @@ document.querySelectorAll('.space-key-common').forEach(btn => {
     }, { passive: true });
     btn.addEventListener('touchend', (e) => {
         e.preventDefault();
+
+        // 281.html 내부에 중복된 스크립트가 있어도 같은 터치를 두 번 처리하지 않음
+        const touchId = e.timeStamp;
+        if (window.__ssulSpaceLastTouch === touchId) return;
+        window.__ssulSpaceLastTouch = touchId;
+
         if (!e.changedTouches || !e.changedTouches.length) return;
         const t = e.changedTouches[0];
         const dx = t.clientX - startX;
