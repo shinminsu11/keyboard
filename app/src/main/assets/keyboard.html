@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v7.1.1</title>
+<title>쓸기자판 v7.1.2</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1190,14 +1190,14 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-    }
     if (cursorPos > 0) {
         cursorPos--;
         let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
+    }
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
     }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
