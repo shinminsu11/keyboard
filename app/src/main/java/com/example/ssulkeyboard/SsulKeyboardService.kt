@@ -34,10 +34,12 @@ class SsulKeyboardService : InputMethodService() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 heightPx
             )
+
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+
             setBackgroundColor(Color.TRANSPARENT)
-            
+
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
             webViewClient = object : WebViewClient() {
@@ -54,6 +56,7 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     inner class KeyboardBridge {
+
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
@@ -69,6 +72,7 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
             val inputConnection = currentInputConnection ?: return
+
             try {
                 inputConnection.setSelection(start, end)
             } catch (e: Exception) {
@@ -79,35 +83,61 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.finishComposingText()
-            
-            val extractedText = inputConnection.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
-            if (extractedText != null && extractedText.selectionStart != extractedText.selectionEnd) {
-                val start = minOf(extractedText.selectionStart, extractedText.selectionEnd)
-                val end = maxOf(extractedText.selectionStart, extractedText.selectionEnd)
-                inputConnection.setSelection(start, end)
-                inputConnection.deleteSurroundingText(end - start, 0)
-                return
-            }
 
-            val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-            if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
-                val high = textBefore[textBefore.length - 2]
-                val low = textBefore[textBefore.length - 1]
-                
-                if (Character.isSurrogatePair(high, low)) {
-                    inputConnection.deleteSurroundingText(2, 0)
-                } else {
+            try {
+                /*
+                 * ① 먼저 현재 선택 영역을 확인한다.
+                 *
+                 * getSelectedText()가 null/빈 문자열이 아니면
+                 * 사용자가 글자를 선택해 놓은 상태이다.
+                 */
+                val selectedText = inputConnection.getSelectedText(0)
+
+                if (!selectedText.isNullOrEmpty()) {
+
+                    // 선택 영역 삭제
+                    // commitText("", 1)은 현재 선택 영역을 빈 문자열로
+                    // 교체하므로 선택한 부분 전체가 삭제된다.
+                    inputConnection.commitText("", 1)
+
+                    return
+                }
+
+                /*
+                 * ② 선택 영역이 없으면 기존 방식대로
+                 * 커서 바로 앞의 한 글자를 삭제한다.
+                 */
+                inputConnection.finishComposingText()
+
+                val textBefore = inputConnection.getTextBeforeCursor(2, 0)
+
+                if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
+
+                    val high = textBefore[textBefore.length - 2]
+                    val low = textBefore[textBefore.length - 1]
+
+                    // 이모지 등 서로게이트 쌍이면 2 UTF-16 단위 삭제
+                    if (Character.isSurrogatePair(high, low)) {
+                        inputConnection.deleteSurroundingText(2, 0)
+                    } else {
+                        // 일반 문자는 1글자 삭제
+                        inputConnection.deleteSurroundingText(1, 0)
+                    }
+
+                } else if (!textBefore.isNullOrEmpty()) {
+
                     inputConnection.deleteSurroundingText(1, 0)
                 }
-            } else if (!textBefore.isNullOrEmpty()) {
-                inputConnection.deleteSurroundingText(1, 0)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
         @JavascriptInterface
         fun deleteOneCharForHanja() {
             val inputConnection = currentInputConnection ?: return
+
             inputConnection.finishComposingText()
             inputConnection.deleteSurroundingText(1, 0)
         }
@@ -115,26 +145,41 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+
+            inputConnection.performEditorAction(
+                EditorInfo.IME_ACTION_SEARCH
+            )
         }
 
         @JavascriptInterface
         fun openUrl(url: String) {
             try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(url)
+                ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
+
                 startActivity(intent)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
+    override fun onStartInputView(
+        info: EditorInfo?,
+        restarting: Boolean
+    ) {
         super.onStartInputView(info, restarting)
+
         if (::webView.isInitialized) {
-            webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
+            webView.evaluateJavascript(
+                "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
+                null
+            )
         }
     }
 
