@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.20</title>
+<title>쓸기자판 v9.22</title>
 <style>
 * {
 box-sizing: border-box;
@@ -545,7 +545,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:9px; color:#555; margin-right:1px;">천</span><span style="font-size:9px; color:#555;">←</span>
 <span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:0px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -574,8 +574,8 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="y" data-long="*"><span class="eng-sub">*</span><span class="key-text">y</span></div>
 <div class="eng-key eng-long" data-char="u" data-long="-"><span class="eng-sub">-</span><span class="key-text">u</span></div>
 <div class="eng-key eng-long" data-char="i" data-long="+"><span class="eng-sub">+</span><span class="key-text">i</span></div>
-<div class="eng-key eng-long" data-char="o" data-long="<"><span class="eng-sub"><</span><span class="key-text">o</span></div>
-<div class="eng-key eng-long" data-char="p" data-long=">"><span class="eng-sub">></span><span class="key-text">p</span></div>
+<div class="eng-key eng-long" data-char="o" data-long="<"><span class="eng-sub">&lt;</span><span class="key-text">o</span></div>
+<div class="eng-key eng-long" data-char="p" data-long=">"><span class="eng-sub">&gt;</span><span class="key-text">p</span></div>
 <div class="eng-key eng-long" data-char="a" data-long="@"><span class="eng-sub">@</span><span class="key-text">a</span></div>
 <div class="eng-key eng-long" data-char="s" data-long="#"><span class="eng-sub">#</span><span class="key-text">s</span></div>
 <div class="eng-key eng-long" data-char="d" data-long=":"><span class="eng-sub">:</span><span class="key-text">d</span></div>
@@ -584,11 +584,12 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<div class="eng-key eng-long" data-char="l" data-long)")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<!-- ⭐️ 영문판 'l' 키 길게 누를 때 ')'가 정상 출력되도록 수정된 부분 -->
+<div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
-<div class="eng-key eng-long" data-char="x" data-long='"'><span class="eng-sub">"</span><span class="key-text">x</span></div>
+<div class="eng-key eng-long" data-char="x" data-long='"''><span class="eng-sub">"</span><span class="key-text">x</span></div>
 <div class="eng-key eng-long" data-char="c" data-long="~"><span class="eng-sub">~</span><span class="key-text">c</span></div>
 <div class="eng-key eng-long" data-char="v" data-long="`"><span class="eng-sub">`</span><span class="key-text">v</span></div>
 <div class="eng-key eng-long" data-char="b" data-long="'"><span class="eng-sub">'</span><span class="key-text">b</span></div>
@@ -1188,26 +1189,25 @@ appendHangul(newVowel);
 }
 }
 
-// ⭐️ [도전 버전] 백스페이스 함수 적용
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (cursorPos > 0) {
-        let subStr = committedText.substring(0, cursorPos);
-        let codePoints = Array.from(subStr);
-        let lastChar = codePoints[codePoints.length - 1];
-        let lastCharLen = lastChar.length;
+if (cursorPos > 0) {
+let subStr = committedText.substring(0, cursorPos);
+let codePoints = Array.from(subStr);
+let lastChar = codePoints[codePoints.length - 1];
+let lastCharLen = lastChar.length;
 
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            for (let i = 0; i < lastCharLen; i++) {
-                window.AndroidBridge.deleteText();
-            }
-        }
+if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+for (let i = 0; i < lastCharLen; i++) {
+window.AndroidBridge.deleteText();
+}
+}
 
-        cursorPos -= lastCharLen;
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, lastCharLen);
-        committedText = chars.join('');
-    }
+cursorPos -= lastCharLen;
+let chars = Array.from(committedText);
+chars.splice(cursorPos, lastCharLen);
+committedText = chars.join('');
+}
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
 else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
@@ -1275,19 +1275,6 @@ bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
-}
-if (e.changedTouches && e.changedTouches.length > 0) {
-let endX = e.changedTouches[0].clientX;
-if (endX - bsStartX < -30) {
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-committedText = '';
-cursorPos = 0;
-updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(0, 0);
-}
-return;
-}
 }
 });
 
