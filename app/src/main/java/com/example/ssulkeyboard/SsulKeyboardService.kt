@@ -1,4 +1,4 @@
-package com.example.ssulkeyboard
+package com.example.ssulkeyboad
 
 import android.content.Intent
 import android.net.Uri
