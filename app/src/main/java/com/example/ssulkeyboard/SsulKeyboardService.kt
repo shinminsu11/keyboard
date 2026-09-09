@@ -98,7 +98,6 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-            // 엔터 입력 시 검색 액션 수행
             inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         }
 
