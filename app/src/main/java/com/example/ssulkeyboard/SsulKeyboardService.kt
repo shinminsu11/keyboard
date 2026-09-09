@@ -80,18 +80,8 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            
-            val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-            if (!textBefore.isNullOrEmpty() && textBefore.length >= 1) {
-                val lastChar = textBefore.last()
-                if (Character.isSurrogate(lastChar) || textBefore.length > 1) {
-                    inputConnection.deleteSurroundingText(2, 0)
-                } else {
-                    inputConnection.deleteSurroundingText(1, 0)
-                }
-            } else {
-                inputConnection.deleteSurroundingText(1, 0)
-            }
+            // ⭐️ 클로드 방식 적용: 네이티브는 복잡한 계산 없이 무조건 1유닛씩 안전하게 삭제
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
