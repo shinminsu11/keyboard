@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.22</title>
+<title>쓸기자판 v9.23</title>
 <style>
 * {
 box-sizing: border-box;
@@ -653,7 +653,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -706,7 +706,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1190,23 +1190,15 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-if (cursorPos > 0) {
-let subStr = committedText.substring(0, cursorPos);
-let codePoints = Array.from(subStr);
-let lastChar = codePoints[codePoints.length - 1];
-let lastCharLen = lastChar.length;
-
-if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-for (let i = 0; i < lastCharLen; i++) {
-window.AndroidBridge.deleteText();
-}
-}
-
-cursorPos -= lastCharLen;
-let chars = Array.from(committedText);
-chars.splice(cursorPos, lastCharLen);
-committedText = chars.join('');
-}
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    if (cursorPos > 0) {
+        cursorPos--;
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos, 1);
+        committedText = chars.join('');
+    }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
 else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
@@ -1274,6 +1266,19 @@ bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
+}
+if (e.changedTouches && e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+if (endX - bsStartX < -30) {
+hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+committedText = '';
+cursorPos = 0;
+updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
+return;
+}
 }
 });
 
@@ -1934,10 +1939,9 @@ function replaceLastCharWithHanja(hanjaChar) {
         let lastChar = codePoints[codePoints.length - 1];
         let lastCharLen = lastChar.length;
 
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            for (let i = 0; i < lastCharLen; i++) {
-                window.AndroidBridge.deleteText();
-            }
+        // ⭐️ 한자 전용 1글자 삭제 함수 호출로 앞글자 유실 방지
+        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
+            window.AndroidBridge.deleteOneCharForHanja();
         }
 
         let chars = Array.from(committedText);
