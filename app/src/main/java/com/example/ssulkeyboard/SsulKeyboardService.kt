@@ -81,7 +81,7 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
             
-            // 커서 앞의 텍스트를 읽어와 이모티콘(서러그게이트 페어) 여부에 따라 안전하게 삭제
+            // 커서 앞의 텍스트를 읽어와 이모티콘(서로게이트 페어) 여부에 따라 한 번에 삭제
             val textBefore = inputConnection.getTextBeforeCursor(2, 0)
             if (!textBefore.isNullOrEmpty() && textBefore.length >= 1) {
                 val lastChar = textBefore.last()
