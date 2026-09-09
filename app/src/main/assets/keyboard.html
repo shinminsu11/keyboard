@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v7.1.2</title>
+<title>쓸기자판 v8.99</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1190,6 +1190,9 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
     if (cursorPos > 0) {
         cursorPos--;
         let chars = Array.from(committedText);
@@ -1492,13 +1495,12 @@ iStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
-// 3(iKey) 밑을 누르거나 터치할 때 'ㅣ' 대신 '.'이 입력되도록 수정
 setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
-appendSpecial('.');
+appendHangul('ㅣ');
 } else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅣ');
 }
@@ -1935,8 +1937,13 @@ let chars = Array.from(committedText);
 chars[cursorPos - 1] = hanjaChar;
 committedText = chars.join('');
 updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText(hanjaChar);
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(hanjaChar);
+    }
 }
 }
 }
@@ -2182,6 +2189,44 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 
 renderSlots();
 updateScreen();
+
+let iStartX = 0, iStartY = 0;
+iKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+iStartX = e.touches[0].clientX;
+iStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupLongPressKey(iKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - iStartX;
+let diffY = t.clientY - iStartY;
+if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
+appendSpecial('.');
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+appendHangul('ㅣ');
+}
+});
+
+let euStartX = 0, euStartY = 0;
+euKey.addEventListener('touchstart', (e) => {
+if (e.touches.length > 0) {
+euStartX = e.touches[0].clientX;
+euStartY = e.touches[0].clientY;
+}
+}, { passive: true });
+
+setupLongPressKey(euKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - euStartX;
+let diffY = t.clientY - euStartY;
+if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
+appendSpecial('.');
+} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+appendHangul('ㅡ');
+}
+});
 </script>
 </body>
 </html>
