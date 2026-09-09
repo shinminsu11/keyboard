@@ -1495,13 +1495,16 @@ iStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
+// 'ㅣ'키 (3번 키): 단독 터치 및 아래 방향 슬라이드 시 '.' 입력, 위 등 나머지는 기존 'ㅣ' 입력
 setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
-appendHangul('ㅣ');
+appendSpecial('.');
 } else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+appendSpecial('.');
+} else {
 appendHangul('ㅣ');
 }
 });
@@ -1514,13 +1517,16 @@ euStartY = e.touches[0].clientY;
 }
 }, { passive: true });
 
+// 'ㅡ'키 (9번 키): 좌우 슬라이드 시 '.' 입력, 단독 터치는 기존 'ㅡ' 입력
 setupLongPressKey(euKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
-appendHangul('ㅡ');
+appendSpecial('.');
 } else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+appendHangul('ㅡ');
+} else {
 appendHangul('ㅡ');
 }
 });
@@ -2189,44 +2195,6 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 
 renderSlots();
 updateScreen();
-
-let iStartX = 0, iStartY = 0;
-iKey.addEventListener('touchstart', (e) => {
-if (e.touches.length > 0) {
-iStartX = e.touches[0].clientX;
-iStartY = e.touches[0].clientY;
-}
-}, { passive: true });
-
-setupLongPressKey(iKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
-let diffX = t.clientX - iStartX;
-let diffY = t.clientY - iStartY;
-if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
-appendSpecial('.');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-appendHangul('ㅣ');
-}
-});
-
-let euStartX = 0, euStartY = 0;
-euKey.addEventListener('touchstart', (e) => {
-if (e.touches.length > 0) {
-euStartX = e.touches[0].clientX;
-euStartY = e.touches[0].clientY;
-}
-}, { passive: true });
-
-setupLongPressKey(euKey, (e) => {
-let t = e.changedTouches ? e.changedTouches[0] : e;
-let diffX = t.clientX - euStartX;
-let diffY = t.clientY - euStartY;
-if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
-appendSpecial('.');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-appendHangul('ㅡ');
-}
-});
 </script>
 </body>
 </html>
