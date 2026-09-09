@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.23</title>
+<title>쓸기자판 v9.24 최적화</title>
 <style>
 * {
 box-sizing: border-box;
 -webkit-tap-highlight-color: transparent;
+touch-action: manipulation; /* 300ms 터치 딜레이 제거 */
 }
 html, body {
 width: 100%;
@@ -98,7 +99,7 @@ left: 0;
 box-shadow: none;
 display: none;
 opacity: 0;
-transition: opacity 0.2s ease;
+transition: opacity 0.15s ease;
 }
 .keyboard-frame.active {
 display: block;
@@ -140,7 +141,6 @@ color: #222222;
 font-size: 22px;
 cursor: pointer;
 user-select: none;
-transition: background-color 0.1s;
 overflow: hidden;
 padding-top: 1px;
 }
@@ -219,7 +219,6 @@ font-size: 16px;
 cursor: pointer;
 user-select: none;
 min-width: 0;
-touch-action: manipulation;
 }
 .sym-key:active {
 background-color: #d8dee4;
@@ -280,7 +279,7 @@ box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 z-index: 1000;
 pointer-events: none;
 opacity: 0;
-transition: opacity 0.3s ease;
+transition: opacity 0.2s ease;
 white-space: nowrap;
 }
 #toastMessage.show {
@@ -298,7 +297,6 @@ display: none;
 justify-content: center;
 align-items: center;
 z-index: 100;
-touch-action: auto;
 }
 .modal-box {
 background: #fff;
@@ -311,7 +309,6 @@ display: flex;
 flex-direction: column;
 color: #333;
 box-sizing: border-box;
-touch-action: auto;
 }
 .modal-header {
 font-weight: bold;
@@ -343,7 +340,6 @@ flex-direction: column;
 gap: 6px;
 max-height: 50vh;
 overflow-y: auto;
-touch-action: pan-y;
 -webkit-overflow-scrolling: touch;
 }
 .clipboard-item {
@@ -356,7 +352,6 @@ box-sizing: border-box;
 word-break: break-all;
 color: #333;
 user-select: none;
-touch-action: pan-y;
 }
 .clipboard-item:active {
 background: #e2e8f0;
@@ -372,7 +367,6 @@ max-height: 60vh;
 overflow-y: auto;
 padding-right: 4px;
 box-sizing: border-box;
-touch-action: pan-y;
 -webkit-overflow-scrolling: touch;
 }
 .emoji-item {
@@ -385,7 +379,6 @@ align-items: center;
 font-size: 32px;
 cursor: pointer;
 user-select: none;
-touch-action: manipulation;
 position: relative;
 }
 .emoji-item:active {
@@ -400,7 +393,6 @@ grid-template-columns: repeat(2, 1fr);
 gap: 8px;
 max-height: 50vh;
 overflow-y: auto;
-touch-action: pan-y;
 -webkit-overflow-scrolling: touch;
 }
 .hanja-item {
@@ -413,7 +405,6 @@ display: flex;
 align-items: center;
 gap: 8px;
 color: #333;
-touch-action: manipulation;
 }
 .hanja-item:active {
 background: #e2e8f0;
@@ -1073,21 +1064,28 @@ function getUtf16Index(arr, glyphIndex) {
     return subStr.length;
 }
 
+// requestAnimationFrame을 활용해 화면 렌더링을 브라우저 주기에 동기화하여 끊김 완화
+let renderRequested = false;
 function updateScreen() {
-let currentAssembled = assembleCurrent();
-let chars = Array.from(committedText);
-let beforeCursor = chars.slice(0, cursorPos).join('');
-let afterCursor = chars.slice(cursorPos).join('');
+    if (renderRequested) return;
+    renderRequested = true;
+    requestAnimationFrame(() => {
+        let currentAssembled = assembleCurrent();
+        let chars = Array.from(committedText);
+        let beforeCursor = chars.slice(0, cursorPos).join('');
+        let afterCursor = chars.slice(cursorPos).join('');
 
-screenTextWrap.innerHTML = 
-    escapeHtml(beforeCursor) + 
-    escapeHtml(currentAssembled) + 
-    '<span class="cursor-bar"></span>' + 
-    escapeHtml(afterCursor);
+        screenTextWrap.innerHTML = 
+            escapeHtml(beforeCursor) + 
+            escapeHtml(currentAssembled) + 
+            '<span class="cursor-bar"></span>' + 
+            escapeHtml(afterCursor);
 
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    window.AndroidBridge.setComposing(currentAssembled);
-}
+        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+            window.AndroidBridge.setComposing(currentAssembled);
+        }
+        renderRequested = false;
+    });
 }
 
 function escapeHtml(str) {
