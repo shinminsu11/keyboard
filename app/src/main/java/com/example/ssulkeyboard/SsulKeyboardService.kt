@@ -81,7 +81,7 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
             
-            // 커서 앞의 텍스트를 읽어와 이모티콘(서로게이트 페어) 여부에 따라 한 번에 삭제
+            // 이모티콘(서로게이트 페어)은 2칸, 일반 글자는 1칸 삭제
             val textBefore = inputConnection.getTextBeforeCursor(2, 0)
             if (!textBefore.isNullOrEmpty() && textBefore.length >= 1) {
                 val lastChar = textBefore.last()
@@ -93,6 +93,14 @@ class SsulKeyboardService : InputMethodService() {
             } else {
                 inputConnection.deleteSurroundingText(1, 0)
             }
+        }
+
+        // 한자 변환 시 앞글자 유실을 막기 위해 정확히 1글자만 지우는 전용 함수 추가
+        @JavascriptInterface
+        fun deleteOneCharForHanja() {
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
