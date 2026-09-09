@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.00</title>
+<title>쓸기자판 v9.33 완전수정본</title>
 <style>
 * {
 box-sizing: border-box;
 -webkit-tap-highlight-color: transparent;
+touch-action: manipulation;
 }
 html, body {
 width: 100%;
@@ -98,7 +99,7 @@ left: 0;
 box-shadow: none;
 display: none;
 opacity: 0;
-transition: opacity 0.2s ease;
+transition: opacity 0.15s ease;
 }
 .keyboard-frame.active {
 display: block;
@@ -140,7 +141,6 @@ color: #222222;
 font-size: 22px;
 cursor: pointer;
 user-select: none;
-transition: background-color 0.1s;
 overflow: hidden;
 padding-top: 1px;
 }
@@ -219,7 +219,6 @@ font-size: 16px;
 cursor: pointer;
 user-select: none;
 min-width: 0;
-touch-action: manipulation;
 }
 .sym-key:active {
 background-color: #d8dee4;
@@ -266,21 +265,22 @@ justify-content: center;
 }
 
 #toastMessage {
-position: fixed;
-bottom: 250px;
+position: absolute;
+bottom: 60px;
 left: 50%;
 transform: translateX(-50%);
-background: rgba(30, 34, 39, 0.95);
+background: rgba(30, 34, 39, 0.9);
 color: #ffffff;
-padding: 10px 20px;
-border-radius: 20px;
-font-size: 14px;
+padding: 6px 14px;
+border-radius: 16px;
+font-size: 13px;
 font-weight: bold;
-box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 z-index: 1000;
 pointer-events: none;
 opacity: 0;
-transition: opacity 0.3s ease;
+transition: opacity 0.2s ease;
+white-space: nowrap;
 }
 #toastMessage.show {
 opacity: 1;
@@ -297,7 +297,6 @@ display: none;
 justify-content: center;
 align-items: center;
 z-index: 100;
-touch-action: auto;
 }
 .modal-box {
 background: #fff;
@@ -310,7 +309,6 @@ display: flex;
 flex-direction: column;
 color: #333;
 box-sizing: border-box;
-touch-action: auto;
 }
 .modal-header {
 font-weight: bold;
@@ -342,7 +340,6 @@ flex-direction: column;
 gap: 6px;
 max-height: 50vh;
 overflow-y: auto;
-touch-action: pan-y;
 -webkit-overflow-scrolling: touch;
 }
 .clipboard-item {
@@ -355,7 +352,6 @@ box-sizing: border-box;
 word-break: break-all;
 color: #333;
 user-select: none;
-touch-action: pan-y;
 }
 .clipboard-item:active {
 background: #e2e8f0;
@@ -371,7 +367,6 @@ max-height: 60vh;
 overflow-y: auto;
 padding-right: 4px;
 box-sizing: border-box;
-touch-action: pan-y;
 -webkit-overflow-scrolling: touch;
 }
 .emoji-item {
@@ -384,7 +379,6 @@ align-items: center;
 font-size: 32px;
 cursor: pointer;
 user-select: none;
-touch-action: manipulation;
 position: relative;
 }
 .emoji-item:active {
@@ -399,7 +393,6 @@ grid-template-columns: repeat(2, 1fr);
 gap: 8px;
 max-height: 50vh;
 overflow-y: auto;
-touch-action: pan-y;
 -webkit-overflow-scrolling: touch;
 }
 .hanja-item {
@@ -412,13 +405,11 @@ display: flex;
 align-items: center;
 gap: 8px;
 color: #333;
-touch-action: manipulation;
 }
 .hanja-item:active {
 background: #e2e8f0;
 }
 
-/* 영문판 좌우 대칭 구도 */
 #alphaBoard .grid-eng-container {
   grid-template-columns: repeat(20, minmax(0, 1fr));
 }
@@ -459,8 +450,6 @@ background: #e2e8f0;
   <div class="screen-text-wrap" id="screenTextWrap"></div>
 </div>
 
-<div id="toastMessage">길게 누르세요</div>
-
 <div id="customConfirmModal" class="modal-overlay" style="z-index: 2000;">
 <div class="modal-box" style="max-width:300px; text-align:center;">
 <div class="modal-header" style="justify-content:center; margin-bottom:12px;">
@@ -475,7 +464,8 @@ background: #e2e8f0;
 </div>
 
 <div class="keyboard-container">
-<!-- 메인 자판 -->
+<div id="toastMessage">길게 누르세요</div>
+
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
 <div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
@@ -555,7 +545,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 영문판 -->
 <div id="alphaBoard" class="keyboard-frame">
 <div class="grid-eng-container">
 <div class="eng-key" onclick="appendSpecial('1')">1</div>
@@ -576,8 +565,8 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="y" data-long="*"><span class="eng-sub">*</span><span class="key-text">y</span></div>
 <div class="eng-key eng-long" data-char="u" data-long="-"><span class="eng-sub">-</span><span class="key-text">u</span></div>
 <div class="eng-key eng-long" data-char="i" data-long="+"><span class="eng-sub">+</span><span class="key-text">i</span></div>
-<div class="eng-key eng-long" data-char="o" data-long="<"><span class="eng-sub"><</span><span class="key-text">o</span></div>
-<div class="eng-key eng-long" data-char="p" data-long=">"><span class="eng-sub">></span><span class="key-text">p</span></div>
+<div class="eng-key eng-long" data-char="o" data-long="<"><span class="eng-sub">&lt;</span><span class="key-text">o</span></div>
+<div class="eng-key eng-long" data-char="p" data-long=">"><span class="eng-sub">&gt;</span><span class="key-text">p</span></div>
 <div class="eng-key eng-long" data-char="a" data-long="@"><span class="eng-sub">@</span><span class="key-text">a</span></div>
 <div class="eng-key eng-long" data-char="s" data-long="#"><span class="eng-sub">#</span><span class="key-text">s</span></div>
 <div class="eng-key eng-long" data-char="d" data-long=":"><span class="eng-sub">:</span><span class="key-text">d</span></div>
@@ -590,7 +579,7 @@ background: #e2e8f0;
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
-<div class="eng-key eng-long" data-char="x" data-long='"'><span class="eng-sub">"</span><span class="key-text">x</span></div>
+<div class="eng-key eng-long" data-char="x" data-long='"''><span class="eng-sub">"</span><span class="key-text">x</span></div>
 <div class="eng-key eng-long" data-char="c" data-long="~"><span class="eng-sub">~</span><span class="key-text">c</span></div>
 <div class="eng-key eng-long" data-char="v" data-long="`"><span class="eng-sub">`</span><span class="key-text">v</span></div>
 <div class="eng-key eng-long" data-char="b" data-long="'"><span class="eng-sub">'</span><span class="key-text">b</span></div>
@@ -609,7 +598,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -624,7 +612,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
 <div class="sym-key" onclick="appendSpecial('`')">`</div>
-<div class="sym-key" onclick="appendSpecial('|')">|</div>
+<div class="sym-key" onclick="appendSpecial('.')">.</div>
 <div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial('√')">√</div>
 <div class="sym-key" onclick="appendSpecial('π')">π</div>
@@ -663,7 +651,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 2 -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -717,7 +704,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 쌍둥이판 -->
 <div id="twinBoard" class="keyboard-frame">
 <div class="grid-container">
 <div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
@@ -760,7 +746,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 모달 창들 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -795,7 +780,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 계산기 모달 -->
 <div id="calcModal" class="modal-overlay">
 <div class="modal-box" style="max-width:270px; padding:10px;">
 <div class="modal-header" style="margin-bottom:6px; font-size:15px;">
@@ -877,7 +861,7 @@ background: #e2e8f0;
 <div id="hanjaModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span id="hanjaModalTitle">한자 변환</span>
+<span id="hanjaModalTitle">한문 변환</span>
 <span class="modal-close" onclick="closeHanjaModal()">×</span>
 </div>
 <div class="hanja-grid" id="hanjaGridContainer"></div>
@@ -887,11 +871,11 @@ background: #e2e8f0;
 <div id="addHanjaModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>사용자 한자 추가</span>
+<span>사용자 한문 추가</span>
 <span class="modal-close" onclick="closeAddHanjaModal()">×</span>
 </div>
 <div style="font-size:12px; color:#666; margin-bottom:8px;" id="addHanjaTargetDesc"></div>
-<input type="text" id="customHanjaChar" class="modal-input" placeholder="한자 입력 (예: 金)">
+<input type="text" id="customHanjaChar" class="modal-input" placeholder="한문 입력 (예: 金)">
 <input type="text" id="customHanjaMeaning" class="modal-input" placeholder="뜻/훈음 입력 (예: 성 김)">
 <div style="display:flex; gap:6px; margin-top:4px;">
 <button onclick="saveCustomHanja()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
@@ -932,7 +916,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-// 새창 진입 시 초기화 함수
 function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
@@ -1062,7 +1045,7 @@ const VOWEL_COMBINE = {
 };
 const CONSONANT_COMBINE = {
 'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ',
-'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㅍ':'ㄿ', 'ㄹ+ㅎ':'ㅀ',
+'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㄿ':'ㄿ', 'ㄹ+ㅎ':'ㅀ',
 'ㅂ+ㅅ':'ㅄ'
 };
 
@@ -1076,26 +1059,27 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
-function getUtf16Index(arr, glyphIndex) {
-    let subStr = arr.slice(0, glyphIndex).join('');
-    return subStr.length;
-}
-
+let renderRequested = false;
 function updateScreen() {
-let currentAssembled = assembleCurrent();
-let chars = Array.from(committedText);
-let beforeCursor = chars.slice(0, cursorPos).join('');
-let afterCursor = chars.slice(cursorPos).join('');
+    if (renderRequested) return;
+    renderRequested = true;
+    requestAnimationFrame(() => {
+        let currentAssembled = assembleCurrent();
+        let chars = Array.from(committedText);
+        let beforeCursor = chars.slice(0, cursorPos).join('');
+        let afterCursor = chars.slice(cursorPos).join('');
 
-screenTextWrap.innerHTML = 
-    escapeHtml(beforeCursor) + 
-    escapeHtml(currentAssembled) + 
-    '<span class="cursor-bar"></span>' + 
-    escapeHtml(afterCursor);
+        screenTextWrap.innerHTML = 
+            escapeHtml(beforeCursor) + 
+            escapeHtml(currentAssembled) + 
+            '<span class="cursor-bar"></span>' + 
+            escapeHtml(afterCursor);
 
-if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-    window.AndroidBridge.setComposing(currentAssembled);
-}
+        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+            window.AndroidBridge.setComposing(currentAssembled);
+        }
+        renderRequested = false;
+    });
 }
 
 function escapeHtml(str) {
@@ -1196,64 +1180,22 @@ appendHangul(newVowel);
 }
 }
 
+// 백스페이스: 조합 중인 글자가 있으면 버퍼에서 해제하고, 없으면 안드로이드 브릿지에만 삭제를 위임하여 중복 삭제 완벽 방지
 function backspaceHangul() {
-if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+if (hangulBuffer.jong !== -1) {
+    hangulBuffer.jong = -1;
+} else if (hangulBuffer.jung !== -1) {
+    hangulBuffer.jung = -1;
+} else if (hangulBuffer.cho !== -1) {
+    hangulBuffer.cho = -1;
+} else {
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
     }
-    if (cursorPos > 0) {
-        cursorPos--;
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, 1);
-        committedText = chars.join('');
-    }
-} else {
-if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
-else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
-else if (hangulBuffer.cho !== -1) { hangulBuffer.cho = -1; }
 }
 lastSlideDir = '';
 updateScreen();
 }
-
-screenDiv.addEventListener('click', (e) => {
-commitCurrent();
-let fullText = committedText;
-let chars = Array.from(fullText);
-if (chars.length === 0) {
-cursorPos = 0;
-updateScreen();
-return;
-}
-
-let rect = screenTextWrap.getBoundingClientRect();
-let clickX = e.clientX - rect.left;
-
-let closestIndex = chars.length;
-let tempSpan = document.createElement('span');
-tempSpan.style.font = window.getComputedStyle(screenDiv).font;
-tempSpan.style.visibility = 'hidden';
-tempSpan.style.position = 'absolute';
-document.body.appendChild(tempSpan);
-
-for (let i = 0; i <= chars.length; i++) {
-tempSpan.textContent = chars.slice(0, i).join('');
-let w = tempSpan.getBoundingClientRect().width;
-if (clickX <= w) {
-closestIndex = i;
-break;
-}
-}
-document.body.removeChild(tempSpan);
-
-cursorPos = closestIndex;
-updateScreen();
-
-let utf16Idx = getUtf16Index(chars, cursorPos);
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-}
-});
 
 let bsTimer = null;
 let bsStartX = 0;
@@ -1313,7 +1255,7 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 
-// 깐띄기 버튼: 탭=공백, 좌우 밀기=실제 커서 이동
+// 깐띄기 버튼: 탭=공백 / 좌우 밀기=커서 한 칸 이동
 function moveCursorByOne(direction) {
     commitCurrent();
     let chars = Array.from(committedText);
@@ -1330,61 +1272,37 @@ function moveCursorByOne(direction) {
 }
 
 document.querySelectorAll('.space-key-common').forEach(btn => {
-    let spaceStartX = 0;
-    let spaceStartY = 0;
-    let spaceMoved = false;
-
+    let startX = 0, startY = 0;
     btn.addEventListener('touchstart', (e) => {
-        const t = e.touches[0];
-        spaceStartX = t.clientX;
-        spaceStartY = t.clientY;
-        spaceMoved = false;
+        if (e.touches && e.touches.length) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }
     }, { passive: true });
-
     btn.addEventListener('touchend', (e) => {
         e.preventDefault();
+        if (!e.changedTouches || !e.changedTouches.length) return;
         const t = e.changedTouches[0];
-        const dx = t.clientX - spaceStartX;
-        const dy = t.clientY - spaceStartY;
-
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
         if (Math.abs(dx) >= 20 && Math.abs(dx) > Math.abs(dy)) {
-            spaceMoved = true;
             moveCursorByOne(dx < 0 ? 'left' : 'right');
-        } else if (!spaceMoved && Math.abs(dx) < 20 && Math.abs(dy) < 20) {
-            appendSpecial(' ');
+            return;
         }
+        if (Math.abs(dx) < 20 && Math.abs(dy) < 20) appendSpecial(' ');
     });
-
-    btn.addEventListener('click', (e) => {
-        e.preventDefault();
-    });
+    btn.addEventListener('click', (e) => e.preventDefault());
 });
 
-document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
-    if (el.textContent.trim() === 'space') {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            appendSpecial(' ');
-        });
-        el.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            appendSpecial(' ');
-        });
-    }
-});
-
-// 엔터 버튼 중복 개행(2칸 이동) 방지 및 네이티브 단독 호출 구조
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
-        if (window.AndroidBridge && window.AndroidBridge.onEnter) {
-            window.AndroidBridge.onEnter();
-        } else {
-            appendSpecial('\n');
+        appendSpecial('\n');
+        if (window.AndroidBridge && window.AndroidBridge.performSearch) {
+            window.AndroidBridge.performSearch();
         }
     };
-
     btn.addEventListener('click', handleEnter);
     btn.addEventListener('touchend', handleEnter);
 });
@@ -1532,6 +1450,7 @@ isLongPressed = false;
 });
 }
 
+// ㅣ 키: 톡 치는 단독 입력 제거
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1546,11 +1465,10 @@ let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 appendHangul('ㅣ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-appendHangul('ㅣ');
 }
 });
 
+// ㅡ 키: 톡 치는 단독 입력 제거
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1564,8 +1482,6 @@ let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
-appendHangul('ㅡ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
 appendHangul('ㅡ');
 }
 });
@@ -1937,17 +1853,17 @@ let dict = getMergedHanjaDict();
 let list = dict[lastChar];
 
 if (!list || list.length === 0) {
-hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
 let emptyDiv = document.createElement('div');
 emptyDiv.style.gridColumn = "span 2";
 emptyDiv.style.padding = "15px";
 emptyDiv.style.textAlign = "center";
 emptyDiv.style.color = "#777";
-emptyDiv.innerHTML = `등록된 한자가 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한자 추가하기</button>`;
+emptyDiv.innerHTML = `등록된 한문이 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한문 추가하기</button>`;
 hanjaGridContainer.appendChild(emptyDiv);
 document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
 } else {
-hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
 list.forEach(item => {
 let div = document.createElement('div');
 div.className = 'hanja-item';
@@ -1960,7 +1876,7 @@ hanjaModal.style.display = 'flex';
 }
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
 function openAddHanjaModal(char) {
-addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한자와 뜻을 입력해주세요.`;
+addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한문과 뜻을 입력해주세요.`;
 addHanjaModal.style.display = 'flex';
 }
 function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
@@ -1976,21 +1892,28 @@ closeAddHanjaModal();
 showToast("추가되었습니다");
 openHanjaModal();
 }
+
 function replaceLastCharWithHanja(hanjaChar) {
-if (cursorPos > 0) {
-let chars = Array.from(committedText);
-chars[cursorPos - 1] = hanjaChar;
-committedText = chars.join('');
-updateScreen();
-if (window.AndroidBridge) {
-    if (window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+    if (cursorPos > 0) {
+        let subStr = committedText.substring(0, cursorPos);
+        let codePoints = Array.from(subStr);
+        let lastChar = codePoints[codePoints.length - 1];
+        let lastCharLen = lastChar.length;
+
+        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
+            window.AndroidBridge.deleteOneCharForHanja();
+        }
+
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos - lastCharLen, lastCharLen, hanjaChar);
+        committedText = chars.join('');
+        cursorPos = cursorPos - lastCharLen + hanjaChar.length;
+        updateScreen();
+
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(hanjaChar);
+        }
     }
-    if (window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText(hanjaChar);
-    }
-}
-}
 }
 
 clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
@@ -2050,23 +1973,13 @@ settingBtn.addEventListener('touchend', (e) => {
         commitCurrent(); 
         if (cursorPos > 0) cursorPos--; 
         updateScreen(); 
-        let chars = Array.from(committedText);
-        let utf16Idx = getUtf16Index(chars, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-        }
         return;
     }
     if (dx > 15 && Math.abs(dx) > Math.abs(dy)) {
         commitCurrent(); 
-        let chars = Array.from(committedText);
-        if (cursorPos < chars.length) cursorPos++; 
-        updateScreen(); 
         let charsList = Array.from(committedText);
-        let utf16Idx = getUtf16Index(charsList, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-        }
+        if (cursorPos < charsList.length) cursorPos++; 
+        updateScreen(); 
         return;
     }
     if (dy > 20 && Math.abs(dy) > Math.abs(dx)) {
