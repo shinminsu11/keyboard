@@ -81,6 +81,7 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
             
+            // 1. 드래그 등으로 텍스트가 선택되어 있는 경우 선택 영역 삭제
             val extractedText = inputConnection.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
             if (extractedText != null && extractedText.selectionStart != extractedText.selectionEnd) {
                 val start = minOf(extractedText.selectionStart, extractedText.selectionEnd)
@@ -90,6 +91,7 @@ class SsulKeyboardService : InputMethodService() {
                 return
             }
 
+            // 2. 선택 영역이 없을 경우 1글자 / 이모티콘 삭제 로직 수행
             val textBefore = inputConnection.getTextBeforeCursor(2, 0)
             if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
                 val high = textBefore[textBefore.length - 2]
