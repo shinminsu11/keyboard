@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.24 최적화</title>
+<title>쓸기자판 v9.25 최적화</title>
 <style>
 * {
 box-sizing: border-box;
 -webkit-tap-highlight-color: transparent;
-touch-action: manipulation; /* 300ms 터치 딜레이 제거 */
+touch-action: manipulation;
 }
 html, body {
 width: 100%;
@@ -536,7 +536,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:9px; color:#555; margin-right:1px;">천</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
 <span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:0px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -861,7 +861,7 @@ background: #e2e8f0;
 <div id="hanjaModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span id="hanjaModalTitle">한자 변환</span>
+<span id="hanjaModalTitle">한문 변환</span>
 <span class="modal-close" onclick="closeHanjaModal()">×</span>
 </div>
 <div class="hanja-grid" id="hanjaGridContainer"></div>
@@ -871,11 +871,11 @@ background: #e2e8f0;
 <div id="addHanjaModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>사용자 한자 추가</span>
+<span>사용자 한문 추가</span>
 <span class="modal-close" onclick="closeAddHanjaModal()">×</span>
 </div>
 <div style="font-size:12px; color:#666; margin-bottom:8px;" id="addHanjaTargetDesc"></div>
-<input type="text" id="customHanjaChar" class="modal-input" placeholder="한자 입력 (예: 金)">
+<input type="text" id="customHanjaChar" class="modal-input" placeholder="한문 입력 (예: 金)">
 <input type="text" id="customHanjaMeaning" class="modal-input" placeholder="뜻/훈음 입력 (예: 성 김)">
 <div style="display:flex; gap:6px; margin-top:4px;">
 <button onclick="saveCustomHanja()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
@@ -1064,7 +1064,6 @@ function getUtf16Index(arr, glyphIndex) {
     return subStr.length;
 }
 
-// requestAnimationFrame을 활용해 화면 렌더링을 브라우저 주기에 동기화하여 끊김 완화
 let renderRequested = false;
 function updateScreen() {
     if (renderRequested) return;
@@ -1485,6 +1484,7 @@ isLongPressed = false;
 });
 }
 
+// ㅣ 키: 톡 치는 단독 입력 기능 제거 (길게 누르거나 슬라이드만 허용)
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1499,11 +1499,11 @@ let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 appendHangul('ㅣ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-appendHangul('ㅣ');
 }
+// 톡 칠 때는 아무 동작도 하지 않도록 단독 입력 제거 완료
 });
 
+// ㅡ 키: 톡 치는 단독 입력 기능 제거 (길게 누르거나 슬라이드만 허용)
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1518,9 +1518,8 @@ let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
 appendHangul('ㅡ');
-} else if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
-appendHangul('ㅡ');
 }
+// 톡 칠 때는 아무 동작도 하지 않도록 단독 입력 제거 완료
 });
 
 document.querySelectorAll('.slide-con').forEach(key => {
@@ -1890,17 +1889,17 @@ let dict = getMergedHanjaDict();
 let list = dict[lastChar];
 
 if (!list || list.length === 0) {
-hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
 let emptyDiv = document.createElement('div');
 emptyDiv.style.gridColumn = "span 2";
 emptyDiv.style.padding = "15px";
 emptyDiv.style.textAlign = "center";
 emptyDiv.style.color = "#777";
-emptyDiv.innerHTML = `등록된 한자가 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한자 추가하기</button>`;
+emptyDiv.innerHTML = `등록된 한문이 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한문 추가하기</button>`;
 hanjaGridContainer.appendChild(emptyDiv);
 document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
 } else {
-hanjaModalTitle.textContent = `한자 변환 ('${lastChar}')`;
+hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
 list.forEach(item => {
 let div = document.createElement('div');
 div.className = 'hanja-item';
@@ -1913,7 +1912,7 @@ hanjaModal.style.display = 'flex';
 }
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
 function openAddHanjaModal(char) {
-addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한자와 뜻을 입력해주세요.`;
+addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한문과 뜻을 입력해주세요.`;
 addHanjaModal.style.display = 'flex';
 }
 function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
