@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.01</title>
+<title>쓸기자판 v9.03</title>
 <style>
 * {
 box-sizing: border-box;
@@ -265,9 +265,10 @@ align-items: center;
 justify-content: center;
 }
 
+/* 토스트 메시지 스타일 수정 (화면 중앙 상단, 최우선 z-index) */
 #toastMessage {
 position: fixed;
-bottom: 250px;
+top: 15%;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.95);
@@ -277,7 +278,7 @@ border-radius: 20px;
 font-size: 14px;
 font-weight: bold;
 box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-z-index: 1000;
+z-index: 999999;
 pointer-events: none;
 opacity: 0;
 transition: opacity 0.3s ease;
@@ -609,12 +610,12 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 (3번키 아래 '.'로 수정됨) -->
+<!-- 기호판 1 (3번 키 아래 온점 입력 반영 완료) -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
 <div class="sym-key" onclick="appendSpecial('2')">2</div>
-<div class="sym-key" onclick="appendSpecial('3')">3</div>
+<div class="sym-key" onclick="appendSpecial('.')">.</div>
 <div class="sym-key" onclick="appendSpecial('4')">4</div>
 <div class="sym-key" onclick="appendSpecial('5')">5</div>
 <div class="sym-key" onclick="appendSpecial('6')">6</div>
@@ -1529,7 +1530,8 @@ isLongPressed = false;
 });
 }
 
-// ㅣ 키: 톡 치는 단독 입력 완전 제거 (밀기 전용)
+// ㅣ 키: 단독 톡 입력 완전 제거 및 슬라이드 입력 전용
+let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
 iStartX = e.touches[0].clientX;
@@ -1546,7 +1548,8 @@ appendHangul('ㅣ');
 }
 });
 
-// ㅡ 키: 톡 치는 단독 입력 완전 제거 (밀기 전용)
+// ㅡ 키: 단독 톡 입력 완전 제거 및 슬라이드 입력 전용
+let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
 euStartX = e.touches[0].clientX;
@@ -2112,7 +2115,11 @@ el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
-if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
+if (!val) { 
+    e.preventDefault(); 
+    showToast("길게 누르세요"); 
+    return; 
+}
 if (type === 'url') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
