@@ -1,4 +1,4 @@
-package com.example.ssulkeyboad
+package com.example.ssulkeyboard
 
 import android.content.Intent
 import android.net.Uri
@@ -40,13 +40,13 @@ class SsulKeyboardService : InputMethodService() {
             
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
 
-            loadUrl("file:///android_asset/keyboard.html")
-
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                 }
             }
+
+            loadUrl("file:///android_asset/keyboard.html")
         }
 
         container.addView(webView)
@@ -82,14 +82,17 @@ class SsulKeyboardService : InputMethodService() {
             inputConnection.finishComposingText()
             
             val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-            if (!textBefore.isNullOrEmpty() && textBefore.length >= 1) {
-                val lastChar = textBefore.last()
-                if (Character.isSurrogate(lastChar) || textBefore.length > 1) {
+            if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
+                val high = textBefore[textBefore.length - 2]
+                val low = textBefore[textBefore.length - 1]
+                
+                // 이모티콘(서로게이트 쌍)일 때만 2글자 삭제, 일반 문자는 1글자만 삭제
+                if (Character.isSurrogatePair(high, low)) {
                     inputConnection.deleteSurroundingText(2, 0)
                 } else {
                     inputConnection.deleteSurroundingText(1, 0)
                 }
-            } else {
+            } else if (!textBefore.isNullOrEmpty()) {
                 inputConnection.deleteSurroundingText(1, 0)
             }
         }
@@ -122,12 +125,8 @@ class SsulKeyboardService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-        webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
-        
-        window.window?.let { window ->
-            window.decorView.let { decorView ->
-                decorView.requestLayout()
-            }
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript("javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }", null)
         }
     }
 
