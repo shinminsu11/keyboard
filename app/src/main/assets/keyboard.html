@@ -1194,6 +1194,7 @@ if (cursorPos > 0) {
 let subStr = committedText.substring(0, cursorPos);
 let codePoints = Array.from(subStr);
 let lastChar = codePoints[codePoints.length - 1];
+// ⭐️ 이모티콘 등 멀티바이트(Surrogate Pair) 문자의 실제 UTF-16 코드 유닛 길이를 반영하여 정확히 삭제하도록 수정
 let lastCharLen = lastChar.length;
 
 if (window.AndroidBridge && window.AndroidBridge.deleteText) {
@@ -1202,9 +1203,9 @@ window.AndroidBridge.deleteText();
 }
 }
 
-cursorPos -= lastCharLen;
+cursorPos -= codePoints.length;
 let chars = Array.from(committedText);
-chars.splice(cursorPos, lastCharLen);
+chars.splice(cursorPos, codePoints.length);
 committedText = chars.join('');
 }
 } else {
