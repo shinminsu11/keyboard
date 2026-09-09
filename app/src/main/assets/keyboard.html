@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.31 안정수정본</title>
+<title>쓸기자판 v9.32 안정복원본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1180,7 +1180,7 @@ appendHangul(newVowel);
 }
 }
 
-// 백스페이스: 조합 버퍼가 있으면 1단계씩 해제, 없으면 커서 기준 앞 글자 1글자만 안전하게 삭제
+// 백스페이스: 예전 방식 그대로 브릿지에 단독 위임하여 1글자씩 정확히 지우도록 원복
 function backspaceHangul() {
 if (hangulBuffer.jong !== -1) {
     hangulBuffer.jong = -1;
@@ -1190,13 +1190,13 @@ if (hangulBuffer.jong !== -1) {
     hangulBuffer.cho = -1;
 } else {
     if (cursorPos > 0) {
-        let chars = Array.from(committedText);
         cursorPos--;
+        let chars = Array.from(committedText);
         chars.splice(cursorPos, 1);
         committedText = chars.join('');
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
+    }
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
     }
 }
 lastSlideDir = '';
