@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.30</title>
+<title>쓸기자판 v8.99</title>
 <style>
 * {
 box-sizing: border-box;
@@ -621,7 +621,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
 <div class="sym-key" onclick="appendSpecial('`')">`</div>
-<div class="sym-key" onclick="appendSpecial('.')">.</div>
+<div class="sym-key" onclick="appendSpecial('|')">|</div>
 <div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial('√')">√</div>
 <div class="sym-key" onclick="appendSpecial('π')">π</div>
@@ -1190,24 +1190,15 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-if (cursorPos > 0) {
-let subStr = committedText.substring(0, cursorPos);
-let codePoints = Array.from(subStr);
-let lastChar = codePoints[codePoints.length - 1];
-// ⭐️ 이모티콘 등 멀티바이트(Surrogate Pair) 문자의 실제 UTF-16 코드 유닛 길이를 반영하여 정확히 삭제하도록 수정
-let lastCharLen = lastChar.length;
-
-if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-for (let i = 0; i < lastCharLen; i++) {
-window.AndroidBridge.deleteText();
-}
-}
-
-cursorPos -= codePoints.length;
-let chars = Array.from(committedText);
-chars.splice(cursorPos, codePoints.length);
-committedText = chars.join('');
-}
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
+    }
+    if (cursorPos > 0) {
+        cursorPos--;
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos, 1);
+        committedText = chars.join('');
+    }
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
 else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
@@ -1275,6 +1266,19 @@ bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
+}
+if (e.changedTouches && e.changedTouches.length > 0) {
+let endX = e.changedTouches[0].clientX;
+if (endX - bsStartX < -30) {
+hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+committedText = '';
+cursorPos = 0;
+updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
+return;
+}
 }
 });
 
@@ -1927,30 +1931,21 @@ closeAddHanjaModal();
 showToast("추가되었습니다");
 openHanjaModal();
 }
-
 function replaceLastCharWithHanja(hanjaChar) {
-    if (cursorPos > 0) {
-        let subStr = committedText.substring(0, cursorPos);
-        let codePoints = Array.from(subStr);
-        let lastChar = codePoints[codePoints.length - 1];
-        let lastCharLen = lastChar.length;
-
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            for (let i = 0; i < lastCharLen; i++) {
-                window.AndroidBridge.deleteText();
-            }
-        }
-
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos - lastCharLen, lastCharLen, hanjaChar);
-        committedText = chars.join('');
-        cursorPos = cursorPos - lastCharLen + hanjaChar.length;
-        updateScreen();
-
-        if (window.AndroidBridge && window.AndroidBridge.commitText) {
-            window.AndroidBridge.commitText(hanjaChar);
-        }
+if (cursorPos > 0) {
+let chars = Array.from(committedText);
+chars[cursorPos - 1] = hanjaChar;
+committedText = chars.join('');
+updateScreen();
+if (window.AndroidBridge) {
+    if (window.AndroidBridge.deleteText) {
+        window.AndroidBridge.deleteText();
     }
+    if (window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(hanjaChar);
+    }
+}
+}
 }
 
 clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
