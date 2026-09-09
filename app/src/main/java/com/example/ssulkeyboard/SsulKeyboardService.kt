@@ -80,19 +80,7 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
             inputConnection.finishComposingText()
-            
-            // 이모티콘 및 특수문자 삭제 시 ? 찌꺼기 방지를 위한 서러게이트 페어 글자 수 정확 판별
-            val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-            if (!textBefore.isNullOrEmpty()) {
-                val lastChar = textBefore.last()
-                if (Character.isSurrogate(lastChar) || textBefore.length > 1) {
-                    inputConnection.deleteSurroundingText(2, 0)
-                } else {
-                    inputConnection.deleteSurroundingText(1, 0)
-                }
-            } else {
-                inputConnection.deleteSurroundingText(1, 0)
-            }
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
