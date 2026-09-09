@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v8.99</title>
+<title>쓸기자판 v9.22</title>
 <style>
 * {
 box-sizing: border-box;
@@ -265,7 +265,6 @@ align-items: center;
 justify-content: center;
 }
 
-/* 자판 내부 위치로 수정된 토스트 메시지 */
 #toastMessage {
 position: absolute;
 bottom: 60px;
@@ -420,7 +419,6 @@ touch-action: manipulation;
 background: #e2e8f0;
 }
 
-/* 영문판 좌우 대칭 구도 */
 #alphaBoard .grid-eng-container {
   grid-template-columns: repeat(20, minmax(0, 1fr));
 }
@@ -475,10 +473,8 @@ background: #e2e8f0;
 </div>
 
 <div class="keyboard-container">
-<!-- 자판 내부 토스트 엘리먼트 -->
 <div id="toastMessage">길게 누르세요</div>
 
-<!-- 메인 자판 -->
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
 <div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
@@ -549,7 +545,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:9px; color:#555; margin-right:1px;">천</span><span style="font-size:9px; color:#555;">←</span>
 <span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:0px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -558,7 +554,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 영문판 -->
 <div id="alphaBoard" class="keyboard-frame">
 <div class="grid-eng-container">
 <div class="eng-key" onclick="appendSpecial('1')">1</div>
@@ -612,7 +607,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 1 -->
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -627,7 +621,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
 <div class="sym-key" onclick="appendSpecial('`')">`</div>
-<div class="sym-key" onclick="appendSpecial('|')">|</div>
+<div class="sym-key" onclick="appendSpecial('.')">.</div>
 <div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial('√')">√</div>
 <div class="sym-key" onclick="appendSpecial('π')">π</div>
@@ -666,7 +660,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 기호판 2 -->
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
@@ -720,7 +713,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 쌍둥이판 -->
 <div id="twinBoard" class="keyboard-frame">
 <div class="grid-container">
 <div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
@@ -763,7 +755,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 모달 창들 -->
 <div id="customSymbolModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -798,7 +789,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-<!-- 계산기 모달 -->
 <div id="calcModal" class="modal-overlay">
 <div class="modal-box" style="max-width:270px; padding:10px;">
 <div class="modal-header" style="margin-bottom:6px; font-size:15px;">
@@ -935,7 +925,6 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
-// 새창 진입 시 초기화 함수
 function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
@@ -1201,15 +1190,23 @@ appendHangul(newVowel);
 
 function backspaceHangul() {
 if (hangulBuffer.cho === -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-    }
-    if (cursorPos > 0) {
-        cursorPos--;
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, 1);
-        committedText = chars.join('');
-    }
+if (cursorPos > 0) {
+let subStr = committedText.substring(0, cursorPos);
+let codePoints = Array.from(subStr);
+let lastChar = codePoints[codePoints.length - 1];
+let lastCharLen = lastChar.length;
+
+if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+for (let i = 0; i < lastCharLen; i++) {
+window.AndroidBridge.deleteText();
+}
+}
+
+cursorPos -= lastCharLen;
+let chars = Array.from(committedText);
+chars.splice(cursorPos, lastCharLen);
+committedText = chars.join('');
+}
 } else {
 if (hangulBuffer.jong !== -1) { hangulBuffer.jong = -1; }
 else if (hangulBuffer.jung !== -1) { hangulBuffer.jung = -1; }
@@ -1278,19 +1275,6 @@ if (bsTimer) {
 clearInterval(bsTimer);
 bsTimer = null;
 }
-if (e.changedTouches && e.changedTouches.length > 0) {
-let endX = e.changedTouches[0].clientX;
-if (endX - bsStartX < -30) {
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-committedText = '';
-cursorPos = 0;
-updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(0, 0);
-}
-return;
-}
-}
 });
 
 bsKey.addEventListener('touchcancel', () => {
@@ -1342,21 +1326,15 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 엔터 버튼 클릭 시 줄바꿈(개행)과 검색(performSearch) 기능이 동시 수행되도록 수정
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
-        
-        // 1단계: 텍스트 개행(칸 바뀜) 반영
         appendSpecial('\n');
-
-        // 2단계: 안드로이드 네이티브 검색 트리거 동시 수행
         if (window.AndroidBridge && window.AndroidBridge.performSearch) {
             window.AndroidBridge.performSearch();
         }
     };
-
     btn.addEventListener('click', handleEnter);
     btn.addEventListener('touchend', handleEnter);
 });
@@ -1948,21 +1926,30 @@ closeAddHanjaModal();
 showToast("추가되었습니다");
 openHanjaModal();
 }
+
 function replaceLastCharWithHanja(hanjaChar) {
-if (cursorPos > 0) {
-let chars = Array.from(committedText);
-chars[cursorPos - 1] = hanjaChar;
-committedText = chars.join('');
-updateScreen();
-if (window.AndroidBridge) {
-    if (window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+    if (cursorPos > 0) {
+        let subStr = committedText.substring(0, cursorPos);
+        let codePoints = Array.from(subStr);
+        let lastChar = codePoints[codePoints.length - 1];
+        let lastCharLen = lastChar.length;
+
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            for (let i = 0; i < lastCharLen; i++) {
+                window.AndroidBridge.deleteText();
+            }
+        }
+
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos - lastCharLen, lastCharLen, hanjaChar);
+        committedText = chars.join('');
+        cursorPos = cursorPos - lastCharLen + hanjaChar.length;
+        updateScreen();
+
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(hanjaChar);
+        }
     }
-    if (window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText(hanjaChar);
-    }
-}
-}
 }
 
 clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
