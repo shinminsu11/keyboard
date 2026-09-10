@@ -655,7 +655,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1370,20 +1370,23 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 개선된 엔터 버튼 검색 처리 로직
+// 튼튼하게 고쳐진 엔터 버튼 핸들러 (앱 브릿지 우선, 없으면 웹 검색/줄바꿈 수행)
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
-        if (window.AndroidBridge && window.AndroidBridge.onEnter) {
+        
+        // 1. 안드로이드 브릿지가 실제로 존재할 때만 호출
+        if (window.AndroidBridge && typeof window.AndroidBridge.onEnter === 'function') {
             window.AndroidBridge.onEnter();
         } else {
+            // 2. 일반 웹 브라우저 환경
             let activeEl = document.activeElement;
             if (!activeEl || activeEl === document.body) {
                 activeEl = document.querySelector('input[type="search"], input[type="text"], textarea');
             }
 
-            if (activeEl) {
+            if (activeEl && activeEl !== document.body) {
                 activeEl.focus();
                 let keyEvent = new KeyboardEvent('keydown', {
                     key: 'Enter',
