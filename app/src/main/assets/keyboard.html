@@ -1370,17 +1370,17 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// [완벽 복구] 엔터 버튼 이벤트 처리 (브릿지 최우선, 없으면 일반 웹 환경 또는 단독 테스트 대응)
+// [최종 수정된 엔터 핸들러] Kotlin의 performEnter() 브릿지 호출 연동
 function triggerEnterAction() {
     commitCurrent();
     
-    // 1. 안드로이드 앱 통신 브릿지
-    if (window.AndroidBridge && typeof window.AndroidBridge.onEnter === 'function') {
-        window.AndroidBridge.onEnter();
+    // 1. 안드로이드 브릿지의 performEnter 호출 (입력창 특성 자동 반영)
+    if (window.AndroidBridge && typeof window.AndroidBridge.performEnter === 'function') {
+        window.AndroidBridge.performEnter();
         return;
     }
     
-    // 2. 웹상에 포커스된 입력창(input/textarea 등)이 있는 경우
+    // 2. 일반 웹브라우저 환경 처리
     let activeEl = document.activeElement;
     if (activeEl && activeEl !== document.body && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         let keyEvent = new KeyboardEvent('keydown', {
@@ -1403,12 +1403,8 @@ function triggerEnterAction() {
         return;
     }
 
-    // 3. 포커스된 창이 없고 단독 테스트 중인 경우: 작성 중이던 텍스트를 알림으로 띄워줌
-    if (committedText.trim() !== '') {
-        alert("입력 완료: " + committedText);
-    } else {
-        appendSpecial('\n');
-    }
+    // 3. 단독 테스트 환경: 줄바꿈 수행
+    appendSpecial('\n');
 }
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
