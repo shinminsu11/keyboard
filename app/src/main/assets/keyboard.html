@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.35 테스트입력창추가본</title>
+<title>쓸기자판 v9.36 검은창위치조정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -34,7 +34,7 @@ height: 100%;
 padding-bottom: env(safe-area-inset-bottom) !important; 
 }
 
-/* 테스트용 입력창 영역 추가 */
+/* 브라우저 테스트용 입력창 영역 */
 .test-input-container {
 width: 100%;
 max-width: 530px;
@@ -76,7 +76,7 @@ width: 100%;
 max-width: 530px;
 height: 40px;
 border-radius: 8px;
-margin-bottom: 4px;
+margin-bottom: 40px; /* 자판 위로 약 1센치 가량 띄움 */
 padding: 0 16px;
 font-size: 16px;
 border: none;
@@ -483,7 +483,6 @@ background: #e2e8f0;
 </head>
 <body>
 
-<!-- 브라우저/HTML 테스트용 입력창 추가 -->
 <div class="test-input-container">
   <input type="text" class="test-input-box" id="testInput" placeholder="여기를 터치하여 입력 및 커서 이동 테스트하세요">
   <textarea class="test-textarea" id="testTextarea" placeholder="여러 줄 입력 및 커서 이동 테스트 영역"></textarea>
@@ -928,7 +927,6 @@ background: #e2e8f0;
 </div>
 
 <script>
-// 브라우저 테스트 시 activeElement와 연동하기 위한 보조 리스너 추가
 let activeTestInput = document.getElementById('testInput');
 document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
     el.addEventListener('focus', () => {
@@ -1131,7 +1129,6 @@ function updateScreen() {
             '<span class="cursor-bar"></span>' + 
             escapeHtml(afterCursor);
 
-        // 브라우저 테스트 환경용 입력창 실시간 반영
         if (activeTestInput && !window.AndroidBridge) {
             let fullStr = beforeCursor + currentAssembled + afterCursor;
             activeTestInput.value = fullStr;
