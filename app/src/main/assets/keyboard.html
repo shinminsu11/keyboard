@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.34 커서이동완료본</title>
+<title>쓸기자판 v9.35 테스트입력창추가본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -33,16 +33,52 @@ width: 100%;
 height: 100%;
 padding-bottom: env(safe-area-inset-bottom) !important; 
 }
+
+/* 테스트용 입력창 영역 추가 */
+.test-input-container {
+width: 100%;
+max-width: 530px;
+padding: 0 10px;
+margin-bottom: 4px;
+display: flex;
+flex-direction: column;
+gap: 4px;
+flex-shrink: 0;
+z-index: 50;
+}
+.test-input-box {
+width: 100%;
+height: 40px;
+padding: 0 12px;
+font-size: 15px;
+border: 2px solid #4285f4;
+border-radius: 6px;
+background: #ffffff;
+outline: none;
+}
+.test-textarea {
+width: 100%;
+height: 55px;
+padding: 8px 12px;
+font-size: 14px;
+border: 2px solid #34a853;
+border-radius: 6px;
+background: #ffffff;
+outline: none;
+resize: none;
+font-family: inherit;
+}
+
 .output-screen {
 background-color: #1e2227;
 color: #ffffff;
 width: 100%;
 max-width: 530px;
-height: 48px;
+height: 40px;
 border-radius: 8px;
-margin-bottom: 6px;
+margin-bottom: 4px;
 padding: 0 16px;
-font-size: 18px;
+font-size: 16px;
 border: none;
 outline: none;
 box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -66,7 +102,7 @@ white-space: pre-wrap;
 .cursor-bar {
 display: inline-block;
 width: 2px;
-height: 20px;
+height: 18px;
 background-color: #4285f4;
 animation: blink 1s infinite;
 vertical-align: middle;
@@ -446,7 +482,14 @@ background: #e2e8f0;
 </style>
 </head>
 <body>
-<div id="screen" class="output-screen" style="display:none;">
+
+<!-- 브라우저/HTML 테스트용 입력창 추가 -->
+<div class="test-input-container">
+  <input type="text" class="test-input-box" id="testInput" placeholder="여기를 터치하여 입력 및 커서 이동 테스트하세요">
+  <textarea class="test-textarea" id="testTextarea" placeholder="여러 줄 입력 및 커서 이동 테스트 영역"></textarea>
+</div>
+
+<div id="screen" class="output-screen">
   <div class="screen-text-wrap" id="screenTextWrap"></div>
 </div>
 
@@ -885,6 +928,14 @@ background: #e2e8f0;
 </div>
 
 <script>
+// 브라우저 테스트 시 activeElement와 연동하기 위한 보조 리스너 추가
+let activeTestInput = document.getElementById('testInput');
+document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
+    el.addEventListener('focus', () => {
+        activeTestInput = el;
+    });
+});
+
 const screenTextWrap = document.getElementById('screenTextWrap');
 const screenDiv = document.getElementById('screen');
 const mainBoard = document.getElementById('mainBoard');
@@ -1059,7 +1110,6 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
-// UTF-16 기준 인덱스 계산 함수 추가 (네이티브 커서 싱크용)
 function getUtf16Index(arr, pos) {
     let subStr = arr.slice(0, pos).join('');
     return subStr.length;
@@ -1080,6 +1130,14 @@ function updateScreen() {
             escapeHtml(currentAssembled) + 
             '<span class="cursor-bar"></span>' + 
             escapeHtml(afterCursor);
+
+        // 브라우저 테스트 환경용 입력창 실시간 반영
+        if (activeTestInput && !window.AndroidBridge) {
+            let fullStr = beforeCursor + currentAssembled + afterCursor;
+            activeTestInput.value = fullStr;
+            let utf16Pos = getUtf16Index(chars, cursorPos) + currentAssembled.length;
+            activeTestInput.setSelectionRange(utf16Pos, utf16Pos);
+        }
 
         if (window.AndroidBridge && window.AndroidBridge.setComposing) {
             window.AndroidBridge.setComposing(currentAssembled);
@@ -1186,7 +1244,6 @@ appendHangul(newVowel);
 }
 }
 
-// 백스페이스: 조합 중인 글자가 있으면 버퍼에서 해제하고, 없으면 안드로이드 브릿지에만 삭제를 위임하여 중복 삭제 완벽 방지
 function backspaceHangul() {
 if (hangulBuffer.jong !== -1) {
     hangulBuffer.jong = -1;
@@ -1197,6 +1254,13 @@ if (hangulBuffer.jong !== -1) {
 } else {
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
+    } else if (activeTestInput) {
+        let chars = Array.from(committedText);
+        if (cursorPos > 0) {
+            chars.splice(cursorPos - 1, 1);
+            committedText = chars.join('');
+            cursorPos--;
+        }
     }
 }
 lastSlideDir = '';
@@ -1443,7 +1507,6 @@ isLongPressed = false;
 });
 }
 
-// ㅣ 키: 톡 치는 단독 입력 제거
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1461,7 +1524,6 @@ appendHangul('ㅣ');
 }
 });
 
-// ㅡ 키: 톡 치는 단독 입력 제거
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
