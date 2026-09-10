@@ -1370,13 +1370,13 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// [최종 수정된 엔터 핸들러] Kotlin의 performEnter() 브릿지 호출 연동
+// [검색 및 엔터 처리 복구 완료] Kotlin의 performSearch()와 완벽 연동
 function triggerEnterAction() {
     commitCurrent();
     
-    // 1. 안드로이드 브릿지의 performEnter 호출 (입력창 특성 자동 반영)
-    if (window.AndroidBridge && typeof window.AndroidBridge.performEnter === 'function') {
-        window.AndroidBridge.performEnter();
+    // 1. 안드로이드 브릿지의 performSearch 호출 (줄바꿈 없이 검색 수행)
+    if (window.AndroidBridge && typeof window.AndroidBridge.performSearch === 'function') {
+        window.AndroidBridge.performSearch();
         return;
     }
     
