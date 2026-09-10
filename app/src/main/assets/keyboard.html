@@ -655,7 +655,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1370,7 +1370,7 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 엔터 버튼 수정부 (웹 브라우저 및 안드로이드 브릿지 모두 완벽 지원)
+// 개선된 엔터 버튼 검색 처리 로직
 document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
@@ -1379,7 +1379,12 @@ document.querySelectorAll('.enter-btn').forEach(btn => {
             window.AndroidBridge.onEnter();
         } else {
             let activeEl = document.activeElement;
-            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+            if (!activeEl || activeEl === document.body) {
+                activeEl = document.querySelector('input[type="search"], input[type="text"], textarea');
+            }
+
+            if (activeEl) {
+                activeEl.focus();
                 let keyEvent = new KeyboardEvent('keydown', {
                     key: 'Enter',
                     code: 'Enter',
@@ -1389,6 +1394,12 @@ document.querySelectorAll('.enter-btn').forEach(btn => {
                     cancelable: true
                 });
                 activeEl.dispatchEvent(keyEvent);
+
+                let searchSubmitBtn = document.querySelector('button[type="submit"], .btn_submit, .ico_search, form button, form [role="button"]');
+                if (searchSubmitBtn) {
+                    searchSubmitBtn.click();
+                }
+
                 let form = activeEl.closest('form');
                 if (form) {
                     form.submit();
