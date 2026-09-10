@@ -1136,7 +1136,11 @@ function updateScreen() {
             activeTestInput.setSelectionRange(utf16Pos, utf16Pos);
         }
 
-        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+        // Android IME에 실제 조합 중인 글자가 있을 때만 composing 상태를 갱신합니다.
+        // 조합 글자가 없는 상태에서 setComposingText("", 1)을 반복 호출하면
+        // 사용자가 앱의 문장을 손으로 톡 눌러 옮긴 실제 커서 위치에
+        // 불필요하게 개입할 수 있으므로 호출하지 않습니다.
+        if (currentAssembled && window.AndroidBridge && window.AndroidBridge.setComposing) {
             window.AndroidBridge.setComposing(currentAssembled);
         }
         renderRequested = false;
