@@ -105,6 +105,7 @@ class SsulKeyboardService : InputMethodService() {
                     } else {
                         inputConnection.deleteSurroundingText(1, 0)
                     }
+
                 } else if (!textBefore.isNullOrEmpty()) {
                     inputConnection.deleteSurroundingText(1, 0)
                 }
@@ -123,28 +124,12 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun performEnter() {
+        fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-            val editorInfo = currentInputEditorInfo
-            
-            val inputType = editorInfo?.inputType ?: 0
-            val isMultiline = (inputType and EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE) != 0 ||
-                              (inputType and EditorInfo.TYPE_MASK_CLASS) == EditorInfo.TYPE_CLASS_TEXT && 
-                              (editorInfo.imeOptions and EditorInfo.IME_FLAG_NAVIGATE_NEXT) == 0 &&
-                              (editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION) == EditorInfo.IME_ACTION_NONE
 
-            if (isMultiline) {
-                inputConnection.commitText("\n", 1)
-                return
-            }
-
-            val action = editorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_UNSPECIFIED
-            
-            if (action != EditorInfo.IME_ACTION_UNSPECIFIED && action != EditorInfo.IME_ACTION_NONE) {
-                inputConnection.performEditorAction(action)
-            } else {
-                inputConnection.performEditorAction(EditorInfo.IME_ACTION_DONE)
-            }
+            inputConnection.performEditorAction(
+                EditorInfo.IME_ACTION_SEARCH
+            )
         }
 
         @JavascriptInterface
