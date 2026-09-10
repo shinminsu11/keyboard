@@ -1370,51 +1370,59 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// 튼튼하게 고쳐진 엔터 버튼 핸들러 (앱 브릿지 우선, 없으면 웹 검색/줄바꿈 수행)
-document.querySelectorAll('.enter-btn').forEach(btn => {
-    const handleEnter = (e) => {
-        e.preventDefault();
-        commitCurrent();
+// [최종 수정] 엔터 버튼 이벤트 처리 (클릭 및 터치 모두 지원)
+function triggerEnterAction() {
+    commitCurrent();
+    
+    // 1. 안드로이드 브릿지 통신
+    if (window.AndroidBridge && typeof window.AndroidBridge.onEnter === 'function') {
+        window.AndroidBridge.onEnter();
+        return;
+    }
+    
+    // 2. 일반 웹브라우저 환경 처리
+    let activeEl = document.activeElement;
+    if (!activeEl || activeEl === document.body) {
+        activeEl = document.querySelector('input[type="search"], input[type="text"], textarea');
+    }
+
+    if (activeEl && activeEl !== document.body) {
+        activeEl.focus();
         
-        // 1. 안드로이드 브릿지가 실제로 존재할 때만 호출
-        if (window.AndroidBridge && typeof window.AndroidBridge.onEnter === 'function') {
-            window.AndroidBridge.onEnter();
-        } else {
-            // 2. 일반 웹 브라우저 환경
-            let activeEl = document.activeElement;
-            if (!activeEl || activeEl === document.body) {
-                activeEl = document.querySelector('input[type="search"], input[type="text"], textarea');
-            }
+        let keyEvent = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true
+        });
+        activeEl.dispatchEvent(keyEvent);
 
-            if (activeEl && activeEl !== document.body) {
-                activeEl.focus();
-                let keyEvent = new KeyboardEvent('keydown', {
-                    key: 'Enter',
-                    code: 'Enter',
-                    keyCode: 13,
-                    which: 13,
-                    bubbles: true,
-                    cancelable: true
-                });
-                activeEl.dispatchEvent(keyEvent);
-
-                let searchSubmitBtn = document.querySelector('button[type="submit"], .btn_submit, .ico_search, form button, form [role="button"]');
-                if (searchSubmitBtn) {
-                    searchSubmitBtn.click();
-                }
-
-                let form = activeEl.closest('form');
-                if (form) {
-                    form.submit();
-                }
-            } else {
-                appendSpecial('\n');
-            }
+        let searchSubmitBtn = document.querySelector('button[type="submit"], .btn_submit, .ico_search, form button, form [role="button"]');
+        if (searchSubmitBtn) {
+            searchSubmitBtn.click();
         }
-    };
 
-    btn.addEventListener('click', handleEnter);
-    btn.addEventListener('touchend', handleEnter);
+        let form = activeEl.closest('form');
+        if (form) {
+            form.submit();
+        }
+    } else {
+        appendSpecial('\n');
+    }
+}
+
+document.querySelectorAll('.enter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        triggerEnterAction();
+    });
+    
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        triggerEnterAction();
+    });
 });
 
 const defaultCustomSymbols = ['+', '+', '+', '+', '+', '+', '+', '+', '+', '+'];
