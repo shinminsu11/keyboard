@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.33 완전수정본</title>
+<title>쓸기자판 v7.1</title>
 <style>
 * {
 box-sizing: border-box;
@@ -266,7 +266,7 @@ justify-content: center;
 
 #toastMessage {
 position: absolute;
-bottom: 60px;
+bottom: 85px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.9);
@@ -1059,7 +1059,6 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
-// UTF-16 인덱스 계산 유틸 추가 (네이티브 커서 동기화용)
 function getUtf16Index(arr, glyphIndex) {
     let subStr = arr.slice(0, glyphIndex).join('');
     return subStr.length;
@@ -1186,7 +1185,6 @@ appendHangul(newVowel);
 }
 }
 
-// 백스페이스: 조합 중인 글자가 있으면 버퍼에서 해제하고, 없으면 안드로이드 브릿지에만 삭제를 위임하여 중복 삭제 완벽 방지
 function backspaceHangul() {
 if (hangulBuffer.jong !== -1) {
     hangulBuffer.jong = -1;
@@ -1443,7 +1441,6 @@ isLongPressed = false;
 });
 }
 
-// ㅣ 키
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1461,7 +1458,6 @@ appendHangul('ㅣ');
 }
 });
 
-// ㅡ 키
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1951,7 +1947,6 @@ else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 
 else switchToBoard('symbolBoard1');
 });
 
-// [좌우 커서 이동 복구 및 네이티브 동기화 완료] 
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { 
     if (e.touches && e.touches.length > 0) {
@@ -1965,7 +1960,6 @@ settingBtn.addEventListener('touchend', (e) => {
     let dx = t.clientX - sX;
     let dy = t.clientY - sY;
 
-    // 왼쪽 스와이프: 커서 왼쪽 이동
     if (dx < -15 && Math.abs(dx) > Math.abs(dy)) {
         commitCurrent(); 
         if (cursorPos > 0) cursorPos--; 
@@ -1977,7 +1971,6 @@ settingBtn.addEventListener('touchend', (e) => {
         }
         return;
     }
-    // 오른쪽 스와이프: 커서 오른쪽 이동
     if (dx > 15 && Math.abs(dx) > Math.abs(dy)) {
         commitCurrent(); 
         let charsList = Array.from(committedText);
@@ -1989,13 +1982,11 @@ settingBtn.addEventListener('touchend', (e) => {
         }
         return;
     }
-    // 아래로 스와이프: 쌍둥이판 전환
     if (dy > 20 && Math.abs(dy) > Math.abs(dx)) {
         mainBoard.classList.remove('active'); 
         twinBoard.classList.add('active');
         return;
     }
-    // 제자리 탭: 공백 입력
     if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
         appendSpecial(' ');
     }
