@@ -1370,25 +1370,19 @@ document.querySelectorAll('.eng-key, .sym-key').forEach(el => {
     }
 });
 
-// [최종 수정] 엔터 버튼 이벤트 처리 (클릭 및 터치 모두 지원)
+// [완벽 복구] 엔터 버튼 이벤트 처리 (브릿지 최우선, 없으면 일반 웹 환경 또는 단독 테스트 대응)
 function triggerEnterAction() {
     commitCurrent();
     
-    // 1. 안드로이드 브릿지 통신
+    // 1. 안드로이드 앱 통신 브릿지
     if (window.AndroidBridge && typeof window.AndroidBridge.onEnter === 'function') {
         window.AndroidBridge.onEnter();
         return;
     }
     
-    // 2. 일반 웹브라우저 환경 처리
+    // 2. 웹상에 포커스된 입력창(input/textarea 등)이 있는 경우
     let activeEl = document.activeElement;
-    if (!activeEl || activeEl === document.body) {
-        activeEl = document.querySelector('input[type="search"], input[type="text"], textarea');
-    }
-
-    if (activeEl && activeEl !== document.body) {
-        activeEl.focus();
-        
+    if (activeEl && activeEl !== document.body && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
         let keyEvent = new KeyboardEvent('keydown', {
             key: 'Enter',
             code: 'Enter',
@@ -1399,15 +1393,19 @@ function triggerEnterAction() {
         });
         activeEl.dispatchEvent(keyEvent);
 
-        let searchSubmitBtn = document.querySelector('button[type="submit"], .btn_submit, .ico_search, form button, form [role="button"]');
+        let searchSubmitBtn = activeEl.closest('form')?.querySelector('button[type="submit"], .btn_submit, .ico_search');
         if (searchSubmitBtn) {
             searchSubmitBtn.click();
+        } else {
+            let form = activeEl.closest('form');
+            if (form) form.submit();
         }
+        return;
+    }
 
-        let form = activeEl.closest('form');
-        if (form) {
-            form.submit();
-        }
+    // 3. 포커스된 창이 없고 단독 테스트 중인 경우: 작성 중이던 텍스트를 알림으로 띄워줌
+    if (committedText.trim() !== '') {
+        alert("입력 완료: " + committedText);
     } else {
         appendSpecial('\n');
     }
