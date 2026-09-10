@@ -85,47 +85,27 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
 
             try {
-                /*
-                 * ① 먼저 현재 선택 영역을 확인한다.
-                 *
-                 * getSelectedText()가 null/빈 문자열이 아니면
-                 * 사용자가 글자를 선택해 놓은 상태이다.
-                 */
                 val selectedText = inputConnection.getSelectedText(0)
 
                 if (!selectedText.isNullOrEmpty()) {
-
-                    // 선택 영역 삭제
-                    // commitText("", 1)은 현재 선택 영역을 빈 문자열로
-                    // 교체하므로 선택한 부분 전체가 삭제된다.
                     inputConnection.commitText("", 1)
-
                     return
                 }
 
-                /*
-                 * ② 선택 영역이 없으면 기존 방식대로
-                 * 커서 바로 앞의 한 글자를 삭제한다.
-                 */
                 inputConnection.finishComposingText()
 
                 val textBefore = inputConnection.getTextBeforeCursor(2, 0)
 
                 if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
-
                     val high = textBefore[textBefore.length - 2]
                     val low = textBefore[textBefore.length - 1]
 
-                    // 이모지 등 서로게이트 쌍이면 2 UTF-16 단위 삭제
                     if (Character.isSurrogatePair(high, low)) {
                         inputConnection.deleteSurroundingText(2, 0)
                     } else {
-                        // 일반 문자는 1글자 삭제
                         inputConnection.deleteSurroundingText(1, 0)
                     }
-
                 } else if (!textBefore.isNullOrEmpty()) {
-
                     inputConnection.deleteSurroundingText(1, 0)
                 }
 
