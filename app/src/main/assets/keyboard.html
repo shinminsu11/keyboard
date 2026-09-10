@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.35 커서싱크완료본</title>
+<title>쓸기자판 v9.34 커서이동완료본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -536,7 +536,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:9px; color:#555; margin-right:1px;">천</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
 <span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:0px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -1059,6 +1059,7 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
+// UTF-16 기준 인덱스 계산 함수 추가 (네이티브 커서 싱크용)
 function getUtf16Index(arr, pos) {
     let subStr = arr.slice(0, pos).join('');
     return subStr.length;
@@ -1114,16 +1115,6 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 }
 }
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-}
-
-// ⭐️ [핵심 방어막] 화면 영역을 터치하거나 클릭할 때 첫 입력 버퍼 잔류 싱크가 꼬이지 않도록 커서 이동 전 강제 확정
-if (screenDiv) {
-    screenDiv.addEventListener('click', () => {
-        commitCurrent();
-    });
-    screenDiv.addEventListener('touchstart', () => {
-        commitCurrent();
-    }, { passive: true });
 }
 
 function getJongIndex(char) { return JONGSUNG.indexOf(char); }
@@ -1195,6 +1186,7 @@ appendHangul(newVowel);
 }
 }
 
+// 백스페이스: 조합 중인 글자가 있으면 버퍼에서 해제하고, 없으면 안드로이드 브릿지에만 삭제를 위임하여 중복 삭제 완벽 방지
 function backspaceHangul() {
 if (hangulBuffer.jong !== -1) {
     hangulBuffer.jong = -1;
@@ -1451,6 +1443,7 @@ isLongPressed = false;
 });
 }
 
+// ㅣ 키: 톡 치는 단독 입력 제거
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1468,6 +1461,7 @@ appendHangul('ㅣ');
 }
 });
 
+// ㅡ 키: 톡 치는 단독 입력 제거
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
