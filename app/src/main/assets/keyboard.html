@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v7.1</title>
+<title>쓸기자판 v9.33 완전수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -266,7 +266,7 @@ justify-content: center;
 
 #toastMessage {
 position: absolute;
-bottom: 85px;
+bottom: 60px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.9);
@@ -697,7 +697,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1059,11 +1059,6 @@ function getCharLen(str) {
 return Array.from(str).length;
 }
 
-function getUtf16Index(arr, glyphIndex) {
-    let subStr = arr.slice(0, glyphIndex).join('');
-    return subStr.length;
-}
-
 let renderRequested = false;
 function updateScreen() {
     if (renderRequested) return;
@@ -1185,6 +1180,7 @@ appendHangul(newVowel);
 }
 }
 
+// 백스페이스: 조합 중인 글자가 있으면 버퍼에서 해제하고, 없으면 안드로이드 브릿지에만 삭제를 위임하여 중복 삭제 완벽 방지
 function backspaceHangul() {
 if (hangulBuffer.jong !== -1) {
     hangulBuffer.jong = -1;
@@ -1441,6 +1437,7 @@ isLongPressed = false;
 });
 }
 
+// ㅣ 키: 톡 치는 단독 입력 제거
 let iStartX = 0, iStartY = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1458,6 +1455,7 @@ appendHangul('ㅣ');
 }
 });
 
+// ㅡ 키: 톡 치는 단독 입력 제거
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
@@ -1949,14 +1947,12 @@ else switchToBoard('symbolBoard1');
 
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { 
-    if (e.touches && e.touches.length > 0) {
-        sX = e.touches[0].clientX; 
-        sY = e.touches[0].clientY; 
-    }
+    sX = e.touches[0].clientX; 
+    sY = e.touches[0].clientY; 
 }, { passive: true });
 
 settingBtn.addEventListener('touchend', (e) => {
-    let t = e.changedTouches ? e.changedTouches[0] : e;
+    let t = e.changedTouches[0];
     let dx = t.clientX - sX;
     let dy = t.clientY - sY;
 
@@ -1964,11 +1960,6 @@ settingBtn.addEventListener('touchend', (e) => {
         commitCurrent(); 
         if (cursorPos > 0) cursorPos--; 
         updateScreen(); 
-        let chars = Array.from(committedText);
-        let utf16Idx = getUtf16Index(chars, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-        }
         return;
     }
     if (dx > 15 && Math.abs(dx) > Math.abs(dy)) {
@@ -1976,10 +1967,6 @@ settingBtn.addEventListener('touchend', (e) => {
         let charsList = Array.from(committedText);
         if (cursorPos < charsList.length) cursorPos++; 
         updateScreen(); 
-        let utf16Idx = getUtf16Index(charsList, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-        }
         return;
     }
     if (dy > 20 && Math.abs(dy) > Math.abs(dx)) {
