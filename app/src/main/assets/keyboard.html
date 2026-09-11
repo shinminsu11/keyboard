@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.36 검은창위치조정본</title>
+<title>쓸기자판 v1.0</title>
 <style>
 * {
 box-sizing: border-box;
@@ -76,7 +76,7 @@ width: 100%;
 max-width: 530px;
 height: 40px;
 border-radius: 8px;
-margin-bottom: 40px; /* 자판 위로 약 1센치 가량 띄움 */
+margin-bottom: 40px;
 padding: 0 16px;
 font-size: 16px;
 border: none;
@@ -302,7 +302,7 @@ justify-content: center;
 
 #toastMessage {
 position: absolute;
-bottom: 60px;
+bottom: 135px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.9);
@@ -506,7 +506,7 @@ background: #e2e8f0;
 </div>
 
 <div class="keyboard-container">
-<div id="toastMessage">길게 누르세요</div>
+<div id="toastMessage">밀어서 입력하세요</div>
 
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
@@ -562,7 +562,7 @@ background: #e2e8f0;
 <div style="position:relative; top:0px;"><span style="font-size:8px; position:relative; top:-0.5px;">/</span> ? !</div>
 </div>
 <div class="key func" id="toAlphaBtn" style="font-size:17px; font-weight:bold; color:#333; justify-content:center;">A</div>
-<div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;">
+<div class="key func" id="symbolKey" style="font-size:10px; font-weight:normal; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center; padding-top: 4px; padding-bottom: 2px;" data-long="※">
 <div style="font-size:10px; margin-bottom:1px; position:relative; top:5.5px;">(♥)</div>
 <div style="font-size:15px; font-weight:bold; margin-bottom:1px; position:relative; top:3px;">1※</div>
 <div style="font-size:11px; margin-top:auto; position:relative; top:-6px;">→</div>
@@ -739,7 +739,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1120,25 +1120,16 @@ function updateScreen() {
     requestAnimationFrame(() => {
         let currentAssembled = assembleCurrent();
         let chars = Array.from(committedText);
-        
-        let html = '';
-        for (let i = 0; i <= chars.length; i++) {
-            if (i === cursorPos) {
-                html += '<span class="cursor-bar"></span>';
-            }
-            if (i < chars.length) {
-                html += `<span class="char-node" data-index="${i}" style="display:inline-block; padding:0 1px;">${escapeHtml(chars[i])}</span>`;
-            }
-        }
-        if (currentAssembled) {
-            html += `<span class="composing-node" style="display:inline-block; color:#4285f4;">${escapeHtml(currentAssembled)}</span>`;
-        }
+        let beforeCursor = chars.slice(0, cursorPos).join('');
+        let afterCursor = chars.slice(cursorPos).join('');
 
-        screenTextWrap.innerHTML = html;
+        screenTextWrap.innerHTML = 
+            escapeHtml(beforeCursor) + 
+            escapeHtml(currentAssembled) + 
+            '<span class="cursor-bar"></span>' + 
+            escapeHtml(afterCursor);
 
         if (activeTestInput && !window.AndroidBridge) {
-            let beforeCursor = chars.slice(0, cursorPos).join('');
-            let afterCursor = chars.slice(cursorPos).join('');
             let fullStr = beforeCursor + currentAssembled + afterCursor;
             activeTestInput.value = fullStr;
             let utf16Pos = getUtf16Index(chars, cursorPos) + currentAssembled.length;
@@ -1151,50 +1142,6 @@ function updateScreen() {
         renderRequested = false;
     });
 }
-
-// 화면 터치/클릭 시 커서 위치(cursorPos) 동기화 로직 추가
-screenDiv.addEventListener('click', (e) => {
-    commitCurrent();
-    let clickX = e.clientX;
-    let charNodes = screenTextWrap.querySelectorAll('.char-node');
-    let chars = Array.from(committedText);
-    
-    if (charNodes.length === 0) {
-        cursorPos = 0;
-        updateScreen();
-        return;
-    }
-    
-    let targetIndex = chars.length;
-    let minDiff = Infinity;
-    
-    charNodes.forEach(node => {
-        let rect = node.getBoundingClientRect();
-        let nodeCenter = rect.left + rect.width / 2;
-        let diff = Math.abs(clickX - nodeCenter);
-        if (diff < minDiff) {
-            minDiff = diff;
-            targetIndex = parseInt(node.getAttribute('data-index'), 10);
-            if (clickX > nodeCenter) {
-                targetIndex++;
-            }
-        }
-    });
-    
-    let lastNode = charNodes[charNodes.length - 1];
-    let lastRect = lastNode.getBoundingClientRect();
-    if (clickX > lastRect.right) {
-        targetIndex = chars.length;
-    }
-    
-    cursorPos = Math.max(0, Math.min(chars.length, targetIndex));
-    updateScreen();
-
-    if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-        let utf16Idx = getUtf16Index(chars, cursorPos);
-        window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
-    }
-});
 
 function escapeHtml(str) {
 return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1302,14 +1249,15 @@ if (hangulBuffer.jong !== -1) {
 } else if (hangulBuffer.cho !== -1) {
     hangulBuffer.cho = -1;
 } else {
-    if (cursorPos > 0) {
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos - 1, 1);
-        committedText = chars.join('');
-        cursorPos--;
-    }
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
+    } else if (activeTestInput) {
+        let chars = Array.from(committedText);
+        if (cursorPos > 0) {
+            chars.splice(cursorPos - 1, 1);
+            committedText = chars.join('');
+            cursorPos--;
+        }
     }
 }
 lastSlideDir = '';
@@ -2048,18 +1996,69 @@ else if (angle >= -112.5 && angle < -67.5) appendSpecial('^');
 else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
 });
 
-let symX = 0, symY = 0, symTimer = null, symLong = false;
+// [기호 키 길게 누르기(※) 및 슬라이드/탭 이벤트 처리]
+let symStartX = 0, symStartY = 0, symTimer = null, isSymLong = false;
 symbolKey.addEventListener('touchstart', (e) => {
-symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
-symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); }, 500);
+    if (e.touches && e.touches.length > 0) {
+        symStartX = e.touches[0].clientX;
+        symStartY = e.touches[0].clientY;
+        isSymLong = false;
+        
+        if (symTimer) clearTimeout(symTimer);
+        symTimer = setTimeout(() => {
+            isSymLong = true;
+            appendSpecial('※'); // 길게 누르면 ※ 입력
+            if (navigator.vibrate) navigator.vibrate(40);
+        }, 500);
+    }
 }, { passive: true });
+
+symbolKey.addEventListener('touchmove', (e) => {
+    if (symTimer && e.touches && e.touches.length > 0) {
+        let moveX = Math.abs(e.touches[0].clientX - symStartX);
+        let moveY = Math.abs(e.touches[0].clientY - symStartY);
+        if (moveX > 10 || moveY > 10) {
+            clearTimeout(symTimer);
+            symTimer = null;
+        }
+    }
+}, { passive: true });
+
 symbolKey.addEventListener('touchend', (e) => {
-if (symTimer) { clearTimeout(symTimer); symTimer = null; }
-if (symLong) return;
-let t = e.changedTouches[0], dx = t.clientX - symX, dy = t.clientY - symY;
-if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) appendSpecial(dx > 0 ? ')' : '(');
-else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 ? '♡' : '→');
-else switchToBoard('symbolBoard1');
+    if (symTimer) {
+        clearTimeout(symTimer);
+        symTimer = null;
+    }
+    if (isSymLong) return; // 길게 누르기가 실행되었으면 종료
+
+    if (e.changedTouches && e.changedTouches.length > 0) {
+        let endX = e.changedTouches[0].clientX;
+        let endY = e.changedTouches[0].clientY;
+        let diffX = endX - symStartX;
+        let diffY = endY - symStartY;
+        let absX = Math.abs(diffX);
+        let absY = Math.abs(diffY);
+
+        if (absX > 25 || absY > 25) {
+            if (absX > absY) {
+                if (diffX > 0) {
+                    appendSpecial(')'); // 우로 밀면 )
+                } else {
+                    appendSpecial('('); // 좌로 밀면 (
+                }
+            } else {
+                if (diffY > 0) {
+                    appendSpecial('→'); // 아래로 밀면 →
+                } else {
+                    appendSpecial('♡'); // 위로 밀면 ♡
+                }
+            }
+            return;
+        }
+    }
+    
+    // 단순 탭일 경우 기호판1(symbolBoard1)로 고정 진입
+    switchToBoard('symbolBoard1');
 });
 
 let sX = 0, sY = 0;
