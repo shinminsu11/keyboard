@@ -1120,16 +1120,25 @@ function updateScreen() {
     requestAnimationFrame(() => {
         let currentAssembled = assembleCurrent();
         let chars = Array.from(committedText);
-        let beforeCursor = chars.slice(0, cursorPos).join('');
-        let afterCursor = chars.slice(cursorPos).join('');
+        
+        let html = '';
+        for (let i = 0; i <= chars.length; i++) {
+            if (i === cursorPos) {
+                html += '<span class="cursor-bar"></span>';
+            }
+            if (i < chars.length) {
+                html += `<span class="char-node" data-index="${i}" style="display:inline-block; padding:0 1px;">${escapeHtml(chars[i])}</span>`;
+            }
+        }
+        if (currentAssembled) {
+            html += `<span class="composing-node" style="display:inline-block; color:#4285f4;">${escapeHtml(currentAssembled)}</span>`;
+        }
 
-        screenTextWrap.innerHTML = 
-            escapeHtml(beforeCursor) + 
-            escapeHtml(currentAssembled) + 
-            '<span class="cursor-bar"></span>' + 
-            escapeHtml(afterCursor);
+        screenTextWrap.innerHTML = html;
 
         if (activeTestInput && !window.AndroidBridge) {
+            let beforeCursor = chars.slice(0, cursorPos).join('');
+            let afterCursor = chars.slice(cursorPos).join('');
             let fullStr = beforeCursor + currentAssembled + afterCursor;
             activeTestInput.value = fullStr;
             let utf16Pos = getUtf16Index(chars, cursorPos) + currentAssembled.length;
@@ -1142,6 +1151,50 @@ function updateScreen() {
         renderRequested = false;
     });
 }
+
+// 화면 터치/클릭 시 커서 위치(cursorPos) 동기화 로직 추가
+screenDiv.addEventListener('click', (e) => {
+    commitCurrent();
+    let clickX = e.clientX;
+    let charNodes = screenTextWrap.querySelectorAll('.char-node');
+    let chars = Array.from(committedText);
+    
+    if (charNodes.length === 0) {
+        cursorPos = 0;
+        updateScreen();
+        return;
+    }
+    
+    let targetIndex = chars.length;
+    let minDiff = Infinity;
+    
+    charNodes.forEach(node => {
+        let rect = node.getBoundingClientRect();
+        let nodeCenter = rect.left + rect.width / 2;
+        let diff = Math.abs(clickX - nodeCenter);
+        if (diff < minDiff) {
+            minDiff = diff;
+            targetIndex = parseInt(node.getAttribute('data-index'), 10);
+            if (clickX > nodeCenter) {
+                targetIndex++;
+            }
+        }
+    });
+    
+    let lastNode = charNodes[charNodes.length - 1];
+    let lastRect = lastNode.getBoundingClientRect();
+    if (clickX > lastRect.right) {
+        targetIndex = chars.length;
+    }
+    
+    cursorPos = Math.max(0, Math.min(chars.length, targetIndex));
+    updateScreen();
+
+    if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+        let utf16Idx = getUtf16Index(chars, cursorPos);
+        window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+    }
+});
 
 function escapeHtml(str) {
 return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
