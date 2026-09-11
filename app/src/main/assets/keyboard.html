@@ -1249,15 +1249,14 @@ if (hangulBuffer.jong !== -1) {
 } else if (hangulBuffer.cho !== -1) {
     hangulBuffer.cho = -1;
 } else {
+    if (cursorPos > 0) {
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos - 1, 1);
+        committedText = chars.join('');
+        cursorPos--;
+    }
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
-    } else if (activeTestInput) {
-        let chars = Array.from(committedText);
-        if (cursorPos > 0) {
-            chars.splice(cursorPos - 1, 1);
-            committedText = chars.join('');
-            cursorPos--;
-        }
     }
 }
 lastSlideDir = '';
