@@ -26,7 +26,6 @@ class SsulKeyboardService : InputMethodService() {
             setBackgroundColor(Color.parseColor("#d1d8e0"))
         }
 
-        // 해상도 차이를 극복하기 위해 dp를 픽셀로 자동 변환 (235dp)
         val heightDp = 235
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
@@ -40,7 +39,6 @@ class SsulKeyboardService : InputMethodService() {
             settings.domStorageEnabled = true
             setBackgroundColor(Color.TRANSPARENT)
 
-            // HTML과 통신할 브릿지 연결 ("AndroidBridge")
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
             loadUrl("file:///android_asset/keyboard.html")
 
@@ -55,12 +53,12 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 웹 자판의 모든 JS 함수(deleteSurroundingText 포함)를 완벽히 수용하는 브릿지
     inner class KeyboardBridge {
 
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
+            // 조합 상태를 깔끔하게 비우고 텍스트를 정직하게 박아넣습니다.
             inputConnection.finishComposingText()
             inputConnection.commitText(text, 1)
         }
@@ -68,11 +66,16 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun setComposing(text: String) {
             val inputConnection = currentInputConnection ?: return
-            inputConnection.setComposingText(text, 1)
+            if (text.isNotEmpty()) {
+                inputConnection.setComposingText(text, 1)
+            } else {
+                inputConnection.finishComposingText()
+            }
         }
 
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
+            // 커서 위치 변경 충돌을 방지하기 위해 안전하게 예외 처리
             val inputConnection = currentInputConnection ?: return
             try {
                 inputConnection.setSelection(start, end)
@@ -81,7 +84,6 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // 1) 웹에서 우선적으로 찾는 deleteSurroundingText 대응 함수 추가!
         @JavascriptInterface
         fun deleteSurroundingText(beforeLength: Int, afterLength: Int) {
             val inputConnection = currentInputConnection ?: return
@@ -93,7 +95,6 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // 2) 백업용 deleteText 함수
         @JavascriptInterface
         fun deleteText() {
             val inputConnection = currentInputConnection ?: return
