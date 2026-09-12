@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.42 토스트위치수정본</title>
+<title>쓸기자판 v9.43 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -76,7 +76,7 @@ width: 100%;
 max-width: 530px;
 height: 40px;
 border-radius: 8px;
-margin-bottom: 40px; /* 자판 위로 약 1센치 가량 띄움 */
+margin-bottom: 40px;
 padding: 0 16px;
 font-size: 16px;
 border: none;
@@ -302,7 +302,7 @@ justify-content: center;
 
 #toastMessage {
 position: absolute;
-bottom: 135px; /* 기존 60px에서 2cm(약 75px) 올려서 135px로 수정 */
+bottom: 135px; /* 토스트 위치 2cm(약 75px) 상향 조정 */
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.9);
@@ -1280,14 +1280,26 @@ if (hangulBuffer.jong !== -1) {
 } else if (hangulBuffer.cho !== -1) {
     hangulBuffer.cho = -1;
 } else {
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-    } else if (activeTestInput) {
-        let chars = Array.from(committedText);
-        if (cursorPos > 0) {
-            chars.splice(cursorPos - 1, 1);
-            committedText = chars.join('');
-            cursorPos--;
+    let chars = Array.from(committedText);
+    if (cursorPos > 0) {
+        let targetChar = chars[cursorPos - 1];
+        let deleteLen = targetChar.length;
+
+        chars.splice(cursorPos - 1, 1);
+        committedText = chars.join('');
+        cursorPos--;
+
+        if (window.AndroidBridge) {
+            if (window.AndroidBridge.deleteSurroundingText) {
+                window.AndroidBridge.deleteSurroundingText(deleteLen, 0);
+            } else if (window.AndroidBridge.deleteText) {
+                window.AndroidBridge.deleteText();
+                if (deleteLen > 1) {
+                    for(let i = 1; i < deleteLen; i++) {
+                        window.AndroidBridge.deleteText();
+                    }
+                }
+            }
         }
     }
 }
