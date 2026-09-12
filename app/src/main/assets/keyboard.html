@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.44 이모지삭제완벽수정본</title>
+<title>쓸기자판 v9.45 이모지완벽삭제수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1282,13 +1282,23 @@ if (hangulBuffer.jong !== -1) {
 } else {
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
+        let targetChar = chars[cursorPos - 1];
+        let deleteLen = targetChar.length; // UTF-16 기준 문자 길이 (이모지는 보통 2 이상)
+
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
 
         if (window.AndroidBridge) {
-            if (window.AndroidBridge.deleteText) {
+            if (window.AndroidBridge.deleteSurroundingText) {
+                window.AndroidBridge.deleteSurroundingText(deleteLen, 0);
+            } else if (window.AndroidBridge.deleteText) {
                 window.AndroidBridge.deleteText();
+                if (deleteLen > 1) {
+                    for(let i = 1; i < deleteLen; i++) {
+                        window.AndroidBridge.deleteText();
+                    }
+                }
             }
         }
     }
