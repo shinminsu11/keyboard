@@ -26,6 +26,7 @@ class SsulKeyboardService : InputMethodService() {
             setBackgroundColor(Color.parseColor("#d1d8e0"))
         }
 
+        // 해상도 차이를 극복하기 위해 dp를 픽셀로 자동 변환 (235dp)
         val heightDp = 235
         val heightPx = (heightDp * resources.displayMetrics.density).toInt()
 
@@ -37,118 +38,54 @@ class SsulKeyboardService : InputMethodService() {
 
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-
             setBackgroundColor(Color.TRANSPARENT)
 
+            // HTML과 통신할 브릿지 연결
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
+            loadUrl("file:///android_asset/keyboard.html")
 
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                 }
             }
-
-            loadUrl("file:///android_asset/keyboard.html")
         }
 
         container.addView(webView)
         return container
     }
 
+    // ★ 실시간 조합과 삭제를 완벽히 지원하는 최종 브릿지
     inner class KeyboardBridge {
 
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.commitText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.setComposingText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setSelection(start: Int, end: Int) {
-            val inputConnection = currentInputConnection ?: return
-
-            try {
-                inputConnection.setSelection(start, end)
-            } catch (e: Exception) {
-                e.printStackTrace()
+            val inputConnection = currentInputConnection
+            if (inputConnection != null) {
+                inputConnection.finishComposingText()
+                inputConnection.commitText(text, 1)
             }
         }
 
         @JavascriptInterface
         fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
-
-            try {
-                /*
-                 * ① 먼저 현재 선택 영역을 확인한다.
-                 *
-                 * getSelectedText()가 null/빈 문자열이 아니면
-                 * 사용자가 글자를 선택해 놓은 상태이다.
-                 */
-                val selectedText = inputConnection.getSelectedText(0)
-
-                if (!selectedText.isNullOrEmpty()) {
-
-                    // 선택 영역 삭제
-                    // commitText("", 1)은 현재 선택 영역을 빈 문자열로
-                    // 교체하므로 선택한 부분 전체가 삭제된다.
-                    inputConnection.commitText("", 1)
-
-                    return
-                }
-
-                /*
-                 * ② 선택 영역이 없으면 기존 방식대로
-                 * 커서 바로 앞의 한 글자를 삭제한다.
-                 */
+            val inputConnection = currentInputConnection
+            if (inputConnection != null) {
                 inputConnection.finishComposingText()
-
-                val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-
-                if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
-
-                    val high = textBefore[textBefore.length - 2]
-                    val low = textBefore[textBefore.length - 1]
-
-                    // 이모지 등 서로게이트 쌍이면 2 UTF-16 단위 삭제
-                    if (Character.isSurrogatePair(high, low)) {
-                        inputConnection.deleteSurroundingText(2, 0)
-                    } else {
-                        // 일반 문자는 1글자 삭제
-                        inputConnection.deleteSurroundingText(1, 0)
-                    }
-
-                } else if (!textBefore.isNullOrEmpty()) {
-
-                    inputConnection.deleteSurroundingText(1, 0)
-                }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
+                inputConnection.deleteSurroundingText(1, 0)
             }
         }
 
         @JavascriptInterface
-        fun deleteOneCharForHanja() {
-            val inputConnection = currentInputConnection ?: return
-
-            inputConnection.finishComposingText()
-            inputConnection.deleteSurroundingText(1, 0)
+        fun setComposing(text: String) {
+            val inputConnection = currentInputConnection
+            inputConnection?.setComposingText(text, 1)
         }
 
         @JavascriptInterface
-        fun performSearch() {
-            val inputConnection = currentInputConnection ?: return
-
-            inputConnection.performEditorAction(
-                EditorInfo.IME_ACTION_SEARCH
-            )
+        fun finishComposing() {
+            val inputConnection = currentInputConnection
+            inputConnection?.finishComposingText()
         }
 
         @JavascriptInterface
@@ -160,27 +97,15 @@ class SsulKeyboardService : InputMethodService() {
                 ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-
                 startActivity(intent)
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    override fun onStartInputView(
-        info: EditorInfo?,
-        restarting: Boolean
-    ) {
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
-
-        if (::webView.isInitialized) {
-            webView.evaluateJavascript(
-                "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
-                null
-            )
-        }
     }
 
     override fun onEvaluateFullscreenMode(): Boolean {
