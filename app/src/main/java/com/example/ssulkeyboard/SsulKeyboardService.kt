@@ -1,161 +1,69 @@
 package com.example.ssulkeyboard
 
-import android.content.Intent
-import android.net.Uri
-import android.inputmethodservice.InputMethodService
-import android.view.View
-import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
+import android.annotation.SuppressLint
+import android.os.Bundle
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.LinearLayout
-import android.graphics.Color
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 
-class SsulKeyboardService : InputMethodService() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
 
-    override fun onCreateInputView(): View {
-        val container = LinearLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#d1d8e0"))
-        }
-
-        val heightDp = 235
-        val heightPx = (heightDp * resources.displayMetrics.density).toInt()
-
+    @SuppressLint("SetJavaScriptEnabled")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // 간단하게 WebView를 화면 전체에 생성합니다.
         webView = WebView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                heightPx
-            )
-
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-
-            setBackgroundColor(Color.TRANSPARENT)
-
-            addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
-
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                }
-            }
-
-            loadUrl("file:///android_asset/keyboard.html")
+            // 웹뷰 내에서 링크 등이 열리도록 설정
+            webViewClient = WebViewClient()
+            
+            // 자바스크립트에서 "AndroidBridge" 이름으로 부를 수 있게 인터페이스를 연결합니다.
+            addJavascriptInterface(WebAppInterface(this@MainActivity), "AndroidBridge")
         }
+        
+        setContentView(webView)
 
-        container.addView(webView)
-        return container
+        // assets 폴더에 index.html을 넣었을 경우 로드하는 방법
+        webView.loadUrl("file:///android_asset/index.html")
+        
+        // 또는 외부 서버나 로컬 서버 주소가 있다면 아래처럼 로드하세요.
+        // webView.loadUrl("https://your-server-url.com")
     }
 
-    inner class KeyboardBridge {
+    // 자바스크립트와 통신할 브릿지 클래스
+    inner class WebAppInterface(private val context: MainActivity) {
 
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.commitText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
-            inputConnection.setComposingText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setSelection(start: Int, end: Int) {
-            val inputConnection = currentInputConnection ?: return
-            try {
-                // 자판 내부에서 커서가 이동했을 때 안드로이드 시스템 커서도 함께 이동시킵니다.
-                inputConnection.setSelection(start, end)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // 웹에서 글자가 확정되어 입력될 때 신호를 받는 곳
+            // TODO: 안드로이드 InputConnection과 연동하여 실제 입력창에 글자 주입
         }
 
         @JavascriptInterface
         fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
-
-            try {
-                val selectedText = inputConnection.getSelectedText(0)
-
-                if (!selectedText.isNullOrEmpty()) {
-                    inputConnection.commitText("", 1)
-                    return
-                }
-
-                inputConnection.finishComposingText()
-
-                // [수정 포인트] 커서 바로 앞의 글자 1개를 정확하게 삭제하도록 수정
-                // 기존의 2글자 서러게이트 체크 대신 시스템 커서 기준 1글자 삭제를 수행합니다.
-                val textBefore = inputConnection.getTextBeforeCursor(1, 0)
-                if (!textBefore.isNullOrEmpty()) {
-                    inputConnection.deleteSurroundingText(1, 0)
-                }
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // 웹에서 백스페이스가 눌렸을 때 신호를 받는 곳
+            // TODO: 안드로이드 InputConnection을 통해 글자 삭제
         }
 
         @JavascriptInterface
         fun deleteOneCharForHanja() {
-            val inputConnection = currentInputConnection ?: return
-
-            inputConnection.finishComposingText()
-            inputConnection.deleteSurroundingText(1, 0)
-        }
-
-        @JavascriptInterface
-        fun performSearch() {
-            val inputConnection = currentInputConnection ?: return
-
-            inputConnection.performEditorAction(
-                EditorInfo.IME_ACTION_SEARCH
-            )
+            // 한자 변환 시 직전 글자 지울 때 호출
         }
 
         @JavascriptInterface
         fun openUrl(url: String) {
-            try {
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(url)
-                ).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-
-                startActivity(intent)
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // URL 열기 요청 처리
         }
-    }
-
-    override fun onStartInputView(
-        info: EditorInfo?,
-        restarting: Boolean
-    ) {
-        super.onStartInputView(info, restarting)
-
-        if (::webView.isInitialized) {
-            webView.evaluateJavascript(
-                "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
-                null
-            )
+        
+        @JavascriptInterface
+        fun setComposing(text: String) {
+            // 조합 중인 텍스트 처리
         }
-    }
-
-    override fun onEvaluateFullscreenMode(): Boolean {
-        return false
     }
 }
