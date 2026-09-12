@@ -38,7 +38,6 @@ class SsulKeyboardService : InputMethodService() {
 
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
-
             setBackgroundColor(Color.TRANSPARENT)
 
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
@@ -54,67 +53,6 @@ class SsulKeyboardService : InputMethodService() {
 
         container.addView(webView)
         return container
-    }
-
-    /**
-     * 안드로이드 입력창의 실제 커서/선택 위치가 바뀔 때마다 호출됩니다.
-     *
-     * 핵심은 단순히 selection 숫자만 HTML에 보내는 것이 아니라,
-     * 그 순간 InputConnection에서 실제 앞/뒤 문자열도 함께 읽어
-     * HTML의 committedText와 cursorPos를 같은 상태로 맞추는 것입니다.
-     *
-     * 이렇게 해야 문장 중간을 터치한 직후 첫 번째 삭제에서도
-     * 맨 뒤 글자가 아니라 실제 커서 앞의 글자가 삭제됩니다.
-     */
-    override fun onUpdateSelection(
-        oldSelStart: Int,
-        oldSelEnd: Int,
-        newSelStart: Int,
-        newSelEnd: Int,
-        candidatesStart: Int,
-        candidatesEnd: Int
-    ) {
-        super.onUpdateSelection(
-            oldSelStart,
-            oldSelEnd,
-            newSelStart,
-            newSelEnd,
-            candidatesStart,
-            candidatesEnd
-        )
-
-        if (!::webView.isInitialized) return
-
-        val inputConnection = currentInputConnection ?: return
-
-        try {
-            // 현재 실제 입력창의 커서 앞/뒤 문자열을 가져옵니다.
-            // 충분히 큰 값으로 가져와 문장 전체를 동기화합니다.
-            val before = inputConnection.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-            val after = inputConnection.getTextAfterCursor(10000, 0)?.toString() ?: ""
-
-            val beforeJs = JSONObject.quote(before)
-            val afterJs = JSONObject.quote(after)
-
-            val js = """
-                (function() {
-                    if (window.setNativeCursorPosition) {
-                        window.setNativeCursorPosition(
-                            $newSelStart,
-                            $newSelEnd,
-                            $beforeJs,
-                            $afterJs
-                        );
-                    }
-                })();
-            """.trimIndent()
-
-            webView.post {
-                webView.evaluateJavascript(js, null)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     inner class KeyboardBridge {
@@ -151,6 +89,7 @@ class SsulKeyboardService : InputMethodService() {
 
                 if (!selectedText.isNullOrEmpty()) {
                     inputConnection.commitText("", 1)
+                    syncNativeTextAfterDelete()
                     return
                 }
 
@@ -169,6 +108,40 @@ class SsulKeyboardService : InputMethodService() {
                     inputConnection.deleteSurroundingText(1, 0)
                 }
 
+                syncNativeTextAfterDelete()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        private fun syncNativeTextAfterDelete() {
+            if (!::webView.isInitialized) return
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+                val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+
+                val beforeJs = JSONObject.quote(before)
+                val afterJs = JSONObject.quote(after)
+
+                webView.post {
+                    webView.evaluateJavascript(
+                        """
+                        (function() {
+                            if (window.setNativeTextAfterDelete) {
+                                window.setNativeTextAfterDelete(
+                                    $beforeJs,
+                                    $afterJs
+                                );
+                            }
+                        })();
+                        """.trimIndent(),
+                        null
+                    )
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -178,18 +151,13 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteOneCharForHanja() {
             val inputConnection = currentInputConnection ?: return
 
-            try {
-                inputConnection.finishComposingText()
-                inputConnection.deleteSurroundingText(1, 0)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            inputConnection.finishComposingText()
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
-
             inputConnection.performEditorAction(
                 EditorInfo.IME_ACTION_SEARCH
             )
@@ -204,12 +172,60 @@ class SsulKeyboardService : InputMethodService() {
                 ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-
                 startActivity(intent)
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart,
+            oldSelEnd,
+            newSelStart,
+            newSelEnd,
+            candidatesStart,
+            candidatesEnd
+        )
+
+        if (!::webView.isInitialized) return
+
+        val inputConnection = currentInputConnection ?: return
+
+        try {
+            val before = inputConnection.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+            val after = inputConnection.getTextAfterCursor(10000, 0)?.toString() ?: ""
+
+            val beforeJs = JSONObject.quote(before)
+            val afterJs = JSONObject.quote(after)
+
+            webView.post {
+                webView.evaluateJavascript(
+                    """
+                    (function() {
+                        if (window.setNativeCursorPosition) {
+                            window.setNativeCursorPosition(
+                                $newSelStart,
+                                $newSelEnd,
+                                $beforeJs,
+                                $afterJs
+                            );
+                        }
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
