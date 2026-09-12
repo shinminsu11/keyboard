@@ -1,8 +1,9 @@
 package com.example.ssulkeyboard
 
 import android.content.Intent
-import android.net.Uri
+import android.graphics.Color
 import android.inputmethodservice.InputMethodService
+import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -10,30 +11,37 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
-import android.graphics.Color
 
 class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
 
-    // 안드로이드 실제 입력창의 커서 위치
+    // Android 실제 입력창의 마지막 선택/커서 위치
     private var nativeCursorStart = 0
     private var nativeCursorEnd = 0
 
     override fun onCreateInputView(): View {
+
         val container = LinearLayout(this).apply {
+
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
+
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#d1d8e0"))
+
+            setBackgroundColor(
+                Color.parseColor("#d1d8e0")
+            )
         }
 
         val heightDp = 235
-        val heightPx = (heightDp * resources.displayMetrics.density).toInt()
+        val heightPx =
+            (heightDp * resources.displayMetrics.density).toInt()
 
         webView = WebView(this).apply {
+
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 heightPx
@@ -44,28 +52,42 @@ class SsulKeyboardService : InputMethodService() {
 
             setBackgroundColor(Color.TRANSPARENT)
 
-            addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
+            addJavascriptInterface(
+                KeyboardBridge(),
+                "AndroidBridge"
+            )
 
             webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
+
+                override fun onPageFinished(
+                    view: WebView?,
+                    url: String?
+                ) {
                     super.onPageFinished(view, url)
                 }
             }
 
-            loadUrl("file:///android_asset/keyboard.html")
+            loadUrl(
+                "file:///android_asset/keyboard.html"
+            )
         }
 
         container.addView(webView)
+
         return container
     }
 
+
     /**
-     * 안드로이드 입력창의 실제 커서/선택 영역이 변경될 때 호출됩니다.
+     * Android 실제 입력창의 커서/선택 위치가 바뀔 때 호출됩니다.
      *
-     * 사용자가 문장 중간을 터치했을 경우
-     * oldSelStart -> newSelStart 로 실제 커서가 이동합니다.
+     * 여기서는 위치만 기억합니다.
      *
-     * 이 값을 기록해 두어 첫 번째 삭제부터 실제 커서 위치를 사용하도록 합니다.
+     * 중요:
+     * HTML에 다시 커서 위치를 밀어 넣지 않습니다.
+     *
+     * HTML과 Android 사이에서 서로 커서를 덮어쓰는
+     * 경쟁 상태(race condition)를 막기 위한 것입니다.
      */
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -86,49 +108,74 @@ class SsulKeyboardService : InputMethodService() {
 
         nativeCursorStart = newSelStart
         nativeCursorEnd = newSelEnd
-
-        // 현재 HTML 자판에도 실제 커서 위치를 알려줍니다.
-        if (::webView.isInitialized) {
-
-            val js = """
-                (function() {
-                    if (window.setNativeCursorPosition) {
-                        window.setNativeCursorPosition(
-                            $newSelStart,
-                            $newSelEnd
-                        );
-                    }
-                })();
-            """.trimIndent()
-
-            webView.post {
-                webView.evaluateJavascript(js, null)
-            }
-        }
     }
+
 
     inner class KeyboardBridge {
 
+
+        /**
+         * 일반 문자 확정 입력
+         */
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
 
-            inputConnection.commitText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
-
-            inputConnection.setComposingText(text, 1)
-        }
-
-        @JavascriptInterface
-        fun setSelection(start: Int, end: Int) {
-            val inputConnection = currentInputConnection ?: return
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
-                inputConnection.setSelection(start, end)
+
+                inputConnection.commitText(
+                    text,
+                    1
+                )
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+
+        /**
+         * 한글 조합 입력
+         */
+        @JavascriptInterface
+        fun setComposing(text: String) {
+
+            val inputConnection =
+                currentInputConnection ?: return
+
+            try {
+
+                inputConnection.setComposingText(
+                    text,
+                    1
+                )
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+
+        /**
+         * Android 실제 입력창의 커서/선택 위치 지정
+         */
+        @JavascriptInterface
+        fun setSelection(
+            start: Int,
+            end: Int
+        ) {
+
+            val inputConnection =
+                currentInputConnection ?: return
+
+            try {
+
+                inputConnection.setSelection(
+                    start,
+                    end
+                )
 
                 nativeCursorStart = start
                 nativeCursorEnd = end
@@ -138,95 +185,146 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
+
+        /**
+         * 삭제
+         *
+         * 우선순위:
+         *
+         * 1. 실제 선택 영역이 있으면 선택 영역 전체 삭제
+         * 2. 선택 영역이 없으면 커서 앞 1글자 삭제
+         *
+         * 이모지/유니코드 문자도 code point 기준으로 삭제합니다.
+         */
         @JavascriptInterface
         fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
 
                 /*
-                 * 선택된 글자가 있다면 선택 영역 자체를 삭제합니다.
+                 * --------------------------------------------------
+                 * 1. 현재 Android 입력창에 실제 선택 영역이 있는지 확인
+                 * --------------------------------------------------
                  */
-                val selectedText = inputConnection.getSelectedText(0)
+                val selectedText =
+                    inputConnection.getSelectedText(0)
 
                 if (!selectedText.isNullOrEmpty()) {
-                    inputConnection.commitText("", 1)
+
+                    /*
+                     * 선택된 영역 자체를 삭제합니다.
+                     *
+                     * 예:
+                     * 가나다라마바
+                     * 가나다 선택
+                     * 삭제
+                     * → 라마바
+                     */
+                    inputConnection.commitText(
+                        "",
+                        1
+                    )
+
+                    nativeCursorStart =
+                        inputConnection.getTextBeforeCursor(
+                            100000,
+                            0
+                        )?.length ?: 0
+
+                    nativeCursorEnd =
+                        nativeCursorStart
+
                     return
                 }
 
+
                 /*
-                 * 중요:
+                 * --------------------------------------------------
+                 * 2. 선택이 없을 경우
+                 * --------------------------------------------------
                  *
-                 * 기존 코드에서는
+                 * 커서 앞의 문자 하나를 삭제합니다.
                  *
-                 *     finishComposingText()
-                 *
-                 * 를 먼저 실행했습니다.
-                 *
-                 * 문장 중간 커서에서 조합 상태와 실제 커서 위치가
-                 * 엇갈릴 수 있으므로, 실제 InputConnection의
-                 * 커서 위치를 기준으로 바로 삭제합니다.
+                 * deleteSurroundingTextInCodePoints()
+                 * 를 사용하면 이모지 같은 surrogate pair도
+                 * 한 글자로 처리할 수 있습니다.
                  */
-
-                val textBefore = inputConnection.getTextBeforeCursor(2, 0)
-
-                if (!textBefore.isNullOrEmpty()) {
-
-                    /*
-                     * 이모지처럼 UTF-16 surrogate pair인 경우
-                     * 2칸 삭제합니다.
-                     */
-                    if (textBefore.length >= 2) {
-
-                        val high = textBefore[textBefore.length - 2]
-                        val low = textBefore[textBefore.length - 1]
-
-                        if (Character.isSurrogatePair(high, low)) {
-                            inputConnection.deleteSurroundingText(2, 0)
-                        } else {
-                            inputConnection.deleteSurroundingText(1, 0)
-                        }
-
-                    } else {
-
-                        inputConnection.deleteSurroundingText(1, 0)
-                    }
-                }
+                inputConnection.deleteSurroundingTextInCodePoints(
+                    1,
+                    0
+                )
 
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
+
+        /**
+         * 한자 입력 후 한 글자 삭제
+         *
+         * 기존 동작 유지
+         */
         @JavascriptInterface
         fun deleteOneCharForHanja() {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
+
                 inputConnection.finishComposingText()
-                inputConnection.deleteSurroundingText(1, 0)
+
+                inputConnection.deleteSurroundingTextInCodePoints(
+                    1,
+                    0
+                )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
+
+        /**
+         * 검색 실행
+         */
         @JavascriptInterface
         fun performSearch() {
-            val inputConnection = currentInputConnection ?: return
 
-            inputConnection.performEditorAction(
-                EditorInfo.IME_ACTION_SEARCH
-            )
+            val inputConnection =
+                currentInputConnection ?: return
+
+            try {
+
+                inputConnection.performEditorAction(
+                    EditorInfo.IME_ACTION_SEARCH
+                )
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
+
+        /**
+         * 외부 URL 실행
+         */
         @JavascriptInterface
         fun openUrl(url: String) {
+
             try {
+
                 val intent = Intent(
                     Intent.ACTION_VIEW,
                     Uri.parse(url)
                 ).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+                    )
                 }
 
                 startActivity(intent)
@@ -237,22 +335,39 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
+
+    /**
+     * 키보드가 새 입력창에 연결될 때
+     */
     override fun onStartInputView(
         info: EditorInfo?,
         restarting: Boolean
     ) {
-        super.onStartInputView(info, restarting)
+
+        super.onStartInputView(
+            info,
+            restarting
+        )
 
         nativeCursorStart = 0
         nativeCursorEnd = 0
 
         if (::webView.isInitialized) {
-            webView.evaluateJavascript(
-                "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
-                null
-            )
+
+            webView.post {
+
+                webView.evaluateJavascript(
+                    """
+                    if (window.resetKeyboardBuffer) {
+                        window.resetKeyboardBuffer();
+                    }
+                    """.trimIndent(),
+                    null
+                )
+            }
         }
     }
+
 
     override fun onEvaluateFullscreenMode(): Boolean {
         return false
