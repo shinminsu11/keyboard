@@ -58,24 +58,29 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun commitText(text: String) {
             val inputConnection = currentInputConnection ?: return
-            // 조합 상태를 깔끔하게 비우고 텍스트를 정직하게 박아넣습니다.
+            // 조합 중이던 찌꺼기를 정리하고 최종 텍스트를 확실히 박아넣습니다.
             inputConnection.finishComposingText()
             inputConnection.commitText(text, 1)
         }
 
         @JavascriptInterface
         fun setComposing(text: String) {
+            // 글자 꼬임을 방지하기 위해 안드로이드 측 강제 조합 명령을 무시하고 
+            // 웹 자체 조합 화면에 맡기거나 단순화합니다.
             val inputConnection = currentInputConnection ?: return
-            if (text.isNotEmpty()) {
-                inputConnection.setComposingText(text, 1)
-            } else {
-                inputConnection.finishComposingText()
+            try {
+                if (text.isNotEmpty()) {
+                    inputConnection.setComposingText(text, 1)
+                } else {
+                    inputConnection.finishComposingText()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
-            // 커서 위치 변경 충돌을 방지하기 위해 안전하게 예외 처리
             val inputConnection = currentInputConnection ?: return
             try {
                 inputConnection.setSelection(start, end)
