@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.43 최종수정본</title>
+<title>쓸기자판 v9.44 이모지삭제완벽수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -302,7 +302,7 @@ justify-content: center;
 
 #toastMessage {
 position: absolute;
-bottom: 135px; /* 토스트 위치 2cm(약 75px) 상향 조정 */
+bottom: 135px;
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.9);
@@ -1282,23 +1282,13 @@ if (hangulBuffer.jong !== -1) {
 } else {
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
-        let targetChar = chars[cursorPos - 1];
-        let deleteLen = targetChar.length;
-
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
 
         if (window.AndroidBridge) {
-            if (window.AndroidBridge.deleteSurroundingText) {
-                window.AndroidBridge.deleteSurroundingText(deleteLen, 0);
-            } else if (window.AndroidBridge.deleteText) {
+            if (window.AndroidBridge.deleteText) {
                 window.AndroidBridge.deleteText();
-                if (deleteLen > 1) {
-                    for(let i = 1; i < deleteLen; i++) {
-                        window.AndroidBridge.deleteText();
-                    }
-                }
             }
         }
     }
