@@ -1,9 +1,8 @@
 package com.example.ssulkeyboard
 
 import android.content.Intent
-import android.graphics.Color
-import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.inputmethodservice.InputMethodService
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -11,7 +10,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
-import org.json.JSONObject
+import android.graphics.Color
 
 class SsulKeyboardService : InputMethodService() {
 
@@ -38,6 +37,7 @@ class SsulKeyboardService : InputMethodService() {
 
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+
             setBackgroundColor(Color.TRANSPARENT)
 
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
@@ -72,8 +72,8 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
             val inputConnection = currentInputConnection ?: return
-
             try {
+                // 자판 내부에서 커서가 이동했을 때 안드로이드 시스템 커서도 함께 이동시킵니다.
                 inputConnection.setSelection(start, end)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -89,59 +89,18 @@ class SsulKeyboardService : InputMethodService() {
 
                 if (!selectedText.isNullOrEmpty()) {
                     inputConnection.commitText("", 1)
-                    syncNativeTextAfterDelete()
                     return
                 }
 
-                val textBefore = inputConnection.getTextBeforeCursor(2, 0)
+                inputConnection.finishComposingText()
 
-                if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
-                    val high = textBefore[textBefore.length - 2]
-                    val low = textBefore[textBefore.length - 1]
-
-                    if (Character.isSurrogatePair(high, low)) {
-                        inputConnection.deleteSurroundingText(2, 0)
-                    } else {
-                        inputConnection.deleteSurroundingText(1, 0)
-                    }
-                } else if (!textBefore.isNullOrEmpty()) {
+                // [수정 포인트] 커서 바로 앞의 글자 1개를 정확하게 삭제하도록 수정
+                // 기존의 2글자 서러게이트 체크 대신 시스템 커서 기준 1글자 삭제를 수행합니다.
+                val textBefore = inputConnection.getTextBeforeCursor(1, 0)
+                if (!textBefore.isNullOrEmpty()) {
                     inputConnection.deleteSurroundingText(1, 0)
                 }
 
-                syncNativeTextAfterDelete()
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        private fun syncNativeTextAfterDelete() {
-            if (!::webView.isInitialized) return
-
-            val ic = currentInputConnection ?: return
-
-            try {
-                val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-                val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
-
-                val beforeJs = JSONObject.quote(before)
-                val afterJs = JSONObject.quote(after)
-
-                webView.post {
-                    webView.evaluateJavascript(
-                        """
-                        (function() {
-                            if (window.setNativeTextAfterDelete) {
-                                window.setNativeTextAfterDelete(
-                                    $beforeJs,
-                                    $afterJs
-                                );
-                            }
-                        })();
-                        """.trimIndent(),
-                        null
-                    )
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -158,6 +117,7 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
+
             inputConnection.performEditorAction(
                 EditorInfo.IME_ACTION_SEARCH
             )
@@ -172,60 +132,12 @@ class SsulKeyboardService : InputMethodService() {
                 ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
+
                 startActivity(intent)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        }
-    }
-
-    override fun onUpdateSelection(
-        oldSelStart: Int,
-        oldSelEnd: Int,
-        newSelStart: Int,
-        newSelEnd: Int,
-        candidatesStart: Int,
-        candidatesEnd: Int
-    ) {
-        super.onUpdateSelection(
-            oldSelStart,
-            oldSelEnd,
-            newSelStart,
-            newSelEnd,
-            candidatesStart,
-            candidatesEnd
-        )
-
-        if (!::webView.isInitialized) return
-
-        val inputConnection = currentInputConnection ?: return
-
-        try {
-            val before = inputConnection.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-            val after = inputConnection.getTextAfterCursor(10000, 0)?.toString() ?: ""
-
-            val beforeJs = JSONObject.quote(before)
-            val afterJs = JSONObject.quote(after)
-
-            webView.post {
-                webView.evaluateJavascript(
-                    """
-                    (function() {
-                        if (window.setNativeCursorPosition) {
-                            window.setNativeCursorPosition(
-                                $newSelStart,
-                                $newSelEnd,
-                                $beforeJs,
-                                $afterJs
-                            );
-                        }
-                    })();
-                    """.trimIndent(),
-                    null
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
