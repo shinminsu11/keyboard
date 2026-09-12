@@ -1127,6 +1127,25 @@ let lastSlideDir = '';
 let lastSlideTime = 0;
 let cursorPos = 0;
 
+// Android 입력창의 실제 커서/선택 위치를 자판 내부 커서와 동기화합니다.
+function setNativeCursorPosition(start, end, nativeBefore, nativeAfter) {
+    if (!window.AndroidBridge) return;
+
+    const before = (typeof nativeBefore === 'string') ? nativeBefore : '';
+    const after = (typeof nativeAfter === 'string') ? nativeAfter : '';
+
+    // Android InputConnection에서 읽은 실제 앞/뒤 문자열을 기준으로
+    // HTML 내부 문장도 즉시 실제 입력창과 동일하게 맞춥니다.
+    committedText = before + after;
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+
+    // before는 실제 커서 앞의 문자열이므로 내부 커서도 그 위치에 둡니다.
+    cursorPos = Array.from(before).length;
+    lastSlideDir = '';
+
+    updateScreen();
+}
+
 // 브라우저 테스트 입력창의 실제 커서 위치를 자판 내부 커서와 동기화합니다.
 // updateScreen()이 입력창의 selection을 다시 설정할 때 발생하는 selectionchange는 무시하고,
 // 사용자가 직접 입력창의 다른 위치를 터치했을 때만 내부 커서를 갱신합니다.
