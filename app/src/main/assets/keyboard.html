@@ -931,6 +931,29 @@ let activeTestInput = document.getElementById('testInput');
 document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
     el.addEventListener('focus', () => {
         activeTestInput = el;
+        expectedTestSelectionStart = typeof el.selectionStart === 'number' ? el.selectionStart : -1;
+    });
+
+    // 사용자가 테스트 입력창에 직접 입력/삭제했을 경우에도 내부 상태를 맞춥니다.
+    el.addEventListener('input', () => {
+        if (window.AndroidBridge || syncingTestInput) return;
+        const value = el.value || '';
+        const selStart = typeof el.selectionStart === 'number' ? el.selectionStart : value.length;
+        committedText = value;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        cursorPos = Array.from(value.slice(0, selStart)).length;
+        expectedTestSelectionStart = selStart;
+        updateScreen();
+    });
+
+    el.addEventListener('click', () => {
+        if (window.AndroidBridge) return;
+        setTimeout(handleTestInputSelectionChange, 0);
+    });
+
+    el.addEventListener('keyup', () => {
+        if (window.AndroidBridge) return;
+        handleTestInputSelectionChange();
     });
 });
 
@@ -1104,6 +1127,12 @@ let lastSlideDir = '';
 let lastSlideTime = 0;
 let cursorPos = 0;
 
+// 브라우저 테스트 입력창의 실제 커서 위치를 자판 내부 커서와 동기화합니다.
+// updateScreen()이 입력창의 selection을 다시 설정할 때 발생하는 selectionchange는 무시하고,
+// 사용자가 직접 입력창의 다른 위치를 터치했을 때만 내부 커서를 갱신합니다.
+let expectedTestSelectionStart = -1;
+let syncingTestInput = false;
+
 function getCharLen(str) {
 return Array.from(str).length;
 }
@@ -1112,6 +1141,54 @@ function getUtf16Index(arr, pos) {
     let subStr = arr.slice(0, pos).join('');
     return subStr.length;
 }
+
+function syncCursorFromTestInput() {
+    if (window.AndroidBridge) return;
+    if (!activeTestInput || syncingTestInput) return;
+    if (typeof activeTestInput.selectionStart !== 'number') return;
+
+    const value = activeTestInput.value || '';
+    const selStart = Math.max(0, Math.min(activeTestInput.selectionStart, value.length));
+
+    // updateScreen()이 방금 설정한 커서라면 이미 내부 상태와 일치하므로 건드리지 않습니다.
+    if (selStart === expectedTestSelectionStart && value === (committedText + assembleCurrent())) {
+        return;
+    }
+
+    syncingTestInput = true;
+    try {
+        // 사용자가 문장 중간을 터치하는 순간 현재 조합 중인 글자도 포함하여
+        // 입력창에 실제로 보이는 전체 문자열을 기준으로 다시 잡습니다.
+        committedText = value;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+
+        // selectionStart는 UTF-16 위치이므로 한글/이모지까지 안전하게 문자 수로 변환합니다.
+        cursorPos = Array.from(value.slice(0, selStart)).length;
+        expectedTestSelectionStart = selStart;
+    } finally {
+        syncingTestInput = false;
+    }
+
+    updateScreen();
+}
+
+// 브라우저에서 사용자가 직접 입력창의 커서를 옮겼을 때 감지합니다.
+function handleTestInputSelectionChange() {
+    if (window.AndroidBridge) return;
+    if (!activeTestInput) return;
+    if (document.activeElement !== activeTestInput) return;
+
+    const selStart = activeTestInput.selectionStart;
+    if (typeof selStart !== 'number') return;
+
+    const value = activeTestInput.value || '';
+    const expectedValue = committedText + assembleCurrent();
+
+    if (selStart === expectedTestSelectionStart && value === expectedValue) return;
+    syncCursorFromTestInput();
+}
+
+document.addEventListener('selectionchange', handleTestInputSelectionChange);
 
 let renderRequested = false;
 function updateScreen() {
@@ -1131,9 +1208,13 @@ function updateScreen() {
 
         if (activeTestInput && !window.AndroidBridge) {
             let fullStr = beforeCursor + currentAssembled + afterCursor;
-            activeTestInput.value = fullStr;
             let utf16Pos = getUtf16Index(chars, cursorPos) + currentAssembled.length;
+
+            syncingTestInput = true;
+            expectedTestSelectionStart = utf16Pos;
+            activeTestInput.value = fullStr;
             activeTestInput.setSelectionRange(utf16Pos, utf16Pos);
+            syncingTestInput = false;
         }
 
         if (window.AndroidBridge && window.AndroidBridge.setComposing) {
