@@ -40,7 +40,7 @@ class SsulKeyboardService : InputMethodService() {
             settings.domStorageEnabled = true
             setBackgroundColor(Color.TRANSPARENT)
 
-            // HTML과 통신할 브릿지 연결
+            // HTML과 통신할 브릿지 연결 ("AndroidBridge")
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
             loadUrl("file:///android_asset/keyboard.html")
 
@@ -55,46 +55,73 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    // ★ 실시간 조합과 삭제를 완벽히 지원하는 최종 브릿지
+    // ★ 웹 자판의 모든 JS 함수(deleteSurroundingText 포함)를 완벽히 수용하는 브릿지
     inner class KeyboardBridge {
 
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                inputConnection.finishComposingText()
-                inputConnection.commitText(text, 1)
-            }
-        }
-
-        @JavascriptInterface
-        fun deleteText() {
-            val inputConnection = currentInputConnection
-            if (inputConnection != null) {
-                inputConnection.finishComposingText()
-                inputConnection.deleteSurroundingText(1, 0)
-            }
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            inputConnection.commitText(text, 1)
         }
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            val inputConnection = currentInputConnection
-            inputConnection?.setComposingText(text, 1)
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.setComposingText(text, 1)
         }
 
         @JavascriptInterface
-        fun finishComposing() {
-            val inputConnection = currentInputConnection
-            inputConnection?.finishComposingText()
+        fun setSelection(start: Int, end: Int) {
+            val inputConnection = currentInputConnection ?: return
+            try {
+                inputConnection.setSelection(start, end)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // 1) 웹에서 우선적으로 찾는 deleteSurroundingText 대응 함수 추가!
+        @JavascriptInterface
+        fun deleteSurroundingText(beforeLength: Int, afterLength: Int) {
+            val inputConnection = currentInputConnection ?: return
+            try {
+                inputConnection.finishComposingText()
+                inputConnection.deleteSurroundingText(beforeLength, afterLength)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // 2) 백업용 deleteText 함수
+        @JavascriptInterface
+        fun deleteText() {
+            val inputConnection = currentInputConnection ?: return
+            try {
+                inputConnection.finishComposingText()
+                inputConnection.deleteSurroundingText(1, 0)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun deleteOneCharForHanja() {
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.finishComposingText()
+            inputConnection.deleteSurroundingText(1, 0)
+        }
+
+        @JavascriptInterface
+        fun performSearch() {
+            val inputConnection = currentInputConnection ?: return
+            inputConnection.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         }
 
         @JavascriptInterface
         fun openUrl(url: String) {
             try {
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(url)
-                ).apply {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 startActivity(intent)
@@ -106,6 +133,12 @@ class SsulKeyboardService : InputMethodService() {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript(
+                "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
+                null
+            )
+        }
     }
 
     override fun onEvaluateFullscreenMode(): Boolean {
