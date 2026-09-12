@@ -21,7 +21,8 @@ class SsulKeyboardService : InputMethodService() {
             settings.domStorageEnabled = true
             webViewClient = WebViewClient()
             addJavascriptInterface(IMEBridge(), "AndroidBridge")
-            loadUrl("file:///android_asset/index.html")
+            // assets 폴더의 keyboard.html 파일 로드
+            loadUrl("file:///android_asset/keyboard.html")
         }
         return webView
     }
