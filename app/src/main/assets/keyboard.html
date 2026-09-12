@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.45 이모지완벽삭제수정본</title>
+<title>쓸기자판 v9.43 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1273,38 +1273,60 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-if (hangulBuffer.jong !== -1) {
-    hangulBuffer.jong = -1;
-} else if (hangulBuffer.jung !== -1) {
-    hangulBuffer.jung = -1;
-} else if (hangulBuffer.cho !== -1) {
-    hangulBuffer.cho = -1;
-} else {
-    let chars = Array.from(committedText);
-    if (cursorPos > 0) {
-        let targetChar = chars[cursorPos - 1];
-        let deleteLen = targetChar.length; // UTF-16 기준 문자 길이 (이모지는 보통 2 이상)
+    if (activeTestInput) {
+        let selStart = activeTestInput.selectionStart;
+        let selEnd = activeTestInput.selectionEnd;
+        if (selStart !== null && selEnd !== null && selStart !== selEnd) {
+            let fullStr = activeTestInput.value || '';
+            let subBefore = fullStr.substring(0, selStart);
+            let subSelection = fullStr.substring(selStart, selEnd);
+            let subAfter = fullStr.substring(selEnd);
+            
+            committedText = subBefore + subAfter;
+            cursorPos = Array.from(subBefore).length;
+            
+            activeTestInput.value = committedText;
+            activeTestInput.setSelectionRange(selStart, selStart);
+            
+            hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+            lastSlideDir = '';
+            updateScreen();
+            return;
+        }
+    }
 
-        chars.splice(cursorPos - 1, 1);
-        committedText = chars.join('');
-        cursorPos--;
+    if (hangulBuffer.jong !== -1) {
+        hangulBuffer.jong = -1;
+    } else if (hangulBuffer.jung !== -1) {
+        hangulBuffer.jung = -1;
+    } else if (hangulBuffer.cho !== -1) {
+        hangulBuffer.cho = -1;
+    } else {
+        let chars = Array.from(committedText);
+        if (cursorPos > 0) {
+            let targetChar = chars[cursorPos - 1];
+            let deleteLen = targetChar.length;
 
-        if (window.AndroidBridge) {
-            if (window.AndroidBridge.deleteSurroundingText) {
-                window.AndroidBridge.deleteSurroundingText(deleteLen, 0);
-            } else if (window.AndroidBridge.deleteText) {
-                window.AndroidBridge.deleteText();
-                if (deleteLen > 1) {
-                    for(let i = 1; i < deleteLen; i++) {
-                        window.AndroidBridge.deleteText();
+            chars.splice(cursorPos - 1, 1);
+            committedText = chars.join('');
+            cursorPos--;
+
+            if (window.AndroidBridge) {
+                if (window.AndroidBridge.deleteSurroundingText) {
+                    window.AndroidBridge.deleteSurroundingText(deleteLen, 0);
+                } else if (window.AndroidBridge.deleteText) {
+                    window.AndroidBridge.deleteText();
+                    if (deleteLen > 1) {
+                        for(let i = 1; i < deleteLen; i++) {
+                            window.AndroidBridge.deleteText();
+                        }
                     }
                 }
             }
         }
     }
-}
-lastSlideDir = '';
-updateScreen();
+    lastSlideDir = '';
+    updateScreen();
 }
 
 let bsTimer = null;
