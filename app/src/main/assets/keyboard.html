@@ -302,7 +302,7 @@ justify-content: center;
 
 #toastMessage {
 position: absolute;
-bottom: 135px;
+bottom: 135px; /* 토스트 위치 2cm(약 75px) 상향 조정 */
 left: 50%;
 transform: translateX(-50%);
 background: rgba(30, 34, 39, 0.9);
@@ -484,8 +484,8 @@ background: #e2e8f0;
 <body>
 
 <div class="test-input-container">
-  <input type="text" class="test-input-box" id="testInput" placeholder="여기를 터치하여 입력 및 커서 인식 테스트하세요">
-  <textarea class="test-textarea" id="testTextarea" placeholder="여러 줄 입력 및 커서 인식 테스트 영역"></textarea>
+  <input type="text" class="test-input-box" id="testInput" inputmode="none" placeholder="여기를 터치하여 입력 및 커서 인식 테스트하세요">
+  <textarea class="test-textarea" id="testTextarea" inputmode="none" placeholder="여러 줄 입력 및 커서 인식 테스트 영역"></textarea>
 </div>
 
 <div id="screen" class="output-screen">
@@ -928,6 +928,35 @@ background: #e2e8f0;
 
 <script>
 let activeTestInput = document.getElementById('testInput');
+// 브라우저 테스트 입력창에서 선택 영역을 기억합니다.
+// updateScreen()이 입력창의 커서를 다시 설정하더라도,
+// 삭제 버튼은 사용자가 실제로 선택했던 영역을 삭제할 수 있도록 합니다.
+let pendingSelectionStart = -1;
+let pendingSelectionEnd = -1;
+let pendingSelectionValue = '';
+
+function rememberNativeSelection() {
+    if (!activeTestInput || window.AndroidBridge) return;
+    if (typeof activeTestInput.selectionStart !== 'number') return;
+    if (typeof activeTestInput.selectionEnd !== 'number') return;
+
+    const value = activeTestInput.value || '';
+    const start = Math.max(0, Math.min(activeTestInput.selectionStart, value.length));
+    const end = Math.max(start, Math.min(activeTestInput.selectionEnd, value.length));
+
+    if (start !== end) {
+        pendingSelectionStart = start;
+        pendingSelectionEnd = end;
+        pendingSelectionValue = value;
+    }
+}
+
+function clearRememberedSelection() {
+    pendingSelectionStart = -1;
+    pendingSelectionEnd = -1;
+    pendingSelectionValue = '';
+}
+
 
 document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
     el.addEventListener('focus', (e) => {
@@ -961,6 +990,14 @@ document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
             updateScreen();
         }, 50);
     });
+});
+
+// 선택 영역이 생기는 순간의 실제 selectionStart/selectionEnd를 기억합니다.
+// 이것이 삭제 버튼을 눌렀을 때 맨 뒤 글자가 지워지는 문제를 막습니다.
+document.addEventListener('selectionchange', () => {
+    if (!activeTestInput || window.AndroidBridge) return;
+    if (document.activeElement !== activeTestInput) return;
+    rememberNativeSelection();
 });
 
 const screenTextWrap = document.getElementById('screenTextWrap');
@@ -1273,28 +1310,38 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    if (activeTestInput) {
-        let selStart = activeTestInput.selectionStart;
-        let selEnd = activeTestInput.selectionEnd;
-        if (selStart !== null && selEnd !== null && selStart !== selEnd) {
-            let fullStr = activeTestInput.value || '';
-            let subBefore = fullStr.substring(0, selStart);
-            let subSelection = fullStr.substring(selStart, selEnd);
-            let subAfter = fullStr.substring(selEnd);
-            
-            committedText = subBefore + subAfter;
-            cursorPos = Array.from(subBefore).length;
-            
-            activeTestInput.value = committedText;
-            activeTestInput.setSelectionRange(selStart, selStart);
-            
-            hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-            lastSlideDir = '';
-            updateScreen();
-            return;
-        }
+    // 브라우저 테스트창에서 사용자가 선택한 글자가 있으면
+    // 일반 커서 삭제보다 선택 영역 전체를 먼저 삭제합니다.
+    if (!window.AndroidBridge &&
+        activeTestInput &&
+        pendingSelectionStart >= 0 &&
+        pendingSelectionEnd > pendingSelectionStart &&
+        pendingSelectionValue === (activeTestInput.value || '')) {
+
+        const startUtf16 = pendingSelectionStart;
+        const endUtf16 = pendingSelectionEnd;
+        const value = pendingSelectionValue;
+
+        const before = value.substring(0, startUtf16);
+        const after = value.substring(endUtf16);
+        const newValue = before + after;
+
+        activeTestInput.value = newValue;
+        try {
+            activeTestInput.setSelectionRange(startUtf16, startUtf16);
+        } catch(e) {}
+
+        committedText = newValue;
+        cursorPos = Array.from(before).length;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        clearRememberedSelection();
+
+        updateScreen();
+        return;
     }
 
+    // 일반적인 커서 위치 삭제는 기존 동작 그대로입니다.
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
     } else if (hangulBuffer.jung !== -1) {
@@ -1328,6 +1375,7 @@ function backspaceHangul() {
     lastSlideDir = '';
     updateScreen();
 }
+
 
 let bsTimer = null;
 let bsStartX = 0;
