@@ -16,41 +16,18 @@ class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
 
-    // Android 실제 입력창의 현재 커서 위치
-    private var nativeCursorStart = 0
-    private var nativeCursorEnd = 0
-
-    /*
-     * 쓸기자판이 직접 발생시킨 selection callback인지 표시합니다.
-     *
-     * 자판이 setComposingText(), commitText(), setSelection()
-     * 을 실행하면 Android가 onUpdateSelection()을 호출할 수 있습니다.
-     *
-     * 이때 그 callback을 HTML의 cursorPos에 다시 전달하면
-     * 한글 조합 상태가 깨질 수 있습니다.
-     *
-     * 따라서 "다음 selection callback 하나"만 무시합니다.
-     */
-    private var ignoreNextSelection = false
-
     override fun onCreateInputView(): View {
 
         val container = LinearLayout(this).apply {
-
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-
             orientation = LinearLayout.VERTICAL
-
-            setBackgroundColor(
-                Color.parseColor("#d1d8e0")
-            )
+            setBackgroundColor(Color.parseColor("#d1d8e0"))
         }
 
         val heightDp = 235
-
         val heightPx =
             (heightDp * resources.displayMetrics.density).toInt()
 
@@ -72,7 +49,6 @@ class SsulKeyboardService : InputMethodService() {
             )
 
             webViewClient = object : WebViewClient() {
-
                 override fun onPageFinished(
                     view: WebView?,
                     url: String?
@@ -81,9 +57,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
             }
 
-            loadUrl(
-                "file:///android_asset/keyboard.html"
-            )
+            loadUrl("file:///android_asset/keyboard.html")
         }
 
         container.addView(webView)
@@ -91,8 +65,17 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    /**
-     * Android 입력창의 실제 selection이 바뀔 때 호출됩니다.
+    /*
+     * 중요:
+     *
+     * 여기서 HTML의 cursorPos를 강제로 변경하지 않습니다.
+     *
+     * 기존 방식은 setComposingText()나 commitText() 과정에서도
+     * onUpdateSelection()이 발생하면서 HTML의 한글 조합 상태를
+     * 초기화시키는 문제가 있었습니다.
+     *
+     * 그래서 입력/삭제/간띄기 안정화를 위해 이 함수에서는
+     * Android 기본 선택 위치만 전달받고 끝냅니다.
      */
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -102,7 +85,6 @@ class SsulKeyboardService : InputMethodService() {
         candidatesStart: Int,
         candidatesEnd: Int
     ) {
-
         super.onUpdateSelection(
             oldSelStart,
             oldSelEnd,
@@ -111,218 +93,89 @@ class SsulKeyboardService : InputMethodService() {
             candidatesStart,
             candidatesEnd
         )
-
-        if (newSelStart < 0) {
-            return
-        }
-
-        nativeCursorStart = newSelStart
-        nativeCursorEnd = newSelEnd
-
-        /*
-         * 쓸기자판이 직접 만든 selection 변화라면
-         * 이번 callback만 HTML로 보내지 않습니다.
-         *
-         * 중요:
-         * 이 플래그는 여기서 바로 해제합니다.
-         * 그래서 깐띄기 같은 다음 동작까지 막지 않습니다.
-         */
-        if (ignoreNextSelection) {
-
-            ignoreNextSelection = false
-
-            return
-        }
-
-        /*
-         * 사용자가 외부 앱의 입력창을 손가락으로 눌러
-         * 실제 커서를 이동한 경우입니다.
-         *
-         * 이 경우에는 HTML 자판의 cursorPos도
-         * 실제 Android 커서 위치에 맞춥니다.
-         */
-        if (!::webView.isInitialized) {
-            return
-        }
-
-        val js = """
-            (function() {
-                if (window.setNativeCursorPosition) {
-                    window.setNativeCursorPosition(
-                        $newSelStart,
-                        $newSelEnd
-                    );
-                }
-            })();
-        """.trimIndent()
-
-        webView.post {
-
-            try {
-
-                webView.evaluateJavascript(
-                    js,
-                    null
-                )
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
     }
 
     inner class KeyboardBridge {
 
-        /**
-         * 일반 글자 확정 입력
-         */
         @JavascriptInterface
         fun commitText(text: String) {
 
-            val inputConnection =
-                currentInputConnection ?: return
+            val inputConnection = currentInputConnection ?: return
 
             try {
-
-                /*
-                 * commitText() 자체가 발생시키는
-                 * selection callback은 HTML 커서에 다시 전달하지 않습니다.
-                 */
-                ignoreNextSelection = true
-
-                inputConnection.commitText(
-                    text,
-                    1
-                )
-
+                inputConnection.commitText(text, 1)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        /**
-         * 한글 조합문자 입력
-         */
         @JavascriptInterface
         fun setComposing(text: String) {
 
-            val inputConnection =
-                currentInputConnection ?: return
+            val inputConnection = currentInputConnection ?: return
 
             try {
-
-                /*
-                 * setComposingText()가 발생시키는
-                 * selection callback을 한 번 무시합니다.
-                 *
-                 * 이것이 '가'에서 ㄱ만 지워지는 문제를 막는 핵심입니다.
-                 */
-                ignoreNextSelection = true
-
-                inputConnection.setComposingText(
-                    text,
-                    1
-                )
-
+                inputConnection.setComposingText(text, 1)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        /**
-         * Android 실제 커서를 지정 위치로 이동
-         */
         @JavascriptInterface
-        fun setSelection(
-            start: Int,
-            end: Int
-        ) {
+        fun setSelection(start: Int, end: Int) {
 
-            val inputConnection =
-                currentInputConnection ?: return
+            val inputConnection = currentInputConnection ?: return
 
             try {
-
-                /*
-                 * HTML 자판이 직접 요청한 커서 이동입니다.
-                 */
-                ignoreNextSelection = true
-
-                inputConnection.setSelection(
-                    start,
-                    end
-                )
-
-                nativeCursorStart = start
-                nativeCursorEnd = end
-
+                inputConnection.setSelection(start, end)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        /**
-         * 일반 삭제
-         *
-         * 기존 삭제 동작을 유지합니다.
-         */
         @JavascriptInterface
         fun deleteText() {
 
-            val inputConnection =
-                currentInputConnection ?: return
+            val inputConnection = currentInputConnection ?: return
 
             try {
 
                 /*
-                 * 선택 영역이 있으면 선택된 내용을 삭제합니다.
+                 * 선택 영역이 있으면 먼저 선택된 글자를 삭제
                  */
                 val selectedText =
                     inputConnection.getSelectedText(0)
 
                 if (!selectedText.isNullOrEmpty()) {
-
-                    inputConnection.commitText(
-                        "",
-                        1
-                    )
-
+                    inputConnection.commitText("", 1)
                     return
                 }
 
                 /*
-                 * 커서 앞의 최대 2 UTF-16 단위를 가져옵니다.
+                 * 커서 바로 앞 글자를 가져옵니다.
+                 *
+                 * 한글은 1 UTF-16 코드 단위이고,
+                 * 이모지처럼 surrogate pair를 사용하는 문자는
+                 * 2개를 삭제합니다.
                  */
-                val textBefore =
-                    inputConnection.getTextBeforeCursor(
-                        2,
-                        0
-                    )
+                val textBeforeCursor =
+                    inputConnection.getTextBeforeCursor(2, 0)
 
-                if (!textBefore.isNullOrEmpty()) {
+                if (!textBeforeCursor.isNullOrEmpty()) {
 
-                    if (textBefore.length >= 2) {
+                    if (textBeforeCursor.length >= 2) {
 
                         val high =
-                            textBefore[
-                                textBefore.length - 2
+                            textBeforeCursor[
+                                textBeforeCursor.length - 2
                             ]
 
                         val low =
-                            textBefore[
-                                textBefore.length - 1
+                            textBeforeCursor[
+                                textBeforeCursor.length - 1
                             ]
 
-                        /*
-                         * 이모지처럼 surrogate pair인 경우
-                         * 두 UTF-16 단위를 함께 삭제합니다.
-                         */
-                        if (
-                            Character.isSurrogatePair(
-                                high,
-                                low
-                            )
-                        ) {
+                        if (Character.isSurrogatePair(high, low)) {
 
                             inputConnection.deleteSurroundingText(
                                 2,
@@ -351,14 +204,10 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        /**
-         * 한자 입력 후 한 글자 삭제
-         */
         @JavascriptInterface
         fun deleteOneCharForHanja() {
 
-            val inputConnection =
-                currentInputConnection ?: return
+            val inputConnection = currentInputConnection ?: return
 
             try {
 
@@ -374,14 +223,10 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        /**
-         * 검색
-         */
         @JavascriptInterface
         fun performSearch() {
 
-            val inputConnection =
-                currentInputConnection ?: return
+            val inputConnection = currentInputConnection ?: return
 
             try {
 
@@ -394,9 +239,6 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        /**
-         * URL 열기
-         */
         @JavascriptInterface
         fun openUrl(url: String) {
 
@@ -406,9 +248,7 @@ class SsulKeyboardService : InputMethodService() {
                     Intent.ACTION_VIEW,
                     Uri.parse(url)
                 ).apply {
-                    addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                    )
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
 
                 startActivity(intent)
@@ -419,10 +259,6 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
-    /**
-     * 새로운 입력창이 시작될 때
-     * HTML 자판 내부 상태를 초기화합니다.
-     */
     override fun onStartInputView(
         info: EditorInfo?,
         restarting: Boolean
@@ -433,30 +269,23 @@ class SsulKeyboardService : InputMethodService() {
             restarting
         )
 
-        nativeCursorStart = 0
-        nativeCursorEnd = 0
-
-        ignoreNextSelection = false
-
+        /*
+         * 새 입력창이 시작되면 HTML 자판 내부 상태만 초기화합니다.
+         */
         if (::webView.isInitialized) {
 
             webView.post {
 
-                try {
-
-                    webView.evaluateJavascript(
-                        """
-                        javascript:
+                webView.evaluateJavascript(
+                    """
+                    (function() {
                         if (window.resetKeyboardBuffer) {
                             window.resetKeyboardBuffer();
                         }
-                        """.trimIndent(),
-                        null
-                    )
-
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                    })();
+                    """.trimIndent(),
+                    null
+                )
             }
         }
     }
