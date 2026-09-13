@@ -1024,6 +1024,25 @@ window.setNativeCursorPosition = function(start, end) {
     lastSlideDir = '';
 };
 
+// Android 실제 입력창의 삭제 결과를 HTML 자판 상태에 반영합니다.
+// 삭제 직후 committedText가 예전 문장을 계속 가지고 있으면
+// 다음 간띄기/특수문자 입력 때 HTML과 Android 위치가 어긋나
+// 마지막 글자가 사라질 수 있으므로, 실제 커서 앞/뒤 문자열을
+// 그대로 받아서 자판 상태를 다시 맞춥니다.
+window.syncNativeText = function(before, after) {
+    before = (before == null) ? '' : String(before);
+    after = (after == null) ? '' : String(after);
+
+    committedText = before + after;
+    cursorPos = Array.from(before).length;
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    lastSlideDir = '';
+
+    // 여기서는 updateScreen()을 호출하지 않습니다.
+    // updateScreen()은 setComposingText()를 호출하므로
+    // 삭제 직후 Android의 선택 위치를 다시 건드릴 수 있습니다.
+};
+
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
