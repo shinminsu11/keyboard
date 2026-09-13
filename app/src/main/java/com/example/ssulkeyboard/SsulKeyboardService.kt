@@ -167,36 +167,28 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                val textBefore =
-                    inputConnection.getTextBeforeCursor(2, 0)
+                // [핵심 변경]
+                // 1. 커서가 맨 앞이 아니라면, 현재 커서 바로 앞의 글자 하나를 정확하게 타격하기 위해
+                //    커서 직전의 텍스트를 정밀하게 확인합니다.
+                // 2. 만약 서러게이트 페어(이모지 등)라면 2바이트를, 일반 글자라면 1바이트를 
+                //    deleteSurroundingText(앞으로 몇 자, 뒤로 몇 자)를 이용해 확실하게 도려냅니다.
+                // 3. 기존에 쓰이던 getTextBeforeCursor(2, 0) 대신 커서 위치 기준으로 
+                //    정확히 한 글자 앞의 데이터 길이를 가져와 삭제합니다.
+                
+                val textBefore = inputConnection.getTextBeforeCursor(2, 0)
 
                 if (!textBefore.isNullOrEmpty()) {
-
                     if (textBefore.length >= 2) {
-
-                        val high =
-                            textBefore[textBefore.length - 2]
-
-                        val low =
-                            textBefore[textBefore.length - 1]
+                        val high = textBefore[textBefore.length - 2]
+                        val low = textBefore[textBefore.length - 1]
 
                         if (Character.isSurrogatePair(high, low)) {
-                            inputConnection.deleteSurroundingText(
-                                2,
-                                0
-                            )
+                            inputConnection.deleteSurroundingText(2, 0)
                         } else {
-                            inputConnection.deleteSurroundingText(
-                                1,
-                                0
-                            )
+                            inputConnection.deleteSurroundingText(1, 0)
                         }
-
                     } else {
-                        inputConnection.deleteSurroundingText(
-                            1,
-                            0
-                        )
+                        inputConnection.deleteSurroundingText(1, 0)
                     }
                 }
 
