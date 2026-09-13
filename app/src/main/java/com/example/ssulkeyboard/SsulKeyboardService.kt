@@ -1,8 +1,10 @@
 package com.example.ssulkeyboard
 
 import android.content.Intent
-import android.net.Uri
+import android.graphics.Color
 import android.inputmethodservice.InputMethodService
+import android.net.Uri
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -10,7 +12,6 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
-import android.graphics.Color
 
 class SsulKeyboardService : InputMethodService() {
 
@@ -20,17 +21,45 @@ class SsulKeyboardService : InputMethodService() {
     private var nativeCursorStart = 0
     private var nativeCursorEnd = 0
 
+    /*
+     * 쓸기자판 자체가 commitText / setComposingText를 실행한 직후에는
+     * Android가 onUpdateSelection()을 다시 호출할 수 있습니다.
+     *
+     * 그때 그 selection을 HTML cursorPos에 다시 전달하면
+     * 한글 조합 상태가 깨질 수 있으므로 잠시 무시합니다.
+     *
+     * 사용자가 외부 입력창을 손가락으로 터치해서 움직인 커서는
+     * 이 시간이 지난 뒤 정상적으로 HTML에 전달됩니다.
+     */
+    private var ignoreSelectionUntil = 0L
+
+    private fun ignoreOwnSelection() {
+        ignoreSelectionUntil =
+            SystemClock.uptimeMillis() + 300L
+    }
+
+    private fun isOwnSelectionIgnored(): Boolean {
+        return SystemClock.uptimeMillis() < ignoreSelectionUntil
+    }
+
     override fun onCreateInputView(): View {
+
         val container = LinearLayout(this).apply {
+
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
+
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#d1d8e0"))
+
+            setBackgroundColor(
+                Color.parseColor("#d1d8e0")
+            )
         }
 
         val heightDp = 235
+
         val heightPx =
             (heightDp * resources.displayMetrics.density).toInt()
 
@@ -61,7 +90,9 @@ class SsulKeyboardService : InputMethodService() {
                 }
             }
 
-            loadUrl("file:///android_asset/keyboard.html")
+            loadUrl(
+                "file:///android_asset/keyboard.html"
+            )
         }
 
         container.addView(webView)
@@ -70,12 +101,14 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     /**
-     * 안드로이드 실제 입력창의 커서/선택 위치가 변경될 때 호출됩니다.
+     * Android 실제 입력창의 selection이 바뀔 때 호출됩니다.
      *
-     * 사용자가 외부 앱의 입력창을 손가락으로 터치해서
-     * 문장 중간으로 커서를 옮긴 경우,
-     * Android가 알려주는 실제 커서 위치를
-     * HTML 자판의 cursorPos로 전달합니다.
+     * 중요:
+     *
+     * 1. 쓸기자판이 직접 발생시킨 selection 변경은 무시합니다.
+     *
+     * 2. 사용자가 외부 앱의 입력창을 손가락으로 터치하여
+     *    실제 커서를 이동한 경우에는 HTML cursorPos에 전달합니다.
      */
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -85,6 +118,7 @@ class SsulKeyboardService : InputMethodService() {
         candidatesStart: Int,
         candidatesEnd: Int
     ) {
+
         super.onUpdateSelection(
             oldSelStart,
             oldSelEnd,
@@ -101,15 +135,26 @@ class SsulKeyboardService : InputMethodService() {
         nativeCursorStart = newSelStart
         nativeCursorEnd = newSelEnd
 
+        /*
+         * 쓸기자판이 방금 입력한 글자 때문에 발생한
+         * selection callback이면 HTML에 전달하지 않습니다.
+         *
+         * 이것이 '가' 입력 후 ㄱ만 지워지는 문제를 막는 핵심입니다.
+         */
+        if (isOwnSelectionIgnored()) {
+            return
+        }
+
         if (!::webView.isInitialized) {
             return
         }
 
         /*
-         * Android의 selection 위치는 UTF-16 기준입니다.
+         * 외부 앱에서 손가락으로 옮긴 실제 커서 위치를
+         * 374.html에 전달합니다.
          *
-         * 374.html에서는 Array.from() 기준의 cursorPos를
-         * 사용하므로 HTML 내부에서 변환합니다.
+         * Android selection은 UTF-16 기준입니다.
+         * HTML 쪽에서 Array.from() 기준으로 변환합니다.
          */
         val js = """
             (function() {
@@ -123,8 +168,14 @@ class SsulKeyboardService : InputMethodService() {
         """.trimIndent()
 
         webView.post {
+
             try {
-                webView.evaluateJavascript(js, null)
+
+                webView.evaluateJavascript(
+                    js,
+                    null
+                )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -143,7 +194,18 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
-                inputConnection.commitText(text, 1)
+
+                /*
+                 * 이 commitText()는 쓸기자판이 직접 실행하는 것이므로
+                 * 뒤따라오는 onUpdateSelection()을 HTML에 전달하지 않습니다.
+                 */
+                ignoreOwnSelection()
+
+                inputConnection.commitText(
+                    text,
+                    1
+                )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -159,15 +221,26 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
-                inputConnection.setComposingText(text, 1)
+
+                /*
+                 * setComposingText() 역시 Android selection callback을
+                 * 발생시킬 수 있으므로 HTML 커서 동기화를 잠시 막습니다.
+                 */
+                ignoreOwnSelection()
+
+                inputConnection.setComposingText(
+                    text,
+                    1
+                )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
         /**
-         * HTML 자판에서 지정한 위치로
-         * Android 실제 커서를 이동시킵니다.
+         * HTML 자판에서 Android 실제 커서를
+         * 지정한 위치로 이동시킵니다.
          */
         @JavascriptInterface
         fun setSelection(
@@ -179,6 +252,11 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
+
+                /*
+                 * 이것도 HTML 자판이 직접 요청한 selection 변경입니다.
+                 */
+                ignoreOwnSelection()
 
                 inputConnection.setSelection(
                     start,
@@ -196,11 +274,10 @@ class SsulKeyboardService : InputMethodService() {
         /**
          * 일반 삭제
          *
-         * 기존 374.html의 삭제 구조를 유지합니다.
+         * 374.html의 기존 삭제 동작을 유지합니다.
          *
-         * 선택된 글자가 있으면 선택 영역 삭제.
-         * 그렇지 않으면 실제 Android 커서 바로 앞의
-         * 한 글자를 삭제합니다.
+         * 선택 영역이 있으면 선택 영역 삭제.
+         * 선택 영역이 없으면 실제 Android 커서 바로 앞을 삭제합니다.
          *
          * UTF-16 surrogate pair도 처리합니다.
          */
@@ -213,12 +290,14 @@ class SsulKeyboardService : InputMethodService() {
             try {
 
                 /*
-                 * 선택 영역이 있으면 선택된 내용을 삭제합니다.
+                 * 선택된 글자가 있으면 선택 영역 자체를 삭제합니다.
                  */
                 val selectedText =
                     inputConnection.getSelectedText(0)
 
                 if (!selectedText.isNullOrEmpty()) {
+
+                    ignoreOwnSelection()
 
                     inputConnection.commitText(
                         "",
@@ -229,10 +308,10 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 /*
-                 * 실제 Android 커서 바로 앞의 문자를 확인합니다.
+                 * 실제 커서 바로 앞의 텍스트를 가져옵니다.
                  *
-                 * 이모지 등 surrogate pair는
-                 * UTF-16 2칸을 삭제합니다.
+                 * 이모지처럼 UTF-16 surrogate pair인 경우
+                 * 2칸을 삭제합니다.
                  */
                 val textBefore =
                     inputConnection.getTextBeforeCursor(
@@ -241,6 +320,8 @@ class SsulKeyboardService : InputMethodService() {
                     )
 
                 if (!textBefore.isNullOrEmpty()) {
+
+                    ignoreOwnSelection()
 
                     if (textBefore.length >= 2) {
 
@@ -289,7 +370,7 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         /**
-         * 한자 입력 후 한 글자 삭제용
+         * 한자 입력 후 한 글자 삭제
          */
         @JavascriptInterface
         fun deleteOneCharForHanja() {
@@ -298,6 +379,8 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
+
+                ignoreOwnSelection()
 
                 inputConnection.finishComposingText()
 
@@ -312,7 +395,7 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         /**
-         * 검색/Enter 동작
+         * 검색 실행
          */
         @JavascriptInterface
         fun performSearch() {
@@ -358,12 +441,13 @@ class SsulKeyboardService : InputMethodService() {
 
     /**
      * 새로운 입력창이 시작될 때
-     * HTML 자판의 내부 조합 버퍼를 초기화합니다.
+     * HTML 자판 내부 버퍼를 초기화합니다.
      */
     override fun onStartInputView(
         info: EditorInfo?,
         restarting: Boolean
     ) {
+
         super.onStartInputView(
             info,
             restarting
@@ -371,6 +455,8 @@ class SsulKeyboardService : InputMethodService() {
 
         nativeCursorStart = 0
         nativeCursorEnd = 0
+
+        ignoreSelectionUntil = 0L
 
         if (::webView.isInitialized) {
 
