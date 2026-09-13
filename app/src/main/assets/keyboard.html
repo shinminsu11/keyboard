@@ -1004,6 +1004,11 @@ function resetKeyboardBuffer() {
 }
 window.resetKeyboardBuffer = resetKeyboardBuffer;
 
+// [추가] 안드로이드 앱에서 실제 커서 위치가 변경되었을 때 동기화해주는 함수
+window.setNativeCursorPosition = function(start, end) {
+    cursorPos = start;
+};
+
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
@@ -1273,7 +1278,6 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    // 1. 조합 중인 한글 버퍼가 있다면 자판 자체 버퍼에서 먼저 지웁니다.
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
@@ -1288,13 +1292,11 @@ function backspaceHangul() {
         return;
     }
 
-    // 2. [핵심] 안드로이드 앱 안(APK)에서는 웹이 자체 메모리를 지우지 않고 무조건 안드로이드 브릿지에 삭제를 맡깁니다!
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
         return;
     }
 
-    // 3. 여기 아래는 오직 웹 브라우저 테스트 전용 로직입니다.
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
         let targetChar = chars[cursorPos - 1];
