@@ -1,4 +1,3 @@
-
 package com.example.ssulkeyboard
 
 import android.content.Intent
@@ -70,22 +69,6 @@ class SsulKeyboardService : InputMethodService() {
         // JS 쪽에서 필요한 횟수만큼 이 함수를 반복 호출한다.
         @JavascriptInterface
         fun deleteText() {
-            currentInputConnection?.deleteSurroundingText(1, 0)
-        }
-
-        // ⭐ 새로 추가: JS가 계산한 정확한 삭제 길이를 한 번에 그대로 반영한다.
-        // keyboard.html의 backspaceHangul()이 이 함수를 우선적으로 찾아서 호출하는데,
-        // 지금까지 이 함수가 Kotlin에 없어서 호출이 조용히 실패했고,
-        // 그 사이 JS 쪽 committedText/cursorPos만 먼저 줄어들어
-        // 실제 화면 텍스트와 어긋나는 문제가 있었다. (뒷글자가 지워지는 원인)
-        @JavascriptInterface
-        fun deleteSurroundingText(beforeLength: Int, afterLength: Int) {
-            currentInputConnection?.deleteSurroundingText(beforeLength, afterLength)
-        }
-
-        // 한자 변환 시, 바뀔 글자 하나를 정확히 지우기 위한 전용 함수
-        @JavascriptInterface
-        fun deleteOneCharForHanja() {
             currentInputConnection?.deleteSurroundingText(1, 0)
         }
 
