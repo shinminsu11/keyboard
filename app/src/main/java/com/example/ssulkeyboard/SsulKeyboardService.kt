@@ -33,6 +33,7 @@ class SsulKeyboardService : InputMethodService() {
             (heightDp * resources.displayMetrics.density).toInt()
 
         webView = WebView(this).apply {
+
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 heightPx
@@ -61,9 +62,14 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         container.addView(webView)
+
         return container
     }
 
+    /*
+     * 입력 중 Android의 선택 위치 변화가
+     * HTML 한글 조합 상태를 건드리지 않도록 합니다.
+     */
     override fun onUpdateSelection(
         oldSelStart: Int,
         oldSelEnd: Int,
@@ -82,35 +88,53 @@ class SsulKeyboardService : InputMethodService() {
         )
     }
 
+    /*
+     * Android 실제 입력창의 내용을 HTML 자판과 동기화합니다.
+     * 삭제 후 HTML 내부 문자 상태가 오래된 상태로 남지 않도록 합니다.
+     */
     private fun syncHtmlWithNativeText() {
+
         if (!::webView.isInitialized) return
 
-        val inputConnection = currentInputConnection ?: return
+        val inputConnection =
+            currentInputConnection ?: return
 
         try {
-            val before = inputConnection
-                .getTextBeforeCursor(10000, 0)
-                ?.toString()
-                ?: ""
 
-            val after = inputConnection
-                .getTextAfterCursor(10000, 0)
-                ?.toString()
-                ?: ""
+            val before =
+                inputConnection
+                    .getTextBeforeCursor(10000, 0)
+                    ?.toString()
+                    ?: ""
 
-            val beforeJs = JSONObject.quote(before)
-            val afterJs = JSONObject.quote(after)
+            val after =
+                inputConnection
+                    .getTextAfterCursor(10000, 0)
+                    ?.toString()
+                    ?: ""
+
+            val beforeJs =
+                JSONObject.quote(before)
+
+            val afterJs =
+                JSONObject.quote(after)
 
             val js = """
                 (function() {
                     if (window.syncNativeText) {
-                        window.syncNativeText($beforeJs, $afterJs);
+                        window.syncNativeText(
+                            $beforeJs,
+                            $afterJs
+                        );
                     }
                 })();
             """.trimIndent()
 
             webView.post {
-                webView.evaluateJavascript(js, null)
+                webView.evaluateJavascript(
+                    js,
+                    null
+                )
             }
 
         } catch (e: Exception) {
@@ -122,10 +146,15 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun commitText(text: String) {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
-                inputConnection.commitText(text, 1)
+                inputConnection.commitText(
+                    text,
+                    1
+                )
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -133,21 +162,34 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
-                inputConnection.setComposingText(text, 1)
+                inputConnection.setComposingText(
+                    text,
+                    1
+                )
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
         @JavascriptInterface
-        fun setSelection(start: Int, end: Int) {
-            val inputConnection = currentInputConnection ?: return
+        fun setSelection(
+            start: Int,
+            end: Int
+        ) {
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
-                inputConnection.setSelection(start, end)
+                inputConnection.setSelection(
+                    start,
+                    end
+                )
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -155,20 +197,88 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteText() {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
+
+                /*
+                 * 선택된 글자가 있으면 선택 영역 삭제
+                 */
                 val selectedText =
                     inputConnection.getSelectedText(0)
 
                 if (!selectedText.isNullOrEmpty()) {
-                    inputConnection.commitText("", 1)
+
+                    inputConnection.commitText(
+                        "",
+                        1
+                    )
+
                     syncHtmlWithNativeText()
                     return
                 }
 
-                inputConnection.deleteSurroundingText(1, 0)
+                /*
+                 * 커서 바로 앞 문자를 확인
+                 */
+                val textBefore =
+                    inputConnection.getTextBeforeCursor(
+                        2,
+                        0
+                    )
 
+                if (!textBefore.isNullOrEmpty()) {
+
+                    /*
+                     * 이모지 등 surrogate pair
+                     */
+                    if (textBefore.length >= 2) {
+
+                        val high =
+                            textBefore[
+                                textBefore.length - 2
+                            ]
+
+                        val low =
+                            textBefore[
+                                textBefore.length - 1
+                            ]
+
+                        if (
+                            Character.isSurrogatePair(
+                                high,
+                                low
+                            )
+                        ) {
+
+                            inputConnection.deleteSurroundingText(
+                                2,
+                                0
+                            )
+
+                        } else {
+
+                            inputConnection.deleteSurroundingText(
+                                1,
+                                0
+                            )
+                        }
+
+                    } else {
+
+                        inputConnection.deleteSurroundingText(
+                            1,
+                            0
+                        )
+                    }
+                }
+
+                /*
+                 * 삭제가 끝난 실제 Android 문자를
+                 * HTML 자판에 다시 맞춥니다.
+                 */
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
@@ -178,9 +288,12 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteOneCharForHanja() {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
+
                 inputConnection.finishComposingText()
 
                 inputConnection.deleteSurroundingText(
@@ -197,12 +310,16 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun performSearch() {
-            val inputConnection = currentInputConnection ?: return
+
+            val inputConnection =
+                currentInputConnection ?: return
 
             try {
+
                 inputConnection.performEditorAction(
                     EditorInfo.IME_ACTION_SEARCH
                 )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -210,12 +327,16 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun openUrl(url: String) {
+
             try {
+
                 val intent = Intent(
                     Intent.ACTION_VIEW,
                     Uri.parse(url)
                 ).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+                    )
                 }
 
                 startActivity(intent)
@@ -230,6 +351,7 @@ class SsulKeyboardService : InputMethodService() {
         info: EditorInfo?,
         restarting: Boolean
     ) {
+
         super.onStartInputView(
             info,
             restarting
