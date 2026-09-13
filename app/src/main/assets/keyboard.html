@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.44 최종안정본</title>
+<title>쓸기자판 v9.45 깐띄기완벽연동본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1312,24 +1312,23 @@ function backspaceHangul() {
         return;
     }
 
-    // 2. 웹 자판 내부의 커서 위치를 기준으로 앞 글자를 정확히 도려내고 표준 키 이벤트를 던집니다.
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
         lastSlideDir = '';
-        
         updateScreen();
 
         if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
+            let utf16Idx = getUtf16Index(chars, cursorPos);
+            window.AndroidBridge.deleteText(utf16Idx);
         }
         return;
     }
 
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
+        window.AndroidBridge.deleteText(0);
         return;
     }
     
