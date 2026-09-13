@@ -16,10 +16,6 @@ class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
 
-    // 안드로이드 실제 입력창의 커서 위치
-    private var nativeCursorStart = 0
-    private var nativeCursorEnd = 0
-
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -59,44 +55,6 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
-    override fun onUpdateSelection(
-        oldSelStart: Int,
-        oldSelEnd: Int,
-        newSelStart: Int,
-        newSelEnd: Int,
-        candidatesStart: Int,
-        candidatesEnd: Int
-    ) {
-        super.onUpdateSelection(
-            oldSelStart,
-            oldSelEnd,
-            newSelStart,
-            newSelEnd,
-            candidatesStart,
-            candidatesEnd
-        )
-
-        nativeCursorStart = newSelStart
-        nativeCursorEnd = newSelEnd
-
-        if (::webView.isInitialized) {
-            val js = """
-                (function() {
-                    if (window.setNativeCursorPosition) {
-                        window.setNativeCursorPosition(
-                            $newSelStart,
-                            $newSelEnd
-                        );
-                    }
-                })();
-            """.trimIndent()
-
-            webView.post {
-                webView.evaluateJavascript(js, null)
-            }
-        }
-    }
-
     inner class KeyboardBridge {
 
         @JavascriptInterface
@@ -115,9 +73,8 @@ class SsulKeyboardService : InputMethodService() {
         fun setSelection(start: Int, end: Int) {
             val inputConnection = currentInputConnection ?: return
             try {
+                // 자판 내부에서 커서가 이동했을 때 안드로이드 시스템 커서도 함께 이동시킵니다.
                 inputConnection.setSelection(start, end)
-                nativeCursorStart = start
-                nativeCursorEnd = end
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -128,30 +85,19 @@ class SsulKeyboardService : InputMethodService() {
             val inputConnection = currentInputConnection ?: return
 
             try {
-                // 1. 선택된 글자가 있다면 선택 영역 자체를 삭제
                 val selectedText = inputConnection.getSelectedText(0)
+
                 if (!selectedText.isNullOrEmpty()) {
                     inputConnection.commitText("", 1)
                     return
                 }
 
-                // 2. 조합 중인 텍스트 정리 후 커서 바로 앞의 글자 정밀 타겟팅 삭제
                 inputConnection.finishComposingText()
 
+                // [수정 포인트] 커서 바로 앞의 글자 1개를 정확하게 삭제하도록 수정
+                // 기존의 2글자 서러게이트 체크 대신 시스템 커서 기준 1글자 삭제를 수행합니다.
                 val textBefore = inputConnection.getTextBeforeCursor(1, 0)
                 if (!textBefore.isNullOrEmpty()) {
-                    val high = textBefore[0]
-                    if (textBefore.length >= 2) {
-                        val low = textBefore[1]
-                        if (Character.isSurrogatePair(high, low)) {
-                            inputConnection.deleteSurroundingText(2, 0)
-                        } else {
-                            inputConnection.deleteSurroundingText(1, 0)
-                        }
-                    } else {
-                        inputConnection.deleteSurroundingText(1, 0)
-                    }
-                } else {
                     inputConnection.deleteSurroundingText(1, 0)
                 }
 
@@ -164,17 +110,14 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteOneCharForHanja() {
             val inputConnection = currentInputConnection ?: return
 
-            try {
-                inputConnection.finishComposingText()
-                inputConnection.deleteSurroundingText(1, 0)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            inputConnection.finishComposingText()
+            inputConnection.deleteSurroundingText(1, 0)
         }
 
         @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
+
             inputConnection.performEditorAction(
                 EditorInfo.IME_ACTION_SEARCH
             )
@@ -189,7 +132,9 @@ class SsulKeyboardService : InputMethodService() {
                 ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
+
                 startActivity(intent)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -201,9 +146,6 @@ class SsulKeyboardService : InputMethodService() {
         restarting: Boolean
     ) {
         super.onStartInputView(info, restarting)
-
-        nativeCursorStart = 0
-        nativeCursorEnd = 0
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
