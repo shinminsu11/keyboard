@@ -167,47 +167,18 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                val textBefore =
-                    inputConnection.getTextBeforeCursor(2, 0)
-
-                if (!textBefore.isNullOrEmpty()) {
-                    if (textBefore.length >= 2) {
-                        val high =
-                            textBefore[textBefore.length - 2]
-                        val low =
-                            textBefore[textBefore.length - 1]
-
-                        if (Character.isSurrogatePair(high, low)) {
-                            inputConnection.deleteSurroundingText(
-                                2,
-                                0
-                            )
-                        } else {
-                            inputConnection.deleteSurroundingText(
-                                1,
-                                0
-                            )
-                        }
-                    } else {
-                        inputConnection.deleteSurroundingText(
-                            1,
-                            0
-                        )
-                    }
-                } else {
-                    inputConnection.sendKeyEvent(
-                        android.view.KeyEvent(
-                            android.view.KeyEvent.ACTION_DOWN,
-                            android.view.KeyEvent.KEYCODE_DEL
-                        )
+                inputConnection.sendKeyEvent(
+                    android.view.KeyEvent(
+                        android.view.KeyEvent.ACTION_DOWN,
+                        android.view.KeyEvent.KEYCODE_DEL
                     )
-                    inputConnection.sendKeyEvent(
-                        android.view.KeyEvent(
-                            android.view.KeyEvent.ACTION_UP,
-                            android.view.KeyEvent.KEYCODE_DEL
-                        )
+                )
+                inputConnection.sendKeyEvent(
+                    android.view.KeyEvent(
+                        android.view.KeyEvent.ACTION_UP,
+                        android.view.KeyEvent.KEYCODE_DEL
                     )
-                }
+                )
 
                 syncHtmlWithNativeText()
 
