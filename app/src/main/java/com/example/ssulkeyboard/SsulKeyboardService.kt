@@ -17,10 +17,6 @@ class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
 
-    // Android가 마지막으로 알려준 실제 커서 위치
-    private var nativeCursorStart = 0
-    private var nativeCursorEnd = 0
-
     override fun onCreateInputView(): View {
 
         val container = LinearLayout(this).apply {
@@ -28,11 +24,16 @@ class SsulKeyboardService : InputMethodService() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
+
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#d1d8e0"))
+
+            setBackgroundColor(
+                Color.parseColor("#d1d8e0")
+            )
         }
 
         val heightDp = 235
+
         val heightPx =
             (heightDp * resources.displayMetrics.density).toInt()
 
@@ -54,15 +55,21 @@ class SsulKeyboardService : InputMethodService() {
             )
 
             webViewClient = object : WebViewClient() {
+
                 override fun onPageFinished(
                     view: WebView?,
                     url: String?
                 ) {
-                    super.onPageFinished(view, url)
+                    super.onPageFinished(
+                        view,
+                        url
+                    )
                 }
             }
 
-            loadUrl("file:///android_asset/keyboard.html")
+            loadUrl(
+                "file:///android_asset/keyboard.html"
+            )
         }
 
         container.addView(webView)
@@ -71,9 +78,12 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     /*
-     * Android 실제 커서 위치를 저장만 합니다.
+     * Android에서 실제 커서가 움직였다는 사실은
+     * 여기서 HTML에 강제로 전달하지 않습니다.
      *
-     * HTML의 커서 상태를 여기서 건드리지 않습니다.
+     * setComposingText() 과정에서 발생하는
+     * onUpdateSelection 때문에 한글 입력 상태가
+     * 꼬이는 것을 막습니다.
      */
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -91,17 +101,16 @@ class SsulKeyboardService : InputMethodService() {
             candidatesStart,
             candidatesEnd
         )
-
-        nativeCursorStart = newSelStart
-        nativeCursorEnd = newSelEnd
     }
 
     /*
-     * Android 실제 입력창의 내용을 HTML에 동기화합니다.
+     * Android 실제 입력창의 상태를 HTML에 맞춥니다.
      */
     private fun syncHtmlWithNativeText() {
 
-        if (!::webView.isInitialized) return
+        if (!::webView.isInitialized) {
+            return
+        }
 
         val inputConnection =
             currentInputConnection ?: return
@@ -110,13 +119,19 @@ class SsulKeyboardService : InputMethodService() {
 
             val before =
                 inputConnection
-                    .getTextBeforeCursor(10000, 0)
+                    .getTextBeforeCursor(
+                        10000,
+                        0
+                    )
                     ?.toString()
                     ?: ""
 
             val after =
                 inputConnection
-                    .getTextAfterCursor(10000, 0)
+                    .getTextAfterCursor(
+                        10000,
+                        0
+                    )
                     ?.toString()
                     ?: ""
 
@@ -138,6 +153,7 @@ class SsulKeyboardService : InputMethodService() {
             """.trimIndent()
 
             webView.post {
+
                 webView.evaluateJavascript(
                     js,
                     null
@@ -145,6 +161,7 @@ class SsulKeyboardService : InputMethodService() {
             }
 
         } catch (e: Exception) {
+
             e.printStackTrace()
         }
     }
@@ -152,10 +169,13 @@ class SsulKeyboardService : InputMethodService() {
     inner class KeyboardBridge {
 
         @JavascriptInterface
-        fun commitText(text: String) {
+        fun commitText(
+            text: String
+        ) {
 
             val inputConnection =
-                currentInputConnection ?: return
+                currentInputConnection
+                    ?: return
 
             try {
 
@@ -165,15 +185,19 @@ class SsulKeyboardService : InputMethodService() {
                 )
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
 
         @JavascriptInterface
-        fun setComposing(text: String) {
+        fun setComposing(
+            text: String
+        ) {
 
             val inputConnection =
-                currentInputConnection ?: return
+                currentInputConnection
+                    ?: return
 
             try {
 
@@ -183,6 +207,7 @@ class SsulKeyboardService : InputMethodService() {
                 )
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
@@ -194,7 +219,8 @@ class SsulKeyboardService : InputMethodService() {
         ) {
 
             val inputConnection =
-                currentInputConnection ?: return
+                currentInputConnection
+                    ?: return
 
             try {
 
@@ -203,141 +229,147 @@ class SsulKeyboardService : InputMethodService() {
                     end
                 )
 
-                nativeCursorStart = start
-                nativeCursorEnd = end
-
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
 
+        /*
+         * =====================================================
+         * 삭제
+         * =====================================================
+         *
+         * 가장 중요한 부분입니다.
+         *
+         * nativeCursorStart 같은 오래된 값을 사용하지 않고
+         * 삭제 버튼을 누른 바로 그 순간 Android에게
+         * 현재 커서 앞/뒤 내용을 물어봅니다.
+         */
         @JavascriptInterface
         fun deleteText() {
 
             val inputConnection =
-                currentInputConnection ?: return
+                currentInputConnection
+                    ?: return
 
             try {
 
                 /*
-                 * ★ 핵심 ★
-                 *
-                 * 삭제 명령이 들어온 순간의 커서 위치를
-                 * 먼저 보관합니다.
-                 *
-                 * 예:
-                 *
-                 * 가나다라마
-                 * ^
-                 *
-                 * 또는
-                 *
-                 * 가|나다라마
-                 *
-                 * 여기서 Android 내부 상태가 바뀌더라도
-                 * 원래 위치를 잃지 않도록 합니다.
+                 * 1. 현재 선택 영역 확인
                  */
-                val deleteStart = nativeCursorStart
-                val deleteEnd = nativeCursorEnd
+                val selectedText =
+                    inputConnection.getSelectedText(0)
 
-                /*
-                 * 선택 영역이 있으면 선택 영역 삭제.
-                 */
-                if (deleteStart != deleteEnd) {
-
-                    val start =
-                        minOf(
-                            deleteStart,
-                            deleteEnd
-                        )
-
-                    val end =
-                        maxOf(
-                            deleteStart,
-                            deleteEnd
-                        )
-
-                    inputConnection.setSelection(
-                        start,
-                        end
-                    )
+                if (!selectedText.isNullOrEmpty()) {
 
                     inputConnection.commitText(
                         "",
                         1
                     )
 
-                    nativeCursorStart = start
-                    nativeCursorEnd = start
-
                     syncHtmlWithNativeText()
+
                     return
                 }
 
                 /*
-                 * ★ 중요 ★
+                 * 2. 삭제 버튼을 누른 바로 그 순간의
+                 * 실제 커서 앞/뒤 내용을 확보합니다.
                  *
-                 * finishComposingText()를 삭제 전에
-                 * 무조건 호출하지 않습니다.
-                 *
-                 * 이것 때문에 이전 버전에서는
-                 * 커서가 '마' 뒤로 이동하면서
-                 *
-                 * 마 → 라 → 다 → 나 → 가
-                 *
-                 * 순서로 삭제되는 문제가 생겼습니다.
+                 * 여기서 커서 위치를 결정합니다.
                  */
+                val textBefore =
+                    inputConnection
+                        .getTextBeforeCursor(
+                            10000,
+                            0
+                        )
+                        ?.toString()
+                        ?: ""
+
+                val textAfter =
+                    inputConnection
+                        .getTextAfterCursor(
+                            10000,
+                            0
+                        )
+                        ?.toString()
+                        ?: ""
+
+                if (textBefore.isEmpty()) {
+                    return
+                }
 
                 /*
-                 * 현재 커서 위치를 확실하게 복원합니다.
+                 * 현재 Android 커서의 UTF-16 위치입니다.
+                 */
+                val cursorUtf16 =
+                    textBefore.length
+
+                /*
+                 * 3. 현재 조합 상태를 종료합니다.
+                 *
+                 * 단, 종료하기 전에 커서 위치를 확보했기
+                 * 때문에 이후 다시 정확한 위치로 돌아갑니다.
+                 */
+                inputConnection.finishComposingText()
+
+                /*
+                 * 4. finishComposingText() 이후 Android가
+                 * 커서를 다른 위치로 바꿀 가능성에 대비하여
+                 * 원래 커서 위치를 다시 지정합니다.
                  */
                 inputConnection.setSelection(
-                    deleteStart,
-                    deleteStart
+                    cursorUtf16,
+                    cursorUtf16
                 )
 
                 /*
-                 * 커서 앞의 글자를 확인합니다.
+                 * 5. 다시 현재 커서 앞 2글자를 확인합니다.
                  */
-                val textBefore =
-                    inputConnection.getTextBeforeCursor(
-                        2,
-                        0
-                    )
+                val beforeDelete =
+                    inputConnection
+                        .getTextBeforeCursor(
+                            2,
+                            0
+                        )
+                        ?.toString()
+                        ?: ""
 
-                if (!textBefore.isNullOrEmpty()) {
+                if (beforeDelete.isEmpty()) {
+                    return
+                }
 
-                    if (textBefore.length >= 2) {
+                /*
+                 * 6. 커서 바로 앞 한 글자 삭제.
+                 *
+                 * 이모지처럼 UTF-16 surrogate pair인 경우
+                 * 2개를 삭제합니다.
+                 */
+                if (beforeDelete.length >= 2) {
 
-                        val high =
-                            textBefore[
-                                textBefore.length - 2
-                            ]
+                    val high =
+                        beforeDelete[
+                            beforeDelete.length - 2
+                        ]
 
-                        val low =
-                            textBefore[
-                                textBefore.length - 1
-                            ]
+                    val low =
+                        beforeDelete[
+                            beforeDelete.length - 1
+                        ]
 
-                        if (
-                            Character.isSurrogatePair(
-                                high,
-                                low
-                            )
-                        ) {
+                    if (
+                        Character.isSurrogatePair(
+                            high,
+                            low
+                        )
+                    ) {
 
-                            inputConnection.deleteSurroundingText(
-                                2,
-                                0
-                            )
-
-                        } else {
-
-                            inputConnection.deleteSurroundingText(
-                                1,
-                                0
-                            )
-                        }
+                        inputConnection.deleteSurroundingText(
+                            2,
+                            0
+                        )
 
                     } else {
 
@@ -346,26 +378,23 @@ class SsulKeyboardService : InputMethodService() {
                             0
                         )
                     }
+
+                } else {
+
+                    inputConnection.deleteSurroundingText(
+                        1,
+                        0
+                    )
                 }
 
                 /*
-                 * 삭제된 뒤 실제 커서 위치는 한 칸 앞으로 갑니다.
-                 */
-                nativeCursorStart =
-                    maxOf(
-                        0,
-                        deleteStart - 1
-                    )
-
-                nativeCursorEnd =
-                    nativeCursorStart
-
-                /*
-                 * 실제 Android 문자 상태를 HTML과 맞춥니다.
+                 * 7. 삭제가 끝난 실제 Android 상태를
+                 * HTML 자판에 반영합니다.
                  */
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
@@ -374,68 +403,43 @@ class SsulKeyboardService : InputMethodService() {
         fun deleteOneCharForHanja() {
 
             val inputConnection =
-                currentInputConnection ?: return
+                currentInputConnection
+                    ?: return
 
             try {
 
-                val deleteStart =
-                    nativeCursorStart
-
-                val deleteEnd =
-                    nativeCursorEnd
-
-                if (deleteStart != deleteEnd) {
-
-                    val start =
-                        minOf(
-                            deleteStart,
-                            deleteEnd
+                val textBefore =
+                    inputConnection
+                        .getTextBeforeCursor(
+                            10000,
+                            0
                         )
+                        ?.toString()
+                        ?: ""
 
-                    val end =
-                        maxOf(
-                            deleteStart,
-                            deleteEnd
-                        )
-
-                    inputConnection.setSelection(
-                        start,
-                        end
-                    )
-
-                    inputConnection.commitText(
-                        "",
-                        1
-                    )
-
-                    nativeCursorStart = start
-                    nativeCursorEnd = start
-
-                } else {
-
-                    inputConnection.setSelection(
-                        deleteStart,
-                        deleteStart
-                    )
-
-                    inputConnection.deleteSurroundingText(
-                        1,
-                        0
-                    )
-
-                    nativeCursorStart =
-                        maxOf(
-                            0,
-                            deleteStart - 1
-                        )
-
-                    nativeCursorEnd =
-                        nativeCursorStart
+                if (textBefore.isEmpty()) {
+                    return
                 }
+
+                val cursorUtf16 =
+                    textBefore.length
+
+                inputConnection.finishComposingText()
+
+                inputConnection.setSelection(
+                    cursorUtf16,
+                    cursorUtf16
+                )
+
+                inputConnection.deleteSurroundingText(
+                    1,
+                    0
+                )
 
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
@@ -444,7 +448,8 @@ class SsulKeyboardService : InputMethodService() {
         fun performSearch() {
 
             val inputConnection =
-                currentInputConnection ?: return
+                currentInputConnection
+                    ?: return
 
             try {
 
@@ -453,27 +458,33 @@ class SsulKeyboardService : InputMethodService() {
                 )
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
 
         @JavascriptInterface
-        fun openUrl(url: String) {
+        fun openUrl(
+            url: String
+        ) {
 
             try {
 
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(url)
-                ).apply {
-                    addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                    )
-                }
+                val intent =
+                    Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse(url)
+                    ).apply {
+
+                        addFlags(
+                            Intent.FLAG_ACTIVITY_NEW_TASK
+                        )
+                    }
 
                 startActivity(intent)
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
@@ -488,9 +499,6 @@ class SsulKeyboardService : InputMethodService() {
             info,
             restarting
         )
-
-        nativeCursorStart = 0
-        nativeCursorEnd = 0
 
         if (::webView.isInitialized) {
 
