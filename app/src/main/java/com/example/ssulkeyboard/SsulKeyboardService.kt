@@ -68,7 +68,7 @@ class SsulKeyboardService : InputMethodService() {
 
     /*
      * 입력 중 Android의 선택 위치 변화가
-     * HTML 한글 조합 상태를 건드리지 않도록 합니다.
+     * HTML 한글 조합 상태를 강제로 변경하지 않도록 합니다.
      */
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -89,8 +89,8 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     /*
-     * Android 실제 입력창의 내용을 HTML 자판과 동기화합니다.
-     * 삭제 후 HTML 내부 문자 상태가 오래된 상태로 남지 않도록 합니다.
+     * Android 실제 입력창의 현재 내용을
+     * HTML 자판의 committedText / cursorPos와 맞춥니다.
      */
     private fun syncHtmlWithNativeText() {
 
@@ -204,7 +204,25 @@ class SsulKeyboardService : InputMethodService() {
             try {
 
                 /*
-                 * 선택된 글자가 있으면 선택 영역 삭제
+                 * ★ 핵심 수정 ★
+                 *
+                 * 마지막 글자가 Android의 조합 상태에
+                 * 남아 있을 수 있습니다.
+                 *
+                 * 예:
+                 * 가나다라[마]
+                 *
+                 * 이 상태에서 외부 앱에서 '가' 위치로
+                 * 커서를 옮긴 뒤 삭제하면 조합 상태인
+                 * '마' 때문에 삭제 위치가 꼬일 수 있습니다.
+                 *
+                 * 삭제하기 전에 조합 상태를 확정합니다.
+                 */
+                inputConnection.finishComposingText()
+
+                /*
+                 * 선택 영역이 있으면
+                 * 선택된 글자를 삭제합니다.
                  */
                 val selectedText =
                     inputConnection.getSelectedText(0)
@@ -221,7 +239,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 /*
-                 * 커서 바로 앞 문자를 확인
+                 * 커서 바로 앞의 문자 확인
                  */
                 val textBefore =
                     inputConnection.getTextBeforeCursor(
@@ -232,7 +250,8 @@ class SsulKeyboardService : InputMethodService() {
                 if (!textBefore.isNullOrEmpty()) {
 
                     /*
-                     * 이모지 등 surrogate pair
+                     * 이모지처럼 UTF-16 surrogate pair를
+                     * 사용하는 문자는 2개 단위로 삭제합니다.
                      */
                     if (textBefore.length >= 2) {
 
@@ -276,8 +295,8 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 /*
-                 * 삭제가 끝난 실제 Android 문자를
-                 * HTML 자판에 다시 맞춥니다.
+                 * 삭제 후 실제 Android 입력 내용을
+                 * HTML 자판 내부 상태에 다시 반영합니다.
                  */
                 syncHtmlWithNativeText()
 
