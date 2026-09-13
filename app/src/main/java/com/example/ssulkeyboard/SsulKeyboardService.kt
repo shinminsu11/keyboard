@@ -17,6 +17,10 @@ class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
 
+    // Android가 마지막으로 알려준 실제 커서 위치
+    private var nativeCursorStart = 0
+    private var nativeCursorEnd = 0
+
     override fun onCreateInputView(): View {
 
         val container = LinearLayout(this).apply {
@@ -67,8 +71,9 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     /*
-     * 입력 중 Android의 선택 위치 변화가
-     * HTML 한글 조합 상태를 강제로 변경하지 않도록 합니다.
+     * Android 실제 커서 위치를 저장만 합니다.
+     *
+     * HTML의 커서 상태를 여기서 건드리지 않습니다.
      */
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -86,11 +91,13 @@ class SsulKeyboardService : InputMethodService() {
             candidatesStart,
             candidatesEnd
         )
+
+        nativeCursorStart = newSelStart
+        nativeCursorEnd = newSelEnd
     }
 
     /*
-     * Android 실제 입력창의 현재 내용을
-     * HTML 자판의 committedText / cursorPos와 맞춥니다.
+     * Android 실제 입력창의 내용을 HTML에 동기화합니다.
      */
     private fun syncHtmlWithNativeText() {
 
@@ -151,10 +158,12 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
+
                 inputConnection.commitText(
                     text,
                     1
                 )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -167,10 +176,12 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
+
                 inputConnection.setComposingText(
                     text,
                     1
                 )
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -186,10 +197,15 @@ class SsulKeyboardService : InputMethodService() {
                 currentInputConnection ?: return
 
             try {
+
                 inputConnection.setSelection(
                     start,
                     end
                 )
+
+                nativeCursorStart = start
+                nativeCursorEnd = end
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -204,42 +220,84 @@ class SsulKeyboardService : InputMethodService() {
             try {
 
                 /*
-                 * ★ 핵심 수정 ★
+                 * ★ 핵심 ★
                  *
-                 * 마지막 글자가 Android의 조합 상태에
-                 * 남아 있을 수 있습니다.
+                 * 삭제 명령이 들어온 순간의 커서 위치를
+                 * 먼저 보관합니다.
                  *
                  * 예:
-                 * 가나다라[마]
                  *
-                 * 이 상태에서 외부 앱에서 '가' 위치로
-                 * 커서를 옮긴 뒤 삭제하면 조합 상태인
-                 * '마' 때문에 삭제 위치가 꼬일 수 있습니다.
+                 * 가나다라마
+                 * ^
                  *
-                 * 삭제하기 전에 조합 상태를 확정합니다.
+                 * 또는
+                 *
+                 * 가|나다라마
+                 *
+                 * 여기서 Android 내부 상태가 바뀌더라도
+                 * 원래 위치를 잃지 않도록 합니다.
                  */
-                inputConnection.finishComposingText()
+                val deleteStart = nativeCursorStart
+                val deleteEnd = nativeCursorEnd
 
                 /*
-                 * 선택 영역이 있으면
-                 * 선택된 글자를 삭제합니다.
+                 * 선택 영역이 있으면 선택 영역 삭제.
                  */
-                val selectedText =
-                    inputConnection.getSelectedText(0)
+                if (deleteStart != deleteEnd) {
 
-                if (!selectedText.isNullOrEmpty()) {
+                    val start =
+                        minOf(
+                            deleteStart,
+                            deleteEnd
+                        )
+
+                    val end =
+                        maxOf(
+                            deleteStart,
+                            deleteEnd
+                        )
+
+                    inputConnection.setSelection(
+                        start,
+                        end
+                    )
 
                     inputConnection.commitText(
                         "",
                         1
                     )
 
+                    nativeCursorStart = start
+                    nativeCursorEnd = start
+
                     syncHtmlWithNativeText()
                     return
                 }
 
                 /*
-                 * 커서 바로 앞의 문자 확인
+                 * ★ 중요 ★
+                 *
+                 * finishComposingText()를 삭제 전에
+                 * 무조건 호출하지 않습니다.
+                 *
+                 * 이것 때문에 이전 버전에서는
+                 * 커서가 '마' 뒤로 이동하면서
+                 *
+                 * 마 → 라 → 다 → 나 → 가
+                 *
+                 * 순서로 삭제되는 문제가 생겼습니다.
+                 */
+
+                /*
+                 * 현재 커서 위치를 확실하게 복원합니다.
+                 */
+                inputConnection.setSelection(
+                    deleteStart,
+                    deleteStart
+                )
+
+                /*
+                 * 커서 앞의 글자를 확인합니다.
                  */
                 val textBefore =
                     inputConnection.getTextBeforeCursor(
@@ -249,10 +307,6 @@ class SsulKeyboardService : InputMethodService() {
 
                 if (!textBefore.isNullOrEmpty()) {
 
-                    /*
-                     * 이모지처럼 UTF-16 surrogate pair를
-                     * 사용하는 문자는 2개 단위로 삭제합니다.
-                     */
                     if (textBefore.length >= 2) {
 
                         val high =
@@ -295,8 +349,19 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 /*
-                 * 삭제 후 실제 Android 입력 내용을
-                 * HTML 자판 내부 상태에 다시 반영합니다.
+                 * 삭제된 뒤 실제 커서 위치는 한 칸 앞으로 갑니다.
+                 */
+                nativeCursorStart =
+                    maxOf(
+                        0,
+                        deleteStart - 1
+                    )
+
+                nativeCursorEnd =
+                    nativeCursorStart
+
+                /*
+                 * 실제 Android 문자 상태를 HTML과 맞춥니다.
                  */
                 syncHtmlWithNativeText()
 
@@ -313,12 +378,60 @@ class SsulKeyboardService : InputMethodService() {
 
             try {
 
-                inputConnection.finishComposingText()
+                val deleteStart =
+                    nativeCursorStart
 
-                inputConnection.deleteSurroundingText(
-                    1,
-                    0
-                )
+                val deleteEnd =
+                    nativeCursorEnd
+
+                if (deleteStart != deleteEnd) {
+
+                    val start =
+                        minOf(
+                            deleteStart,
+                            deleteEnd
+                        )
+
+                    val end =
+                        maxOf(
+                            deleteStart,
+                            deleteEnd
+                        )
+
+                    inputConnection.setSelection(
+                        start,
+                        end
+                    )
+
+                    inputConnection.commitText(
+                        "",
+                        1
+                    )
+
+                    nativeCursorStart = start
+                    nativeCursorEnd = start
+
+                } else {
+
+                    inputConnection.setSelection(
+                        deleteStart,
+                        deleteStart
+                    )
+
+                    inputConnection.deleteSurroundingText(
+                        1,
+                        0
+                    )
+
+                    nativeCursorStart =
+                        maxOf(
+                            0,
+                            deleteStart - 1
+                        )
+
+                    nativeCursorEnd =
+                        nativeCursorStart
+                }
 
                 syncHtmlWithNativeText()
 
@@ -375,6 +488,9 @@ class SsulKeyboardService : InputMethodService() {
             info,
             restarting
         )
+
+        nativeCursorStart = 0
+        nativeCursorEnd = 0
 
         if (::webView.isInitialized) {
 
