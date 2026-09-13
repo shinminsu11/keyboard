@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.45 깐띄기완벽연동본</title>
+<title>쓸기자판 v9.46 최종정리본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1297,7 +1297,6 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    // 1. 조합 중인 한글 버퍼가 있다면 자판 자체 버퍼에서 먼저 지웁니다.
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
@@ -1321,14 +1320,13 @@ function backspaceHangul() {
         updateScreen();
 
         if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            let utf16Idx = getUtf16Index(chars, cursorPos);
-            window.AndroidBridge.deleteText(utf16Idx);
+            window.AndroidBridge.deleteText();
         }
         return;
     }
 
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText(0);
+        window.AndroidBridge.deleteText();
         return;
     }
     
