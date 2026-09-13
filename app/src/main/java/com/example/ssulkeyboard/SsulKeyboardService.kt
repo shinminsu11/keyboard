@@ -143,5 +143,3 @@ class SsulKeyboardService : InputMethodService() {
         return false
     }
 }
-EOF
-echo "완료"
