@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.43 최종수정본</title>
+<title>쓸기자판 v9.44 최종완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1004,9 +1004,14 @@ function resetKeyboardBuffer() {
 }
 window.resetKeyboardBuffer = resetKeyboardBuffer;
 
-// [추가] 안드로이드 앱에서 실제 커서 위치가 변경되었을 때 동기화해주는 함수
+// [핵심 수정] 안드로이드에서 커서 위치가 바뀔 때, 웹도 그 위치를 정확히 이어받습니다.
 window.setNativeCursorPosition = function(start, end) {
-    cursorPos = start;
+    let fullStr = committedText;
+    // 만약 committedText가 비어있거나 하면 안전하게 맞춤
+    let subStrUtf16 = fullStr.substring(0, start);
+    cursorPos = Array.from(subStrUtf16).length;
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    updateScreen();
 };
 
 function showCustomConfirm(message, onOk) {
@@ -1171,10 +1176,6 @@ function updateScreen() {
                 activeTestInput.setSelectionRange(utf16Cursor, utf16Cursor);
             } catch(e) {}
         }
-
-        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-            window.AndroidBridge.setComposing(currentAssembled);
-        }
         renderRequested = false;
     });
 }
@@ -1299,9 +1300,6 @@ function backspaceHangul() {
 
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
-        let targetChar = chars[cursorPos - 1];
-        let deleteLen = targetChar.length;
-
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
