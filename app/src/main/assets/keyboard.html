@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.46 최종정리본</title>
+<title>쓸기자판 v9.43 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1004,6 +1004,10 @@ function resetKeyboardBuffer() {
 }
 window.resetKeyboardBuffer = resetKeyboardBuffer;
 
+// Android 실제 입력창에서 손가락으로 옮긴 커서 위치를
+// 이 HTML 자판의 cursorPos와 동기화합니다.
+// Android의 selectionStart/selectionEnd는 UTF-16 기준이고,
+// 이 자판의 cursorPos는 Array.from() 기준이므로 변환합니다.
 window.setNativeCursorPosition = function(start, end) {
     let text = committedText || '';
     let utf16Pos = Number.isFinite(start) ? start : 0;
@@ -1014,10 +1018,17 @@ window.setNativeCursorPosition = function(start, end) {
     let before = text.substring(0, utf16Pos);
     cursorPos = Array.from(before).length;
 
+    // 선택 영역이 남아 있거나 한글 조합 중이었다면
+    // 새 커서 위치에서 정상적으로 입력이 시작되도록 조합 버퍼를 비웁니다.
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     lastSlideDir = '';
 };
 
+// Android 실제 입력창의 삭제 결과를 HTML 자판 상태에 반영합니다.
+// 삭제 직후 committedText가 예전 문장을 계속 가지고 있으면
+// 다음 간띄기/특수문자 입력 때 HTML과 Android 위치가 어긋나
+// 마지막 글자가 사라질 수 있으므로, 실제 커서 앞/뒤 문자열을
+// 그대로 받아서 자판 상태를 다시 맞춥니다.
 window.syncNativeText = function(before, after) {
     before = (before == null) ? '' : String(before);
     after = (after == null) ? '' : String(after);
@@ -1026,6 +1037,10 @@ window.syncNativeText = function(before, after) {
     cursorPos = Array.from(before).length;
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     lastSlideDir = '';
+
+    // 여기서는 updateScreen()을 호출하지 않습니다.
+    // updateScreen()은 setComposingText()를 호출하므로
+    // 삭제 직후 Android의 선택 위치를 다시 건드릴 수 있습니다.
 };
 
 function showCustomConfirm(message, onOk) {
@@ -1191,7 +1206,11 @@ function updateScreen() {
             } catch(e) {}
         }
 
-        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+        // 빈 문자열을 setComposingText()로 보내지 않습니다.
+        // 마지막 한글(예: '마')이 Android 조합 상태에 남아 있을 때
+        // 간띄기/커서 이동 과정에서 빈 조합문자가 전달되면
+        // Android가 마지막 조합 글자를 지워버릴 수 있습니다.
+        if (window.AndroidBridge && window.AndroidBridge.setComposing && currentAssembled) {
             window.AndroidBridge.setComposing(currentAssembled);
         }
         renderRequested = false;
@@ -1297,6 +1316,7 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
+    // 1. 조합 중인 한글 버퍼가 있다면 자판 자체 버퍼에서 먼저 지웁니다.
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
@@ -1311,25 +1331,22 @@ function backspaceHangul() {
         return;
     }
 
-    let chars = Array.from(committedText);
-    if (cursorPos > 0) {
-        chars.splice(cursorPos - 1, 1);
-        committedText = chars.join('');
-        cursorPos--;
-        lastSlideDir = '';
-        updateScreen();
-
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            window.AndroidBridge.deleteText();
-        }
-        return;
-    }
-
+    // 2. [핵심] 안드로이드 앱 안(APK)에서는 웹이 자체 메모리를 지우지 않고 무조건 안드로이드 브릿지에 삭제를 맡깁니다!
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
         return;
     }
-    
+
+    // 3. 여기 아래는 오직 웹 브라우저 테스트 전용 로직입니다.
+    let chars = Array.from(committedText);
+    if (cursorPos > 0) {
+        let targetChar = chars[cursorPos - 1];
+        let deleteLen = targetChar.length;
+
+        chars.splice(cursorPos - 1, 1);
+        committedText = chars.join('');
+        cursorPos--;
+    }
     lastSlideDir = '';
     updateScreen();
 }
