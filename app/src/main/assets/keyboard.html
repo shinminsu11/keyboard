@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.45 실시간즉시반영본</title>
+<title>쓸기자판 v9.46 최종완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1002,7 +1002,7 @@ function resetKeyboardBuffer() {
 }
 window.resetKeyboardBuffer = resetKeyboardBuffer;
 
-// 딜레이 없는 즉시 커서 싱크
+// 딜레이 없는 즉시 커서 싱크 + 안드로이드 커서 동기화 일치
 window.setNativeCursorPosition = function(start, end) {
     let fullStr = committedText;
     let subStrUtf16 = fullStr.substring(0, start);
@@ -1125,7 +1125,7 @@ function getUtf16Index(arr, pos) {
     return subStr.length;
 }
 
-// [핵심] requestAnimationFrame 지연을 제거하고 즉시 화면에 때려박는 동기식 렌더러
+// 즉시 동기식 렌더러
 function updateScreenInstant() {
     let currentAssembled = assembleCurrent();
     let chars = Array.from(committedText);
@@ -1251,6 +1251,7 @@ appendHangul(newVowel);
 }
 }
 
+// [핵심 수정] 이모지/특수문자 2번 삭제 문제 완전 해결 (유니코드 배열 단위 1글자 정밀 삭제)
 function backspaceHangul() {
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
@@ -1266,26 +1267,24 @@ function backspaceHangul() {
         return;
     }
 
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-        let chars = Array.from(committedText);
-        if (cursorPos > 0) {
-            chars.splice(cursorPos - 1, 1);
-            committedText = chars.join('');
-            cursorPos--;
-        }
-        updateScreenInstant();
-        return;
-    }
-
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
+        // 삭제 전 현재 정확한 커서 위치를 안드로이드에 먼저 동기화하여 '가' 지울 때 '마'가 지워지는 현상 원천 차단
+        let utf16Idx = getUtf16Index(chars, cursorPos);
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+        }
+
+        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+            window.AndroidBridge.deleteText();
+        }
+
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
+        updateScreenInstant();
+        return;
     }
-    lastSlideDir = '';
-    updateScreenInstant();
 }
 
 let bsTimer = null;
@@ -1336,6 +1335,13 @@ if (!char) return;
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
+
+// 삽입 전 현재 커서 위치를 안드로이드에 먼저 일치시킴
+let utf16Idx = getUtf16Index(chars, cursorPos);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+}
+
 chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
 cursorPos += getCharLen(char);
