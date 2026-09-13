@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.44 최종완성본</title>
+<title>쓸기자판 v9.45 실시간즉시반영본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -739,7 +739,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -946,7 +946,7 @@ document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
         cursorPos = Array.from(subStrUtf16).length;
         committedText = fullStr;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-        updateScreen();
+        updateScreenInstant();
     });
 
     el.addEventListener('touchend', (e) => {
@@ -958,7 +958,7 @@ document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
             cursorPos = Array.from(subStrUtf16).length;
             committedText = fullStr;
             hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-            updateScreen();
+            updateScreenInstant();
         }, 50);
     });
 });
@@ -998,45 +998,18 @@ function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-    if (typeof updateScreen === 'function') {
-        updateScreen();
-    }
+    updateScreenInstant();
 }
 window.resetKeyboardBuffer = resetKeyboardBuffer;
 
-// [핵심 수정] 안드로이드에서 커서 위치가 바뀔 때, 웹도 그 위치를 정확히 이어받습니다.
+// 딜레이 없는 즉시 커서 싱크
 window.setNativeCursorPosition = function(start, end) {
     let fullStr = committedText;
-    // 만약 committedText가 비어있거나 하면 안전하게 맞춤
     let subStrUtf16 = fullStr.substring(0, start);
     cursorPos = Array.from(subStrUtf16).length;
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-    updateScreen();
+    updateScreenInstant();
 };
-
-function showCustomConfirm(message, onOk) {
-const modal = document.getElementById('customConfirmModal');
-const msgEl = document.getElementById('confirmMessage');
-const okBtn = document.getElementById('confirmOkBtn');
-const cancelBtn = document.getElementById('confirmCancelBtn');
-
-msgEl.textContent = message;
-modal.style.display = 'flex';
-
-const newOk = okBtn.cloneNode(true);
-const newCancel = cancelBtn.cloneNode(true);
-okBtn.parentNode.replaceChild(newOk, okBtn);
-cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
-
-newOk.addEventListener('click', () => {
-modal.style.display = 'none';
-onOk();
-});
-
-newCancel.addEventListener('click', () => {
-modal.style.display = 'none';
-});
-}
 
 let toastTimer = null;
 function showToast(msg) {
@@ -1152,33 +1125,33 @@ function getUtf16Index(arr, pos) {
     return subStr.length;
 }
 
-let renderRequested = false;
-function updateScreen() {
-    if (renderRequested) return;
-    renderRequested = true;
-    requestAnimationFrame(() => {
-        let currentAssembled = assembleCurrent();
-        let chars = Array.from(committedText);
-        let beforeCursor = chars.slice(0, cursorPos).join('');
-        let afterCursor = chars.slice(cursorPos).join('');
+// [핵심] requestAnimationFrame 지연을 제거하고 즉시 화면에 때려박는 동기식 렌더러
+function updateScreenInstant() {
+    let currentAssembled = assembleCurrent();
+    let chars = Array.from(committedText);
+    let beforeCursor = chars.slice(0, cursorPos).join('');
+    let afterCursor = chars.slice(cursorPos).join('');
 
-        screenTextWrap.innerHTML = 
-            escapeHtml(beforeCursor) + 
-            escapeHtml(currentAssembled) + 
-            '<span class="cursor-bar"></span>' + 
-            escapeHtml(afterCursor);
+    screenTextWrap.innerHTML = 
+        escapeHtml(beforeCursor) + 
+        escapeHtml(currentAssembled) + 
+        '<span class="cursor-bar"></span>' + 
+        escapeHtml(afterCursor);
 
-        if (activeTestInput && !window.AndroidBridge) {
-            let fullStr = beforeCursor + currentAssembled + afterCursor;
-            activeTestInput.value = fullStr;
-            let utf16Cursor = getUtf16Index(chars, cursorPos) + currentAssembled.length;
-            try {
-                activeTestInput.setSelectionRange(utf16Cursor, utf16Cursor);
-            } catch(e) {}
-        }
-        renderRequested = false;
-    });
+    if (activeTestInput && !window.AndroidBridge) {
+        let fullStr = beforeCursor + currentAssembled + afterCursor;
+        activeTestInput.value = fullStr;
+        let utf16Cursor = getUtf16Index(chars, cursorPos) + currentAssembled.length;
+        try {
+            activeTestInput.setSelectionRange(utf16Cursor, utf16Cursor);
+        } catch(e) {}
+    }
+
+    if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+        window.AndroidBridge.setComposing(currentAssembled);
+    }
 }
+function updateScreen() { updateScreenInstant(); }
 
 function escapeHtml(str) {
 return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -1262,16 +1235,16 @@ hangulBuffer.jung = jungIdx;
 }
 }
 }
-updateScreen();
+updateScreenInstant();
 }
 
 function replaceLastVowel(newVowel) {
 if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
 hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
-updateScreen();
+updateScreenInstant();
 } else if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
 hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
-updateScreen();
+updateScreenInstant();
 } else {
 commitCurrent();
 appendHangul(newVowel);
@@ -1281,20 +1254,27 @@ appendHangul(newVowel);
 function backspaceHangul() {
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
-        updateScreen();
+        updateScreenInstant();
         return;
     } else if (hangulBuffer.jung !== -1) {
         hangulBuffer.jung = -1;
-        updateScreen();
+        updateScreenInstant();
         return;
     } else if (hangulBuffer.cho !== -1) {
         hangulBuffer.cho = -1;
-        updateScreen();
+        updateScreenInstant();
         return;
     }
 
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         window.AndroidBridge.deleteText();
+        let chars = Array.from(committedText);
+        if (cursorPos > 0) {
+            chars.splice(cursorPos - 1, 1);
+            committedText = chars.join('');
+            cursorPos--;
+        }
+        updateScreenInstant();
         return;
     }
 
@@ -1305,7 +1285,7 @@ function backspaceHangul() {
         cursorPos--;
     }
     lastSlideDir = '';
-    updateScreen();
+    updateScreenInstant();
 }
 
 let bsTimer = null;
@@ -1334,7 +1314,7 @@ if (endX - bsStartX < -30) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 committedText = '';
 cursorPos = 0;
-updateScreen();
+updateScreenInstant();
 if (window.AndroidBridge && window.AndroidBridge.setSelection) {
     window.AndroidBridge.setSelection(0, 0);
 }
@@ -1359,7 +1339,7 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
 cursorPos += getCharLen(char);
-updateScreen();
+updateScreenInstant();
 
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
@@ -1934,7 +1914,7 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, emoji);
 committedText = chars.join('');
 cursorPos += getCharLen(emoji);
-updateScreen();
+updateScreenInstant();
 closeEmojiModal();
 
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
@@ -2025,7 +2005,7 @@ function replaceLastCharWithHanja(hanjaChar) {
         chars.splice(cursorPos - lastCharLen, lastCharLen, hanjaChar);
         committedText = chars.join('');
         cursorPos = cursorPos - lastCharLen + hanjaChar.length;
-        updateScreen();
+        updateScreenInstant();
 
         if (window.AndroidBridge && window.AndroidBridge.commitText) {
             window.AndroidBridge.commitText(hanjaChar);
@@ -2089,7 +2069,7 @@ settingBtn.addEventListener('touchend', (e) => {
     if (dx < -15 && Math.abs(dx) > Math.abs(dy)) {
         commitCurrent(); 
         if (cursorPos > 0) cursorPos--; 
-        updateScreen(); 
+        updateScreenInstant(); 
         
         let chars = Array.from(committedText);
         let utf16Idx = getUtf16Index(chars, cursorPos);
@@ -2102,7 +2082,7 @@ settingBtn.addEventListener('touchend', (e) => {
         commitCurrent(); 
         let charsList = Array.from(committedText);
         if (cursorPos < charsList.length) cursorPos++; 
-        updateScreen(); 
+        updateScreenInstant(); 
         
         let utf16Idx = getUtf16Index(charsList, cursorPos);
         if (window.AndroidBridge && window.AndroidBridge.setSelection) {
@@ -2185,7 +2165,7 @@ if (type === 'snippet' && val) {
     chars.splice(cursorPos, 0, textVal);
     committedText = chars.join('');
     cursorPos += getCharLen(textVal);
-    updateScreen();
+    updateScreenInstant();
     
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(textVal);
@@ -2212,7 +2192,7 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, resStr);
 committedText = chars.join('');
 cursorPos += getCharLen(resStr);
-updateScreen();
+updateScreenInstant();
 
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(resStr);
@@ -2274,7 +2254,7 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 }
 
 renderSlots();
-updateScreen();
+updateScreenInstant();
 </script>
 </body>
 </html>
