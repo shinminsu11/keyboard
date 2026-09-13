@@ -1289,9 +1289,16 @@ if (hangulBuffer.jong !== -1) {
         committedText = chars.join('');
         cursorPos--;
 
-        if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-            for (let i = 0; i < deleteLen; i++) {
+        if (window.AndroidBridge) {
+            if (window.AndroidBridge.deleteSurroundingText) {
+                window.AndroidBridge.deleteSurroundingText(deleteLen, 0);
+            } else if (window.AndroidBridge.deleteText) {
                 window.AndroidBridge.deleteText();
+                if (deleteLen > 1) {
+                    for(let i = 1; i < deleteLen; i++) {
+                        window.AndroidBridge.deleteText();
+                    }
+                }
             }
         }
     }
