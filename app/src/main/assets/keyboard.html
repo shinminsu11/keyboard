@@ -1030,6 +1030,7 @@ window.setNativeCursorPosition = function(start, end) {
 // 마지막 글자가 사라질 수 있으므로, 실제 커서 앞/뒤 문자열을
 // 그대로 받아서 자판 상태를 다시 맞춥니다.
 window.syncNativeText = function(before, after) {
+    renderVersion++;
     before = (before == null) ? '' : String(before);
     after = (after == null) ? '' : String(after);
 
@@ -1182,7 +1183,9 @@ function getUtf16Index(arr, pos) {
 }
 
 let renderRequested = false;
+let renderVersion = 0;
 function updateScreen() {
+    const requestedVersion = renderVersion;
     if (renderRequested) return;
     renderRequested = true;
     requestAnimationFrame(() => {
@@ -1204,6 +1207,12 @@ function updateScreen() {
             try {
                 activeTestInput.setSelectionRange(utf16Cursor, utf16Cursor);
             } catch(e) {}
+        }
+
+        // 이미 더 최신 상태로 변경되었다면 이 프레임은 폐기합니다.
+        if (requestedVersion !== renderVersion) {
+            renderRequested = false;
+            return;
         }
 
         // 빈 문자열을 setComposingText()로 보내지 않습니다.
@@ -1233,6 +1242,7 @@ return String.fromCharCode(0xAC00 + (c * 21 * 28) + (j * 28) + o);
 }
 
 function commitCurrent() {
+renderVersion++;
 let current = assembleCurrent();
 if (current) {
 let chars = Array.from(committedText);
