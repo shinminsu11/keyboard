@@ -1004,26 +1004,6 @@ function resetKeyboardBuffer() {
 }
 window.resetKeyboardBuffer = resetKeyboardBuffer;
 
-// Android 실제 입력창에서 손가락으로 옮긴 커서 위치를
-// 이 HTML 자판의 cursorPos와 동기화합니다.
-// Android의 selectionStart/selectionEnd는 UTF-16 기준이고,
-// 이 자판의 cursorPos는 Array.from() 기준이므로 변환합니다.
-window.setNativeCursorPosition = function(start, end) {
-    let text = committedText || '';
-    let utf16Pos = Number.isFinite(start) ? start : 0;
-
-    if (utf16Pos < 0) utf16Pos = 0;
-    if (utf16Pos > text.length) utf16Pos = text.length;
-
-    let before = text.substring(0, utf16Pos);
-    cursorPos = Array.from(before).length;
-
-    // 선택 영역이 남아 있거나 한글 조합 중이었다면
-    // 새 커서 위치에서 정상적으로 입력이 시작되도록 조합 버퍼를 비웁니다.
-    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-    lastSlideDir = '';
-};
-
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
