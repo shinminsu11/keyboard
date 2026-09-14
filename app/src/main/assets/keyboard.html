@@ -1185,10 +1185,10 @@ function getUtf16Index(arr, pos) {
 let renderRequested = false;
 let renderVersion = 0;
 function updateScreen() {
-    const requestedVersion = renderVersion;
     if (renderRequested) return;
     renderRequested = true;
     requestAnimationFrame(() => {
+        const requestedVersion = renderVersion;
         let currentAssembled = assembleCurrent();
         let chars = Array.from(committedText);
         let beforeCursor = chars.slice(0, cursorPos).join('');
@@ -1209,16 +1209,14 @@ function updateScreen() {
             } catch(e) {}
         }
 
-        // 이미 더 최신 상태로 변경되었다면 이 프레임은 폐기합니다.
+        // 이 프레임을 만드는 동안 상태가 바뀌었다면 현재 프레임에서
+        // Android 조합문자를 보내지 않습니다. 최신 상태를 다시 그립니다.
         if (requestedVersion !== renderVersion) {
             renderRequested = false;
+            updateScreen();
             return;
         }
 
-        // 빈 문자열을 setComposingText()로 보내지 않습니다.
-        // 마지막 한글(예: '마')이 Android 조합 상태에 남아 있을 때
-        // 간띄기/커서 이동 과정에서 빈 조합문자가 전달되면
-        // Android가 마지막 조합 글자를 지워버릴 수 있습니다.
         if (window.AndroidBridge && window.AndroidBridge.setComposing && currentAssembled) {
             window.AndroidBridge.setComposing(currentAssembled);
         }
