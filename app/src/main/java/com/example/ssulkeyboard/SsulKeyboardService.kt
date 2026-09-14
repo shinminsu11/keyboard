@@ -14,6 +14,8 @@ import android.widget.LinearLayout
 
 class SsulKeyboardService : InputMethodService() {
 
+    // pair11: 외부 커서 이동 직후 첫 입력에서만 실제 Android 커서를 확정적으로 맞춥니다.
+
     private lateinit var webView: WebView
 
     // 마지막으로 자판이 직접 만든 것으로 확인한 실제 앱 커서 위치입니다.
@@ -22,10 +24,9 @@ class SsulKeyboardService : InputMethodService() {
     private var lastKnownSelectionStart = -1
     private var lastKnownSelectionEnd = -1
 
-    // 실제 앱에서 사용자가 커서를 옮겼다고 판단된 순간만 표시합니다.
-    private var externalCursorMovePending = false
-
-    // 자판이 내부 동작을 처리하는 동안 Android selection callback을 잠시 무시합니다.
+    // 사용자가 실제 앱에서 커서를 옮긴 직후의 "첫 입력"에만 사용합니다.
+    // 평상시 한글 입력에는 영향을 주지 않습니다.
+    private var pendingExternalCursorUtf16: Int? = null
     private var suppressSelectionSyncUntil = 0L
 
     override fun onCreateInputView(): View {
@@ -113,10 +114,27 @@ class SsulKeyboardService : InputMethodService() {
     }
 
     private fun applyPendingExternalCursor(ic: android.view.inputmethod.InputConnection) {
-        // 이번 버전에서는 Android 커서를 다시 강제로 움직이지 않습니다.
-        // 실제 커서는 사용자가 이동시킨 위치를 그대로 사용하고,
-        // HTML의 cursorPos만 selection callback에서 맞춥니다.
-        externalCursorMovePending = false
+        val pos = pendingExternalCursorUtf16 ?: return
+
+        // 중요: finishComposingText()/setSelection() 자체가 onUpdateSelection을
+        // 발생시킬 수 있습니다. 이 callback을 다시 "사용자가 커서를 옮겼다"고
+        // 판단하면 커서가 끝으로 되돌아갈 수 있으므로, 이번 내부 작업 전체를
+        // 잠시 외부 커서 이동 판정에서 제외합니다.
+        suppressSelectionSyncUntil =
+            android.os.SystemClock.uptimeMillis() + 500L
+
+        try {
+            // 먼저 마지막 composing 문자를 확정하고, 그 다음 사용자가 실제로
+            // 옮긴 위치를 다시 지정합니다. 두 동작 사이의 selection callback은
+            // 위의 suppress 구간에서 무시됩니다.
+            ic.finishComposingText()
+            ic.setSelection(pos, pos)
+        } catch (_: Exception) {
+        }
+
+        pendingExternalCursorUtf16 = null
+        lastKnownSelectionStart = pos
+        lastKnownSelectionEnd = pos
     }
 
     inner class KeyboardBridge {
@@ -283,27 +301,27 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        // 실제 앱에서 사용자가 커서를 옮긴 경우입니다.
-        // 이때는 Android의 실제 입력 커서를 건드리지 않고,
-        // HTML 자판의 cursorPos만 같은 UTF-16 위치로 맞춥니다.
-        // 정상적인 한글 입력 중에는 lastKnownSelection과 같기 때문에
-        // 이 블록에 들어오지 않습니다.
+        // 실제 앱에서 손가락으로 커서를 옮긴 경우입니다.
+        // 마지막 한글(예: '마')이 composing 상태라면 먼저 확정합니다.
+        // finishComposingText()는 비동기로 selection callback을 다시 만들 수
+        // 있으므로, 그 callback이 HTML 상태를 덮어쓰지 못하게 잠시 막습니다.
+        // 그리고 실제 Android 입력창의 앞/뒤 문자열과 현재 커서를 다시 읽은 뒤
+        // HTML에 동기화합니다.
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
-        externalCursorMovePending = true
 
-        val posJs = newSelStart.toString()
-        val endJs = newSelEnd.toString()
+        // 여기서 바로 finishComposingText()/setSelection()을 실행하면
+        // 정상 한글 입력의 조합 과정까지 건드릴 수 있습니다.
+        // 대신 "외부 커서 이동 후 첫 입력"에만 실제 커서 위치를 적용합니다.
+        pendingExternalCursorUtf16 = newSelStart
+        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 250L
+
+        // 현재 앱의 실제 앞/뒤 문자열을 HTML에 알려 주되,
+        // 아직 Android 커서를 강제로 움직이지 않습니다.
         webView.post {
-            webView.evaluateJavascript(
-                """
-                (function() {
-                    if (window.setNativeCursorPosition) {
-                        window.setNativeCursorPosition($posJs, $endJs);
-                    }
-                })();
-                """.trimIndent(), null
-            )
+            if (android.os.SystemClock.uptimeMillis() <= suppressSelectionSyncUntil) {
+                syncHtmlWithNativeText()
+            }
         }
     }
 
@@ -315,6 +333,7 @@ class SsulKeyboardService : InputMethodService() {
 
         lastKnownSelectionStart = -1
         lastKnownSelectionEnd = -1
+        pendingExternalCursorUtf16 = null
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
