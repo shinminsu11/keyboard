@@ -263,16 +263,8 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // 실제 앱 화면에서 사용자가 손가락으로 커서를 옮긴 경우입니다.
-        // 이때 기존 HTML 자판의 마지막 조합문자(예: 끝의 '마')가
-        // Android의 composing 영역에 남아 있으면, 새 글자를 가운데에
-        // 입력할 때 Android가 그 조합문자를 대신할 수 있습니다.
-        // 먼저 기존 composing 상태만 확정하고, 실제 앞/뒤 문자열을
-        // 다시 읽어 HTML과 맞춥니다.
-        try {
-            currentInputConnection?.finishComposingText()
-        } catch (_: Exception) {
-        }
-
+        // 이때는 위치 숫자만 보내지 않고 실제 앞/뒤 문자열까지 HTML에 전달하여
+        // hangulBuffer도 함께 비웁니다.
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
         syncHtmlWithNativeText()
