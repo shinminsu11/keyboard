@@ -1218,17 +1218,10 @@ function updateScreen() {
         }
 
         if (window.AndroidBridge && window.AndroidBridge.setComposing && currentAssembled) {
-            // HTML의 커서 위치와 Android 실제 커서 위치를 먼저 맞춘 뒤
-            // 조합 문자를 넣습니다. 가운데 삽입 시 끝으로 붙는 문제 방지.
-            const nativeUtf16Pos = getUtf16Index(chars, cursorPos);
-            if (window.AndroidBridge.setComposingAtCursor) {
-                window.AndroidBridge.setComposingAtCursor(currentAssembled, nativeUtf16Pos);
-            } else {
-                if (window.AndroidBridge.setSelection) {
-                    window.AndroidBridge.setSelection(nativeUtf16Pos, nativeUtf16Pos);
-                }
-                window.AndroidBridge.setComposing(currentAssembled);
-            }
+            // 평상시에는 Android가 현재 커서 위치를 그대로 유지하게 합니다.
+            // 외부에서 커서를 옮긴 직후의 첫 입력만 Kotlin의 pending cursor가
+            // 실제 Android 커서 위치를 한 번 맞춘 뒤 조합합니다.
+            window.AndroidBridge.setComposing(currentAssembled);
         }
         renderRequested = false;
     });
@@ -1257,10 +1250,7 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
-const nativeUtf16Pos = getUtf16Index(chars, cursorPos - getCharLen(current));
-if (window.AndroidBridge && window.AndroidBridge.commitTextAtCursor) {
-    window.AndroidBridge.commitTextAtCursor(current, nativeUtf16Pos);
-} else if (window.AndroidBridge && window.AndroidBridge.commitText) {
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
 }
@@ -1427,10 +1417,7 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 
-const nativeUtf16Pos = getUtf16Index(Array.from(committedText), cursorPos - getCharLen(char));
-if (window.AndroidBridge && window.AndroidBridge.commitTextAtCursor) {
-    window.AndroidBridge.commitTextAtCursor(char, nativeUtf16Pos);
-} else if (window.AndroidBridge && window.AndroidBridge.commitText) {
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
 }
