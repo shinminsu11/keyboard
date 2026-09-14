@@ -21,6 +21,7 @@ class SsulKeyboardService : InputMethodService() {
     // 터치해서 커서를 옮겼다"고 보고 HTML과 동기화합니다.
     private var lastKnownSelectionStart = -1
     private var lastKnownSelectionEnd = -1
+    private var suppressSelectionSyncUntil = 0L
 
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
@@ -248,6 +249,12 @@ class SsulKeyboardService : InputMethodService() {
 
         if (!::webView.isInitialized || newSelStart < 0 || newSelEnd < 0) return
 
+        if (android.os.SystemClock.uptimeMillis() < suppressSelectionSyncUntil) {
+            lastKnownSelectionStart = newSelStart
+            lastKnownSelectionEnd = newSelEnd
+            return
+        }
+
         // 실제 한글 조합 중 Android가 보내는 selection callback은
         // candidates 영역을 함께 가지고 옵니다. 이 callback은 웹 자판의
         // 조합 버퍼를 초기화하면 안 됩니다.
@@ -262,12 +269,29 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        // 실제 앱 화면에서 사용자가 손가락으로 커서를 옮긴 경우입니다.
-        // 이때는 위치 숫자만 보내지 않고 실제 앞/뒤 문자열까지 HTML에 전달하여
-        // hangulBuffer도 함께 비웁니다.
+        // 실제 앱에서 손가락으로 커서를 옮긴 경우입니다.
+        // 마지막 한글(예: '마')이 composing 상태라면 먼저 확정합니다.
+        // finishComposingText()는 비동기로 selection callback을 다시 만들 수
+        // 있으므로, 그 callback이 HTML 상태를 덮어쓰지 못하게 잠시 막습니다.
+        // 그리고 실제 Android 입력창의 앞/뒤 문자열과 현재 커서를 다시 읽은 뒤
+        // HTML에 동기화합니다.
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
-        syncHtmlWithNativeText()
+        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 250L
+
+        try {
+            currentInputConnection?.finishComposingText()
+            currentInputConnection?.setSelection(newSelStart, newSelEnd)
+        } catch (_: Exception) {
+        }
+
+        // finishComposingText/setSelection의 실제 반영이 끝난 다음 읽어야
+        // 마지막 composing 문자와 새 커서 위치가 함께 정확히 반영됩니다.
+        webView.postDelayed({
+            if (android.os.SystemClock.uptimeMillis() <= suppressSelectionSyncUntil) {
+                syncHtmlWithNativeText()
+            }
+        }, 80L)
     }
 
     override fun onStartInputView(
