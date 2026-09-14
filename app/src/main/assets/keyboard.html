@@ -1324,7 +1324,19 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    // 1. 조합 중인 한글 버퍼가 있다면 자판 자체 버퍼에서 먼저 지웁니다.
+    // Android IME에서는 실제 삭제 위치를 Android가 관리합니다.
+    // 특히 문장 중간으로 커서를 옮긴 뒤 마지막 한글 조합 버퍼가 남아 있으면
+    // 버퍼를 먼저 지우면서 ㅏ/ㅁ처럼 조합이 분해되는 문제가 생길 수 있습니다.
+    // 따라서 APK에서는 버퍼를 건드리는 분기를 먼저 실행하지 않고,
+    // 현재 실제 커서 위치의 삭제를 Android에 맡깁니다.
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        window.AndroidBridge.deleteText();
+        return;
+    }
+
+    // 브라우저 테스트에서는 기존의 조합 중 한글 삭제 동작을 그대로 유지합니다.
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
@@ -1339,18 +1351,8 @@ function backspaceHangul() {
         return;
     }
 
-    // 2. [핵심] 안드로이드 앱 안(APK)에서는 웹이 자체 메모리를 지우지 않고 무조건 안드로이드 브릿지에 삭제를 맡깁니다!
-    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
-        window.AndroidBridge.deleteText();
-        return;
-    }
-
-    // 3. 여기 아래는 오직 웹 브라우저 테스트 전용 로직입니다.
     let chars = Array.from(committedText);
     if (cursorPos > 0) {
-        let targetChar = chars[cursorPos - 1];
-        let deleteLen = targetChar.length;
-
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
