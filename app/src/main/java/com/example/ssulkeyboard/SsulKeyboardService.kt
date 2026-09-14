@@ -160,8 +160,18 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                // 여기서는 finishComposingText()를 호출하지 않습니다.
-                // 문장 중간의 실제 커서 위치를 보존한 채 주변 문자만 삭제합니다.
+                // 문장 끝에서 마지막 한글이 Android의 composing 상태로 남아 있으면
+                // 일반 deleteSurroundingText()가 그 글자를 지우지 못할 수 있습니다.
+                // 이 경우에만 먼저 조합을 확정한 뒤 삭제합니다.
+                // 문장 중간에서는 finishComposingText()를 호출하지 않아 현재 커서 위치를 보존합니다.
+                val textAfter = ic.getTextAfterCursor(1, 0)?.toString() ?: ""
+                if (textAfter.isEmpty()) {
+                    try {
+                        ic.finishComposingText()
+                    } catch (_: Exception) {
+                    }
+                }
+
                 val textBefore = ic.getTextBeforeCursor(2, 0)
 
                 if (!textBefore.isNullOrEmpty() && textBefore.length >= 2) {
