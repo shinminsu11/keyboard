@@ -110,6 +110,41 @@ class SsulKeyboardService : InputMethodService() {
     inner class KeyboardBridge {
 
         @JavascriptInterface
+        fun commitTextAtCursor(text: String, utf16Position: Int) {
+            val ic = currentInputConnection ?: return
+            try {
+                // 중간 삽입에서는 Android의 기존 composing 상태가 남아 있어도
+                // 지정한 위치를 확실히 기준으로 삼습니다.
+                ic.finishComposingText()
+                val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
+                val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
+                val maxPos = before + after
+                val pos = utf16Position.coerceIn(0, maxPos)
+                ic.setSelection(pos, pos)
+                ic.commitText(text, 1)
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun setComposingAtCursor(text: String, utf16Position: Int) {
+            val ic = currentInputConnection ?: return
+            try {
+                val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
+                val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
+                val maxPos = before + after
+                val pos = utf16Position.coerceIn(0, maxPos)
+                ic.setSelection(pos, pos)
+                ic.setComposingText(text, 1)
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
         fun commitText(text: String) {
             val ic = currentInputConnection ?: return
             try {
