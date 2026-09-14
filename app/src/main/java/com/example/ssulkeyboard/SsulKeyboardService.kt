@@ -21,6 +21,10 @@ class SsulKeyboardService : InputMethodService() {
     // 터치해서 커서를 옮겼다"고 보고 HTML과 동기화합니다.
     private var lastKnownSelectionStart = -1
     private var lastKnownSelectionEnd = -1
+
+    // 사용자가 실제 앱에서 커서를 옮긴 직후의 "첫 입력"에만 사용합니다.
+    // 평상시 한글 입력에는 영향을 주지 않습니다.
+    private var pendingExternalCursorUtf16: Int? = null
     private var suppressSelectionSyncUntil = 0L
 
     override fun onCreateInputView(): View {
@@ -107,47 +111,25 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
+    private fun applyPendingExternalCursor(ic: android.view.inputmethod.InputConnection) {
+        val pos = pendingExternalCursorUtf16 ?: return
+        try {
+            ic.finishComposingText()
+            ic.setSelection(pos, pos)
+        } catch (_: Exception) {
+        }
+        pendingExternalCursorUtf16 = null
+        lastKnownSelectionStart = pos
+        lastKnownSelectionEnd = pos
+    }
+
     inner class KeyboardBridge {
-
-        @JavascriptInterface
-        fun commitTextAtCursor(text: String, utf16Position: Int) {
-            val ic = currentInputConnection ?: return
-            try {
-                // 중간 삽입에서는 Android의 기존 composing 상태가 남아 있어도
-                // 지정한 위치를 확실히 기준으로 삼습니다.
-                ic.finishComposingText()
-                val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
-                val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
-                val maxPos = before + after
-                val pos = utf16Position.coerceIn(0, maxPos)
-                ic.setSelection(pos, pos)
-                ic.commitText(text, 1)
-                rememberActualSelection()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        @JavascriptInterface
-        fun setComposingAtCursor(text: String, utf16Position: Int) {
-            val ic = currentInputConnection ?: return
-            try {
-                val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
-                val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
-                val maxPos = before + after
-                val pos = utf16Position.coerceIn(0, maxPos)
-                ic.setSelection(pos, pos)
-                ic.setComposingText(text, 1)
-                rememberActualSelection()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
 
         @JavascriptInterface
         fun commitText(text: String) {
             val ic = currentInputConnection ?: return
             try {
+                applyPendingExternalCursor(ic)
                 ic.commitText(text, 1)
                 // commitText 후 실제 위치를 다시 기록합니다.
                 rememberActualSelection()
@@ -160,6 +142,7 @@ class SsulKeyboardService : InputMethodService() {
         fun setComposing(text: String) {
             val ic = currentInputConnection ?: return
             try {
+                applyPendingExternalCursor(ic)
                 ic.setComposingText(text, 1)
                 // 조합문자 입력으로 앱 커서가 이동한 위치를 기억합니다.
                 rememberActualSelection()
@@ -312,21 +295,20 @@ class SsulKeyboardService : InputMethodService() {
         // HTML에 동기화합니다.
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
+
+        // 여기서 바로 finishComposingText()/setSelection()을 실행하면
+        // 정상 한글 입력의 조합 과정까지 건드릴 수 있습니다.
+        // 대신 "외부 커서 이동 후 첫 입력"에만 실제 커서 위치를 적용합니다.
+        pendingExternalCursorUtf16 = newSelStart
         suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 250L
 
-        try {
-            currentInputConnection?.finishComposingText()
-            currentInputConnection?.setSelection(newSelStart, newSelEnd)
-        } catch (_: Exception) {
-        }
-
-        // finishComposingText/setSelection의 실제 반영이 끝난 다음 읽어야
-        // 마지막 composing 문자와 새 커서 위치가 함께 정확히 반영됩니다.
-        webView.postDelayed({
+        // 현재 앱의 실제 앞/뒤 문자열을 HTML에 알려 주되,
+        // 아직 Android 커서를 강제로 움직이지 않습니다.
+        webView.post {
             if (android.os.SystemClock.uptimeMillis() <= suppressSelectionSyncUntil) {
                 syncHtmlWithNativeText()
             }
-        }, 80L)
+        }
     }
 
     override fun onStartInputView(
@@ -337,6 +319,7 @@ class SsulKeyboardService : InputMethodService() {
 
         lastKnownSelectionStart = -1
         lastKnownSelectionEnd = -1
+        pendingExternalCursorUtf16 = null
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
