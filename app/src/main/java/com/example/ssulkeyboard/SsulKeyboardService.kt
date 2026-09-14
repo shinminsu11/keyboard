@@ -238,8 +238,14 @@ class SsulKeyboardService : InputMethodService() {
 
         if (!::webView.isInitialized || newSelStart < 0 || newSelEnd < 0) return
 
+        // 실제 한글 조합 중 Android가 보내는 selection callback은
+        // candidates 영역을 함께 가지고 옵니다. 이 callback은 웹 자판의
+        // 조합 버퍼를 초기화하면 안 됩니다.
+        if (candidatesStart >= 0 || candidatesEnd >= 0) {
+            return
+        }
+
         // 자판이 방금 만든 selection callback이면 무시합니다.
-        // 이 부분이 없으면 정상 입력 중에도 HTML 버퍼가 계속 초기화됩니다.
         if (newSelStart == lastKnownSelectionStart &&
             newSelEnd == lastKnownSelectionEnd
         ) {
