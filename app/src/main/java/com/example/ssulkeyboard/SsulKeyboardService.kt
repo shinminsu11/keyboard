@@ -139,11 +139,12 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun insertAtExternalCursor(text: String) {
+        fun setComposing(text: String) {
             val ic = currentInputConnection ?: return
             try {
                 applyPendingExternalCursor(ic)
-                ic.commitText(text, 1)
+                ic.setComposingText(text, 1)
+                // 조합문자 입력으로 앱 커서가 이동한 위치를 기억합니다.
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -151,12 +152,18 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun setComposing(text: String) {
+        fun setComposingAtExternalCursor(text: String) {
             val ic = currentInputConnection ?: return
+            val pos = pendingExternalCursorUtf16 ?: return
             try {
-                applyPendingExternalCursor(ic)
+                // 중간 커서 입력에서만: 기존 composing을 확정하고
+                // 사용자가 옮긴 위치를 다시 지정한 뒤 첫 조합문자를 넣습니다.
+                ic.finishComposingText()
+                ic.setSelection(pos, pos)
+                pendingExternalCursorUtf16 = null
+                lastKnownSelectionStart = pos
+                lastKnownSelectionEnd = pos
                 ic.setComposingText(text, 1)
-                // 조합문자 입력으로 앱 커서가 이동한 위치를 기억합니다.
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -314,15 +321,6 @@ class SsulKeyboardService : InputMethodService() {
         pendingExternalCursorUtf16 = newSelStart
         suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 250L
 
-        // pair12: 다음에 완성되는 첫 음절을 외부 커서 위치에 확정 입력할 수 있도록
-        // HTML에 1회성 플래그를 전달합니다. 평상시 한글 입력에는 개입하지 않습니다.
-        webView.post {
-            webView.evaluateJavascript(
-                "javascript:if(window.beginExternalInsert){window.beginExternalInsert();}",
-                null
-            )
-        }
-
         // 현재 앱의 실제 앞/뒤 문자열을 HTML에 알려 주되,
         // 아직 Android 커서를 강제로 움직이지 않습니다.
         webView.post {
@@ -338,10 +336,9 @@ class SsulKeyboardService : InputMethodService() {
     ) {
         super.onStartInputView(info, restarting)
 
-        // 처음 자판이 열릴 때 Android가 보내는 selection callback을
-        // "외부 커서 이동"으로 오인하지 않도록 현재 커서 위치를 먼저 기억합니다.
+        lastKnownSelectionStart = -1
+        lastKnownSelectionEnd = -1
         pendingExternalCursorUtf16 = null
-        rememberActualSelection()
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
