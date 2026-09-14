@@ -1218,6 +1218,12 @@ function updateScreen() {
         }
 
         if (window.AndroidBridge && window.AndroidBridge.setComposing && currentAssembled) {
+            // HTML의 커서 위치와 Android 실제 커서 위치를 먼저 맞춘 뒤
+            // 조합 문자를 넣습니다. 가운데 삽입 시 끝으로 붙는 문제 방지.
+            const nativeUtf16Pos = getUtf16Index(chars, cursorPos);
+            if (window.AndroidBridge.setSelection) {
+                window.AndroidBridge.setSelection(nativeUtf16Pos, nativeUtf16Pos);
+            }
             window.AndroidBridge.setComposing(currentAssembled);
         }
         renderRequested = false;
@@ -1247,6 +1253,10 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    const nativeUtf16Pos = getUtf16Index(chars, cursorPos);
+    window.AndroidBridge.setSelection(nativeUtf16Pos, nativeUtf16Pos);
+}
 if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
