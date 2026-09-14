@@ -25,6 +25,9 @@ class SsulKeyboardService : InputMethodService() {
     // 실제 앱에서 사용자가 커서를 옮겼다고 판단된 순간만 표시합니다.
     private var externalCursorMovePending = false
 
+    // 자판이 내부 동작을 처리하는 동안 Android selection callback을 잠시 무시합니다.
+    private var suppressSelectionSyncUntil = 0L
+
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
