@@ -1221,10 +1221,14 @@ function updateScreen() {
             // HTML의 커서 위치와 Android 실제 커서 위치를 먼저 맞춘 뒤
             // 조합 문자를 넣습니다. 가운데 삽입 시 끝으로 붙는 문제 방지.
             const nativeUtf16Pos = getUtf16Index(chars, cursorPos);
-            if (window.AndroidBridge.setSelection) {
-                window.AndroidBridge.setSelection(nativeUtf16Pos, nativeUtf16Pos);
+            if (window.AndroidBridge.setComposingAtCursor) {
+                window.AndroidBridge.setComposingAtCursor(currentAssembled, nativeUtf16Pos);
+            } else {
+                if (window.AndroidBridge.setSelection) {
+                    window.AndroidBridge.setSelection(nativeUtf16Pos, nativeUtf16Pos);
+                }
+                window.AndroidBridge.setComposing(currentAssembled);
             }
-            window.AndroidBridge.setComposing(currentAssembled);
         }
         renderRequested = false;
     });
@@ -1253,11 +1257,10 @@ let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, current);
 committedText = chars.join('');
 cursorPos += getCharLen(current);
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    const nativeUtf16Pos = getUtf16Index(chars, cursorPos);
-    window.AndroidBridge.setSelection(nativeUtf16Pos, nativeUtf16Pos);
-}
-if (window.AndroidBridge && window.AndroidBridge.commitText) {
+const nativeUtf16Pos = getUtf16Index(chars, cursorPos - getCharLen(current));
+if (window.AndroidBridge && window.AndroidBridge.commitTextAtCursor) {
+    window.AndroidBridge.commitTextAtCursor(current, nativeUtf16Pos);
+} else if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(current);
 }
 }
@@ -1424,7 +1427,10 @@ committedText = chars.join('');
 cursorPos += getCharLen(char);
 updateScreen();
 
-if (window.AndroidBridge && window.AndroidBridge.commitText) {
+const nativeUtf16Pos = getUtf16Index(Array.from(committedText), cursorPos - getCharLen(char));
+if (window.AndroidBridge && window.AndroidBridge.commitTextAtCursor) {
+    window.AndroidBridge.commitTextAtCursor(char, nativeUtf16Pos);
+} else if (window.AndroidBridge && window.AndroidBridge.commitText) {
     window.AndroidBridge.commitText(char);
 }
 }
