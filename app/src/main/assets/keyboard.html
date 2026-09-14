@@ -1182,13 +1182,11 @@ function getUtf16Index(arr, pos) {
     return subStr.length;
 }
 
+let externalCursorInsertMode = false;
+window.beginExternalCursorInsert = function() { externalCursorInsertMode = true; };
+
 let renderRequested = false;
 let renderVersion = 0;
-let externalInsertOnce = false;
-window.beginExternalInsert = function() {
-    externalInsertOnce = true;
-};
-
 function updateScreen() {
     if (renderRequested) return;
     renderRequested = true;
@@ -1196,31 +1194,6 @@ function updateScreen() {
         const requestedVersion = renderVersion;
         let currentAssembled = assembleCurrent();
         let chars = Array.from(committedText);
-
-        // pair12: 외부 커서 이동 직후, 완성된 한글 음절(예: '아')이 만들어졌다면
-        // 그 첫 음절만 실제 Android 커서 위치에 확정 입력합니다.
-        // 평상시 한글 조합에는 개입하지 않습니다.
-        if (externalInsertOnce &&
-            currentAssembled.length === 1 &&
-            currentAssembled.charCodeAt(0) >= 0xAC00 &&
-            currentAssembled.charCodeAt(0) <= 0xD7A3 &&
-            window.AndroidBridge &&
-            window.AndroidBridge.insertAtExternalCursor) {
-            // 외부 커서 이동 후 첫 음절은 여기서 Android에 딱 한 번 확정 입력합니다.
-            // 그 뒤 일반 setComposing/commitCurrent가 같은 글자를 다시 넣지 않도록
-            // HTML 내부 상태도 동시에 한 글자 전진시키고 조합 버퍼를 비웁니다.
-            externalInsertOnce = false;
-            window.AndroidBridge.insertAtExternalCursor(currentAssembled);
-
-            chars = Array.from(committedText);
-            chars.splice(cursorPos, 0, currentAssembled);
-            committedText = chars.join('');
-            cursorPos += getCharLen(currentAssembled);
-            hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-            lastSlideDir = '';
-            currentAssembled = '';
-        }
-
         let beforeCursor = chars.slice(0, cursorPos).join('');
         let afterCursor = chars.slice(cursorPos).join('');
 
@@ -1247,11 +1220,15 @@ function updateScreen() {
             return;
         }
 
-        if (window.AndroidBridge && window.AndroidBridge.setComposing && currentAssembled) {
-            // 평상시에는 Android가 현재 커서 위치를 그대로 유지하게 합니다.
-            // 외부에서 커서를 옮긴 직후의 첫 입력만 Kotlin의 pending cursor가
-            // 실제 Android 커서 위치를 한 번 맞춘 뒤 조합합니다.
-            window.AndroidBridge.setComposing(currentAssembled);
+        if (window.AndroidBridge && currentAssembled) {
+            if (externalCursorInsertMode && window.AndroidBridge.setComposingAtExternalCursor) {
+                // 중간 커서 입력의 첫 조합만 별도 처리합니다.
+                // 정상 한글 조합에는 개입하지 않습니다.
+                externalCursorInsertMode = false;
+                window.AndroidBridge.setComposingAtExternalCursor(currentAssembled);
+            } else if (window.AndroidBridge.setComposing) {
+                window.AndroidBridge.setComposing(currentAssembled);
+            }
         }
         renderRequested = false;
     });
