@@ -338,9 +338,10 @@ class SsulKeyboardService : InputMethodService() {
     ) {
         super.onStartInputView(info, restarting)
 
-        lastKnownSelectionStart = -1
-        lastKnownSelectionEnd = -1
+        // 처음 자판이 열릴 때 Android가 보내는 selection callback을
+        // "외부 커서 이동"으로 오인하지 않도록 현재 커서 위치를 먼저 기억합니다.
         pendingExternalCursorUtf16 = null
+        rememberActualSelection()
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
