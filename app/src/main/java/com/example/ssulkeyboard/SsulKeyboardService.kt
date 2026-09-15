@@ -146,9 +146,18 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun setComposing(text: String) {
             internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+
+            // 외부에서 앱 화면의 커서를 옮긴 직후의 첫 한글 조합은
+            // HTML의 별도 모드에 의존하지 않고 여기서 직접 중간 삽입합니다.
+            // pendingExternalCursorUtf16은 실제 외부 커서 이동을 감지했을 때만
+            // 설정되므로 평상시 한글 조합에는 영향을 주지 않습니다.
+            if (pendingExternalCursorUtf16 != null) {
+                insertAtExternalCursor(text)
+                return
+            }
+
             val ic = currentInputConnection ?: return
             try {
-                applyPendingExternalCursor(ic)
                 ic.setComposingText(text, 1)
                 // 조합문자 입력으로 앱 커서가 이동한 위치를 기억합니다.
                 rememberActualSelection()
