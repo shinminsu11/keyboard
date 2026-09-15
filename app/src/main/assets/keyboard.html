@@ -1186,6 +1186,7 @@ let externalCursorInsertMode = false;
 // 중간에 삽입한 첫 음절 뒤의 자음은
 // 종성인지 다음 음절의 초성인지 다음 모음/자음이 들어와야 확정할 수 있습니다.
 let externalFinalCandidate = null;
+let externalComposeTimer = null;
 window.beginExternalCursorInsert = function() {
     externalCursorInsertMode = true;
     externalFinalCandidate = null;
@@ -1288,8 +1289,34 @@ function updateScreen() {
                     currentAssembled.charCodeAt(0) <= 0xD7A3;
 
                 if (isCompleteHangulSyllable) {
-                    externalCursorInsertMode = false;
-                    window.AndroidBridge.setComposing(currentAssembled);
+                    // 중간 커서에서 ㅗ+ㅏ=ㅘ, ㅜ+ㅓ=ㅝ 같은 복합모음은
+                    // 첫 완성음절(예: 오)을 바로 Android에 보내면 다음 모음이
+                    // 별도 문자로 들어갑니다. 복합모음으로 이어질 수 있는
+                    // 음절만 잠시 기다렸다가 다음 모음과 합쳐서 한 번만 보냅니다.
+                    const code = currentAssembled.charCodeAt(0);
+                    const offset = code - 0xAC00;
+                    const jungIndex = Math.floor((offset % (21 * 28)) / 28);
+                    const currentVowel = JUNGSUNG[jungIndex];
+                    const canCombineVowel = Object.keys(VOWEL_COMBINE).some(key =>
+                        key.startsWith(currentVowel + '+')
+                    );
+
+                    if (canCombineVowel) {
+                        if (externalComposeTimer) clearTimeout(externalComposeTimer);
+                        externalComposeTimer = setTimeout(() => {
+                            if (!externalCursorInsertMode) return;
+                            externalCursorInsertMode = false;
+                            externalComposeTimer = null;
+                            window.AndroidBridge.setComposing(currentAssembled);
+                        }, 350);
+                    } else {
+                        if (externalComposeTimer) {
+                            clearTimeout(externalComposeTimer);
+                            externalComposeTimer = null;
+                        }
+                        externalCursorInsertMode = false;
+                        window.AndroidBridge.setComposing(currentAssembled);
+                    }
                 }
             } else if (window.AndroidBridge.setComposing) {
                 window.AndroidBridge.setComposing(currentAssembled);
