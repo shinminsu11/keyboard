@@ -152,19 +152,34 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun setComposingAtExternalCursor(text: String) {
+        fun insertAtExternalCursor(text: String) {
             val ic = currentInputConnection ?: return
-            val pos = pendingExternalCursorUtf16 ?: return
+            val target = pendingExternalCursorUtf16 ?: return
             try {
-                // 중간 커서 입력에서만: 기존 composing을 확정하고
-                // 사용자가 옮긴 위치를 다시 지정한 뒤 첫 조합문자를 넣습니다.
+                // 중요: setSelection()으로 중간 위치를 직접 잡는 대신,
+                // 현재 네이티브 커서에서 전체 문장을 읽고
+                // [앞부분 + 새 글자 + 뒷부분]을 한 번에 다시 넣습니다.
+                // 이렇게 하면 대상 앱이 setSelection()을 무시하는 경우에도
+                // 중간 삽입 위치를 정확히 표현할 수 있습니다.
                 ic.finishComposingText()
-                ic.setSelection(pos, pos)
+
+                val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: return
+                val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+                val full = before + after
+
+                if (target < 0 || target > full.length) return
+
+                val prefix = full.substring(0, target)
+                val suffix = full.substring(target)
+                val rebuilt = prefix + text + suffix
+
+                ic.deleteSurroundingText(before.length, after.length)
+                ic.commitText(rebuilt, 1)
+
                 pendingExternalCursorUtf16 = null
-                lastKnownSelectionStart = pos
-                lastKnownSelectionEnd = pos
-                ic.setComposingText(text, 1)
-                rememberActualSelection()
+                val newPos = (prefix + text).length
+                lastKnownSelectionStart = newPos
+                lastKnownSelectionEnd = newPos
             } catch (e: Exception) {
                 e.printStackTrace()
             }
