@@ -1183,7 +1183,13 @@ function getUtf16Index(arr, pos) {
 }
 
 let externalCursorInsertMode = false;
-window.beginExternalCursorInsert = function() { externalCursorInsertMode = true; };
+// 중간에 삽입한 첫 음절 뒤의 자음은
+// 종성인지 다음 음절의 초성인지 다음 모음/자음이 들어와야 확정할 수 있습니다.
+let externalFinalCandidate = null;
+window.beginExternalCursorInsert = function() {
+    externalCursorInsertMode = true;
+    externalFinalCandidate = null;
+};
 
 // 중간 커서 한 글자 삽입이 Android에서 완료된 뒤
 // HTML의 상태도 같은 문장/커서 위치로 맞춥니다.
@@ -1200,6 +1206,13 @@ window.finishExternalInsert = function(fullText, utf16Cursor) {
         committedText = fullText;
         cursorPos = Array.from(left).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        // 삽입된 완성 음절을 기억합니다. 다음 자음이 오면 일단
+        // 종성 후보로 Android에 확정하고, 다음 입력이 모음이면
+        // 다시 원래 음절로 되돌려 다음 음절의 초성으로 처리합니다.
+        externalFinalCandidate = {
+            baseChar: (pos > 0 ? Array.from(fullText.substring(0, pos)).slice(-1)[0] : ''),
+            start: Math.max(0, cursorPos - 1)
+        };
         lastSlideDir = '';
         renderVersion++;
         renderRequested = false;
@@ -1321,8 +1334,87 @@ function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
-if (choIdx !== -1 && jungIdx === -1) {
+
+// 중간 삽입 직후의 첫 자음은 앞 음절의 종성일 수도 있고
+// 다음 음절의 초성일 수도 있습니다. 첫 자음은 일단 종성 후보로
+// 화면/Android에 반영하고, 다음 입력으로 최종 방향을 결정합니다.
+if (externalFinalCandidate) {
+    if (choIdx !== -1 && jungIdx === -1 && !externalFinalCandidate.pendingConsonant) {
+        const jongTry = getJongIndex(inputChar);
+        const base = externalFinalCandidate.baseChar || '';
+        const code = base.charCodeAt(0);
+
+        if (jongTry !== -1 && code >= 0xAC00 && code <= 0xD7A3) {
+            const offset = code - 0xAC00;
+            const cho = Math.floor(offset / (21 * 28));
+            const jung = Math.floor((offset % (21 * 28)) / 28);
+            const newOffset = cho * 21 * 28 + jung * 28 + jongTry;
+            const extended = String.fromCharCode(0xAC00 + newOffset);
+            const chars = Array.from(committedText);
+            const at = externalFinalCandidate.start;
+
+            if (at >= 0 && at < chars.length) {
+                chars[at] = extended;
+                committedText = chars.join('');
+                if (window.AndroidBridge && window.AndroidBridge.extendExternalSyllable) {
+                    window.AndroidBridge.extendExternalSyllable(extended);
+                }
+                externalFinalCandidate = {
+                    baseChar: extended,
+                    originalChar: base,
+                    start: at,
+                    pendingConsonant: inputChar
+                };
+                renderVersion++;
+                updateScreen();
+                return;
+            }
+        }
+
+        // 종성으로 사용할 수 없거나 위치가 없으면 새 음절의 초성입니다.
+        externalFinalCandidate = null;
+        hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
+        updateScreen();
+        return;
+    }
+
+    if (jungIdx !== -1 && externalFinalCandidate.pendingConsonant) {
+        // 앞서 종성 후보로 넣었던 자음을 떼어내고
+        // 다음 음절의 초성으로 되돌립니다. 예: 아+ㄱ+ㅣ → 아기
+        const chars = Array.from(committedText);
+        const at = externalFinalCandidate.start;
+        const original = externalFinalCandidate.originalChar || '';
+
+        if (at >= 0 && at < chars.length && original) {
+            chars[at] = original;
+            committedText = chars.join('');
+            if (window.AndroidBridge && window.AndroidBridge.extendExternalSyllable) {
+                window.AndroidBridge.extendExternalSyllable(original);
+            }
+        }
+
+        const pending = externalFinalCandidate.pendingConsonant;
+        externalFinalCandidate = null;
+        hangulBuffer = { cho: CHOSUNG.indexOf(pending), jung: jungIdx, jong: -1 };
+        lastSlideDir = '';
+        updateScreen();
+        return;
+    }
+
+    // 두 번째 자음이 들어오면 첫 자음은 종성으로 확정된 상태이므로,
+    // 현재 자음은 다음 음절의 초성으로 시작합니다. 예: 안+경.
+    if (choIdx !== -1 && jungIdx === -1 && externalFinalCandidate.pendingConsonant) {
+        externalFinalCandidate = null;
+        hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
+        updateScreen();
+        return;
+    }
+
+    externalFinalCandidate = null;
+}
+
 lastSlideDir = '';
+if (choIdx !== -1 && jungIdx === -1) {
 if (hangulBuffer.cho === -1) {
 hangulBuffer.cho = choIdx;
 } else if (hangulBuffer.jung === -1) {
@@ -1371,7 +1463,6 @@ hangulBuffer.jung = jungIdx;
 }
 updateScreen();
 }
-
 function replaceLastVowel(newVowel) {
 if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
 hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
