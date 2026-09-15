@@ -131,7 +131,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun commitText(text: String) {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
             try {
                 applyPendingExternalCursor(ic)
@@ -145,7 +145,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
 
             // 외부에서 앱 화면의 커서를 옮긴 직후의 첫 한글 조합은
             // HTML의 별도 모드에 의존하지 않고 여기서 직접 중간 삽입합니다.
@@ -168,7 +168,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun insertAtExternalCursor(text: String) {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
             val target = pendingExternalCursorUtf16 ?: return
             try {
@@ -203,7 +203,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
             try {
                 ic.setSelection(start, end)
@@ -218,7 +218,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteText() {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
 
             try {
@@ -267,7 +267,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteOneCharForHanja() {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
             try {
                 ic.finishComposingText()
@@ -360,7 +360,7 @@ class SsulKeyboardService : InputMethodService() {
         // 정상 한글 입력의 조합 과정까지 건드릴 수 있습니다.
         // 대신 "외부 커서 이동 후 첫 입력"에만 실제 커서 위치를 적용합니다.
         pendingExternalCursorUtf16 = newSelStart
-        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 1000L
+        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 150L
 
         // 이번 커서 이동은 "외부에서 손가락으로 옮긴 커서"임을
         // HTML에 명확히 표시합니다. 다음 한글 첫 글자 한 번만
