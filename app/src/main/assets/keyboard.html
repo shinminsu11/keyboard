@@ -1185,6 +1185,19 @@ function getUtf16Index(arr, pos) {
 let externalCursorInsertMode = false;
 window.beginExternalCursorInsert = function() { externalCursorInsertMode = true; };
 
+// Android selection callback과 HTML 자판의 현재 입력 위치가 같은지
+// 판단하기 위한 UTF-16 기준 예상 커서 위치입니다.
+window.getKeyboardExpectedCursorUtf16 = function() {
+    try {
+        let chars = Array.from(committedText);
+        let pos = getUtf16Index(chars, cursorPos);
+        let current = assembleCurrent();
+        return pos + current.length;
+    } catch(e) {
+        return -1;
+    }
+};
+
 let renderRequested = false;
 let renderVersion = 0;
 function updateScreen() {
