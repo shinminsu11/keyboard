@@ -1266,9 +1266,18 @@ function updateScreen() {
 
         if (window.AndroidBridge && currentAssembled) {
             if (externalCursorInsertMode && window.AndroidBridge.setComposing) {
-                // 첫 조합문자만 Kotlin의 외부 커서 삽입 경로로 보냅니다.
-                externalCursorInsertMode = false;
-                window.AndroidBridge.setComposing(currentAssembled);
+                // 중간 커서에서는 초성/중간 조합 상태(예: ㅇ)를 Android로
+                // 먼저 보내지 않습니다. 완성된 한글 음절(예: 아)이 된 순간
+                // 한 번만 외부 커서 삽입 경로로 보냅니다.
+                const isCompleteHangulSyllable =
+                    currentAssembled.length === 1 &&
+                    currentAssembled.charCodeAt(0) >= 0xAC00 &&
+                    currentAssembled.charCodeAt(0) <= 0xD7A3;
+
+                if (isCompleteHangulSyllable) {
+                    externalCursorInsertMode = false;
+                    window.AndroidBridge.setComposing(currentAssembled);
+                }
             } else if (window.AndroidBridge.setComposing) {
                 window.AndroidBridge.setComposing(currentAssembled);
             }
