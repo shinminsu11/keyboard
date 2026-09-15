@@ -195,6 +195,14 @@ class SsulKeyboardService : InputMethodService() {
                 // 방금 새로 넣은 텍스트 위에서 이동시키므로 충돌 가능성이 작습니다.
                 ic.setSelection(newPos, newPos)
 
+                // 방금 중간에 넣은 첫 자음/모음을 composing 영역으로 잡습니다.
+                // 다음 모음(예: ㅏ)이 들어오면 이 글자를 교체하여
+                // ㅇ + ㅏ -> 아처럼 기존 한글 조합을 계속할 수 있게 합니다.
+                try {
+                    ic.setComposingRegion(prefix.length, newPos)
+                } catch (_: Exception) {
+                }
+
                 pendingExternalCursorUtf16 = null
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
