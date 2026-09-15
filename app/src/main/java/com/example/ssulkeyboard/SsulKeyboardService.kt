@@ -346,12 +346,10 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        // 실제 한글 조합 중 Android가 보내는 selection callback은
-        // candidates 영역을 함께 가지고 옵니다. 이 callback은 웹 자판의
-        // 조합 버퍼를 초기화하면 안 됩니다.
-        if (candidatesStart >= 0 || candidatesEnd >= 0) {
-            return
-        }
+        // candidates 영역이 잡혀 있어도 사용자가 실제 입력창을 터치해
+        // 커서를 옮긴 경우에는 이 callback이 들어올 수 있습니다.
+        // 앞의 internalSelectionUntil 차단으로 자판이 만든 callback은
+        // 이미 걸러지므로 여기서는 candidates를 이유로 무시하지 않습니다.
 
         // 자판이 방금 만든 selection callback이면 무시합니다.
         if (newSelStart == lastKnownSelectionStart &&
