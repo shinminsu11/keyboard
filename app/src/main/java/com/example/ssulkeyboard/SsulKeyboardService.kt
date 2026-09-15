@@ -145,58 +145,71 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setComposing(text: String) {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
+            val ic = currentInputConnection ?: return
 
-            // 외부에서 앱 화면의 커서를 옮긴 직후의 첫 한글 조합은
-            // HTML의 별도 모드에 의존하지 않고 여기서 직접 중간 삽입합니다.
-            // pendingExternalCursorUtf16은 실제 외부 커서 이동을 감지했을 때만
-            // 설정되므로 평상시 한글 조합에는 영향을 주지 않습니다.
-            if (pendingExternalCursorUtf16 != null) {
-                insertAtExternalCursor(text)
+            // 중간 커서 입력은 HTML의 composing 경로와 섞지 않고
+            // 여기서 딱 한 번만 처리합니다.
+            val target = pendingExternalCursorUtf16
+            if (target != null) {
+                insertAtExternalCursor(text, target)
                 return
             }
 
-            val ic = currentInputConnection ?: return
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             try {
                 ic.setComposingText(text, 1)
-                // 조합문자 입력으로 앱 커서가 이동한 위치를 기억합니다.
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        @JavascriptInterface
-        fun insertAtExternalCursor(text: String) {
-            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
+        private fun insertAtExternalCursor(text: String, target: Int) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 300L
             val ic = currentInputConnection ?: return
-            val target = pendingExternalCursorUtf16 ?: return
+
             try {
-                // 중요: setSelection()으로 중간 위치를 직접 잡는 대신,
-                // 현재 네이티브 커서에서 전체 문장을 읽고
-                // [앞부분 + 새 글자 + 뒷부분]을 한 번에 다시 넣습니다.
-                // 이렇게 하면 대상 앱이 setSelection()을 무시하는 경우에도
-                // 중간 삽입 위치를 정확히 표현할 수 있습니다.
                 ic.finishComposingText()
 
-                val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: return
+                val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
                 val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
                 val full = before + after
 
-                if (target < 0 || target > full.length) return
+                if (target < 0 || target > full.length) {
+                    pendingExternalCursorUtf16 = null
+                    return
+                }
 
                 val prefix = full.substring(0, target)
                 val suffix = full.substring(target)
                 val rebuilt = prefix + text + suffix
 
+                // 현재 입력창 전체를 한 번에 다시 넣습니다.
                 ic.deleteSurroundingText(before.length, after.length)
                 ic.commitText(rebuilt, 1)
 
-                pendingExternalCursorUtf16 = null
                 val newPos = (prefix + text).length
+
+                // 전체 문자열을 넣은 직후 원하는 위치로 커서를 옮깁니다.
+                // 이번에는 기존 텍스트 위에서 이동시키는 것이 아니라
+                // 방금 새로 넣은 텍스트 위에서 이동시키므로 충돌 가능성이 작습니다.
+                ic.setSelection(newPos, newPos)
+
+                pendingExternalCursorUtf16 = null
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
+
+                // HTML에도 최종 결과와 커서 위치를 정확히 알려서
+                // 같은 글자를 다시 setComposingText()로 보내지 못하게 합니다.
+                val textJs = org.json.JSONObject.quote(rebuilt)
+                webView.post {
+                    webView.evaluateJavascript(
+                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($textJs,$newPos);}",
+                        null
+                    )
+                }
             } catch (e: Exception) {
+                pendingExternalCursorUtf16 = null
                 e.printStackTrace()
             }
         }
