@@ -334,7 +334,17 @@ class SsulKeyboardService : InputMethodService() {
         // 정상 한글 입력의 조합 과정까지 건드릴 수 있습니다.
         // 대신 "외부 커서 이동 후 첫 입력"에만 실제 커서 위치를 적용합니다.
         pendingExternalCursorUtf16 = newSelStart
-        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 250L
+        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 1000L
+
+        // 이번 커서 이동은 "외부에서 손가락으로 옮긴 커서"임을
+        // HTML에 명확히 표시합니다. 다음 한글 첫 글자 한 번만
+        // 전용 중간 삽입 경로로 보내고, 그 뒤에는 기존 조합 경로로 돌아갑니다.
+        webView.post {
+            webView.evaluateJavascript(
+                "javascript:if(window.beginExternalCursorInsert) { window.beginExternalCursorInsert(); }",
+                null
+            )
+        }
 
         // 현재 앱의 실제 앞/뒤 문자열을 HTML에 알려 주되,
         // 아직 Android 커서를 강제로 움직이지 않습니다.
