@@ -217,6 +217,21 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
+        fun extendExternalSyllable(text: String) {
+            val ic = currentInputConnection ?: return
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 180L
+            try {
+                // 중간 삽입으로 방금 들어간 한 음절의 마지막 글자를
+                // 새로 만든 완성 음절로 교체합니다.
+                ic.deleteSurroundingText(1, 0)
+                ic.commitText(text, 1)
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
             internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
