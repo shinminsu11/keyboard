@@ -1185,6 +1185,37 @@ function getUtf16Index(arr, pos) {
 let externalCursorInsertMode = false;
 window.beginExternalCursorInsert = function() { externalCursorInsertMode = true; };
 
+// 중간 커서 한 글자 삽입이 Android에서 완료된 뒤
+// HTML의 상태도 같은 문장/커서 위치로 맞춥니다.
+// 다시 updateScreen()을 호출하지 않아 Android에 같은 글자를 재전송하지 않습니다.
+window.finishExternalInsert = function(fullText, utf16Cursor) {
+    try {
+        fullText = (fullText == null) ? '' : String(fullText);
+        let pos = Number(utf16Cursor);
+        if (!Number.isFinite(pos)) pos = fullText.length;
+        pos = Math.max(0, Math.min(pos, fullText.length));
+
+        // UTF-16 위치를 Array.from 기준 문자 위치로 변환합니다.
+        let left = fullText.substring(0, pos);
+        committedText = fullText;
+        cursorPos = Array.from(left).length;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        renderVersion++;
+        renderRequested = false;
+
+        if (typeof screenTextWrap !== 'undefined') {
+            let chars = Array.from(committedText);
+            let beforeCursor = chars.slice(0, cursorPos).join('');
+            let afterCursor = chars.slice(cursorPos).join('');
+            screenTextWrap.innerHTML =
+                escapeHtml(beforeCursor) +
+                '<span class="cursor-bar"></span>' +
+                escapeHtml(afterCursor);
+        }
+    } catch(e) {}
+};
+
 // Android selection callback과 HTML 자판의 현재 입력 위치가 같은지
 // 판단하기 위한 UTF-16 기준 예상 커서 위치입니다.
 window.getKeyboardExpectedCursorUtf16 = function() {
@@ -1234,11 +1265,10 @@ function updateScreen() {
         }
 
         if (window.AndroidBridge && currentAssembled) {
-            if (externalCursorInsertMode && window.AndroidBridge.insertAtExternalCursor) {
-                // 중간 커서에서 처음 완성된 한글 한 글자만 별도 삽입합니다.
-                // 기존 정상 한글 조합 경로에는 개입하지 않습니다.
+            if (externalCursorInsertMode && window.AndroidBridge.setComposing) {
+                // 첫 조합문자만 Kotlin의 외부 커서 삽입 경로로 보냅니다.
                 externalCursorInsertMode = false;
-                window.AndroidBridge.insertAtExternalCursor(currentAssembled);
+                window.AndroidBridge.setComposing(currentAssembled);
             } else if (window.AndroidBridge.setComposing) {
                 window.AndroidBridge.setComposing(currentAssembled);
             }
