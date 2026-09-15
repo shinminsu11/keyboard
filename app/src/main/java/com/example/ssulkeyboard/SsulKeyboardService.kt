@@ -27,6 +27,10 @@ class SsulKeyboardService : InputMethodService() {
     private var pendingExternalCursorUtf16: Int? = null
     private var suppressSelectionSyncUntil = 0L
 
+    // 자판이 직접 입력/커서 이동을 한 직후의 selection callback은
+    // 외부 커서 이동으로 오인하지 않도록 잠시 무시합니다.
+    private var internalSelectionUntil = 0L
+
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -127,6 +131,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun commitText(text: String) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
             val ic = currentInputConnection ?: return
             try {
                 applyPendingExternalCursor(ic)
@@ -140,6 +145,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setComposing(text: String) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
             val ic = currentInputConnection ?: return
             try {
                 applyPendingExternalCursor(ic)
@@ -153,6 +159,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun insertAtExternalCursor(text: String) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
             val ic = currentInputConnection ?: return
             val target = pendingExternalCursorUtf16 ?: return
             try {
@@ -187,6 +194,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
             val ic = currentInputConnection ?: return
             try {
                 ic.setSelection(start, end)
@@ -201,6 +209,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteText() {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
             val ic = currentInputConnection ?: return
 
             try {
@@ -249,6 +258,7 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteOneCharForHanja() {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 1000L
             val ic = currentInputConnection ?: return
             try {
                 ic.finishComposingText()
@@ -300,6 +310,13 @@ class SsulKeyboardService : InputMethodService() {
         )
 
         if (!::webView.isInitialized || newSelStart < 0 || newSelEnd < 0) return
+
+        // 정상 한글 입력/삭제/자판이 요청한 커서 이동에서 발생한 callback은
+        // 외부 커서 이동으로 처리하지 않습니다. 이것이 Pair19에서
+        // 일반 입력까지 중간삽입 모드로 들어가던 문제를 막습니다.
+        if (android.os.SystemClock.uptimeMillis() < internalSelectionUntil) {
+            return
+        }
 
         if (android.os.SystemClock.uptimeMillis() < suppressSelectionSyncUntil) {
             lastKnownSelectionStart = newSelStart
