@@ -71,3 +71,403 @@ class SsulKeyboardService : InputMethodService() {
             if (after >= 0) {
                 lastKnownSelectionStart = before
                 lastKnownSelectionEnd = before
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun syncHtmlWithNativeText() {
+        if (!::webView.isInitialized) return
+
+        val ic = currentInputConnection ?: return
+
+        try {
+            val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+            val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+
+            val beforeJs = org.json.JSONObject.quote(before)
+            val afterJs = org.json.JSONObject.quote(after)
+
+            webView.post {
+                webView.evaluateJavascript(
+                    """
+                    (function() {
+                        if (window.syncNativeText) {
+                            window.syncNativeText($beforeJs, $afterJs);
+                        }
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun applyPendingExternalCursor(
+        ic: android.view.inputmethod.InputConnection
+    ) {
+        val pos = pendingExternalCursorUtf16 ?: return
+
+        try {
+            ic.finishComposingText()
+            ic.setSelection(pos, pos)
+        } catch (_: Exception) {
+        }
+
+        pendingExternalCursorUtf16 = null
+        lastKnownSelectionStart = pos
+        lastKnownSelectionEnd = pos
+    }
+
+    inner class KeyboardBridge {
+
+        @JavascriptInterface
+        fun commitText(text: String) {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                applyPendingExternalCursor(ic)
+                ic.commitText(text, 1)
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun setComposing(text: String) {
+            val ic = currentInputConnection ?: return
+
+            val target = pendingExternalCursorUtf16
+
+            if (target != null) {
+                insertAtExternalCursor(text, target)
+                return
+            }
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
+            try {
+                ic.setComposingText(text, 1)
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        private fun insertAtExternalCursor(
+            text: String,
+            target: Int
+        ) {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 300L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                ic.finishComposingText()
+
+                val before =
+                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+
+                val after =
+                    ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+
+                val full = before + after
+
+                if (target < 0 || target > full.length) {
+                    pendingExternalCursorUtf16 = null
+                    return
+                }
+
+                val prefix = full.substring(0, target)
+                val suffix = full.substring(target)
+                val rebuilt = prefix + text + suffix
+
+                ic.deleteSurroundingText(
+                    before.length,
+                    after.length
+                )
+
+                ic.commitText(rebuilt, 1)
+
+                val newPos = (prefix + text).length
+
+                ic.setSelection(newPos, newPos)
+
+                pendingExternalCursorUtf16 = null
+                lastKnownSelectionStart = newPos
+                lastKnownSelectionEnd = newPos
+
+                val textJs = org.json.JSONObject.quote(rebuilt)
+
+                webView.post {
+                    webView.evaluateJavascript(
+                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($textJs,$newPos);}",
+                        null
+                    )
+                }
+            } catch (e: Exception) {
+                pendingExternalCursorUtf16 = null
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun extendExternalSyllable(text: String) {
+            val ic = currentInputConnection ?: return
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 180L
+
+            try {
+                ic.deleteSurroundingText(1, 0)
+                ic.commitText(text, 1)
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun setSelection(start: Int, end: Int) {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                ic.setSelection(start, end)
+
+                lastKnownSelectionStart = start
+                lastKnownSelectionEnd = end
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // ============================
+        // Pair33 수정: 삭제
+        // ============================
+        @JavascriptInterface
+        fun deleteText() {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                val selectedText = ic.getSelectedText(0)
+
+                if (!selectedText.isNullOrEmpty()) {
+                    ic.commitText("", 1)
+                    rememberActualSelection()
+                    syncHtmlWithNativeText()
+                    return
+                }
+
+                // 삭제 직전의 실제 커서 위치를 먼저 저장합니다.
+                val beforeNow =
+                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+
+                val originalCursor = beforeNow.length
+
+                if (originalCursor <= 0) {
+                    return
+                }
+
+                // 메모장에서 composing 상태 때문에
+                // 삭제 위치가 흔들리는 것을 막기 위해 확정합니다.
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
+
+                // 확정 후 원래 커서 위치를 다시 복원합니다.
+                try {
+                    ic.setSelection(
+                        originalCursor,
+                        originalCursor
+                    )
+                } catch (_: Exception) {
+                }
+
+                // 복원된 커서 바로 앞 글자를 확인합니다.
+                val textBefore =
+                    ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+
+                if (textBefore.isEmpty()) {
+                    return
+                }
+
+                if (textBefore.length >= 2) {
+
+                    val high =
+                        textBefore[textBefore.length - 2]
+
+                    val low =
+                        textBefore[textBefore.length - 1]
+
+                    if (Character.isSurrogatePair(high, low)) {
+                        ic.deleteSurroundingText(2, 0)
+                    } else {
+                        ic.deleteSurroundingText(1, 0)
+                    }
+
+                } else {
+
+                    ic.deleteSurroundingText(1, 0)
+                }
+
+                rememberActualSelection()
+                syncHtmlWithNativeText()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun deleteOneCharForHanja() {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                ic.finishComposingText()
+                ic.deleteSurroundingText(1, 0)
+                rememberActualSelection()
+                syncHtmlWithNativeText()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun performSearch() {
+            val ic = currentInputConnection ?: return
+            ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+        }
+
+        @JavascriptInterface
+        fun openUrl(url: String) {
+            try {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(url)
+                ).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                startActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        candidatesStart: Int,
+        candidatesEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart,
+            oldSelEnd,
+            newSelStart,
+            newSelEnd,
+            candidatesStart,
+            candidatesEnd
+        )
+
+        if (!::webView.isInitialized ||
+            newSelStart < 0 ||
+            newSelEnd < 0
+        ) {
+            return
+        }
+
+        if (
+            android.os.SystemClock.uptimeMillis() <
+            internalSelectionUntil
+        ) {
+            return
+        }
+
+        if (
+            android.os.SystemClock.uptimeMillis() <
+            suppressSelectionSyncUntil
+        ) {
+            lastKnownSelectionStart = newSelStart
+            lastKnownSelectionEnd = newSelEnd
+            return
+        }
+
+        if (
+            newSelStart == lastKnownSelectionStart &&
+            newSelEnd == lastKnownSelectionEnd
+        ) {
+            return
+        }
+
+        lastKnownSelectionStart = newSelStart
+        lastKnownSelectionEnd = newSelEnd
+
+        pendingExternalCursorUtf16 = newSelStart
+
+        suppressSelectionSyncUntil =
+            android.os.SystemClock.uptimeMillis() + 150L
+
+        webView.post {
+            webView.evaluateJavascript(
+                "javascript:if(window.beginExternalCursorInsert) { window.beginExternalCursorInsert(); }",
+                null
+            )
+        }
+
+        webView.post {
+            if (
+                android.os.SystemClock.uptimeMillis() <=
+                suppressSelectionSyncUntil
+            ) {
+                syncHtmlWithNativeText()
+            }
+        }
+    }
+
+    override fun onStartInputView(
+        info: EditorInfo?,
+        restarting: Boolean
+    ) {
+        super.onStartInputView(info, restarting)
+
+        lastKnownSelectionStart = -1
+        lastKnownSelectionEnd = -1
+        pendingExternalCursorUtf16 = null
+
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript(
+                "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
+                null
+            )
+        }
+
+        webView.post {
+            rememberActualSelection()
+        }
+    }
+
+    override fun onEvaluateFullscreenMode(): Boolean {
+        return false
+    }
+}
