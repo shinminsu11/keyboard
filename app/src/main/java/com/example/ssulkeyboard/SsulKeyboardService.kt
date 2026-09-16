@@ -16,11 +16,16 @@ class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
 
+    // 마지막으로 자판이 직접 만든 것으로 확인한 실제 앱 커서 위치입니다.
     private var lastKnownSelectionStart = -1
     private var lastKnownSelectionEnd = -1
 
+    // 사용자가 실제 앱에서 커서를 옮긴 직후의 첫 입력에만 사용합니다.
     private var pendingExternalCursorUtf16: Int? = null
     private var suppressSelectionSyncUntil = 0L
+
+    // 자판이 직접 입력/커서 이동을 한 직후의 selection callback은
+    // 외부 커서 이동으로 오인하지 않도록 잠시 무시합니다.
     private var internalSelectionUntil = 0L
 
     override fun onCreateInputView(): View {
@@ -37,11 +42,4 @@ class SsulKeyboardService : InputMethodService() {
         val heightPx =
             (heightDp * resources.displayMetrics.density).toInt()
 
-        webView = WebView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                heightPx
-            )
-
-            settings.javaScriptEnabled = true
-            settings.domStorage
+       
