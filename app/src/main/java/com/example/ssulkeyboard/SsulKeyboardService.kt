@@ -19,4 +19,29 @@ class SsulKeyboardService : InputMethodService() {
     private var lastKnownSelectionStart = -1
     private var lastKnownSelectionEnd = -1
 
-   
+    private var pendingExternalCursorUtf16: Int? = null
+    private var suppressSelectionSyncUntil = 0L
+    private var internalSelectionUntil = 0L
+
+    override fun onCreateInputView(): View {
+        val container = LinearLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#d1d8e0"))
+        }
+
+        val heightDp = 235
+        val heightPx =
+            (heightDp * resources.displayMetrics.density).toInt()
+
+        webView = WebView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                heightPx
+            )
+
+            settings.javaScriptEnabled = true
+            settings.domStorage
