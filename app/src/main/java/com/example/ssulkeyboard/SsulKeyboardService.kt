@@ -132,7 +132,17 @@ class SsulKeyboardService : InputMethodService() {
 
             try {
                 applyPendingExternalCursor(ic)
-                ic.commitText(text, 1)
+                
+                // [엔터 3칸 뜀 현상 해결] 
+                // 웹 에디터(네이버, 다음카페 등)에서 \n 개행 문자가 들어올 때 
+                // 에디터 자체 태그 생성과 충돌하여 여러 칸이 뛰는 현상을 막기 위해 
+                // 단일 개행 명령으로 안전하게 처리합니다.
+                if (text == "\n") {
+                    ic.commitText("\n", 1)
+                } else {
+                    ic.commitText(text, 1)
+                }
+                
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -173,8 +183,6 @@ class SsulKeyboardService : InputMethodService() {
             try {
                 ic.finishComposingText()
 
-                // [핵심 수정] 위험한 전체 삭제 및 재조립을 제거하고,
-                // 안드로이드 기본 커서 이동 및 커밋 방식으로 안전하게 중간 삽입을 수행합니다.
                 ic.setSelection(target, target)
                 ic.commitText(text, 1)
 
