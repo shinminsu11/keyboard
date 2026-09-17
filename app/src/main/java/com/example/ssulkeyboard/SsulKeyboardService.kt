@@ -252,9 +252,6 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // ============================
-        // Pair33 수정: 삭제
-        // ============================
         @JavascriptInterface
         fun deleteText() {
             internalSelectionUntil =
@@ -272,7 +269,6 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                // 삭제 직전의 실제 커서 위치를 먼저 저장합니다.
                 val beforeNow =
                     ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
 
@@ -282,14 +278,11 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                // 메모장에서 composing 상태 때문에
-                // 삭제 위치가 흔들리는 것을 막기 위해 확정합니다.
                 try {
                     ic.finishComposingText()
                 } catch (_: Exception) {
                 }
 
-                // 확정 후 원래 커서 위치를 다시 복원합니다.
                 try {
                     ic.setSelection(
                         originalCursor,
@@ -298,7 +291,6 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
-                // 복원된 커서 바로 앞 글자를 확인합니다.
                 val textBefore =
                     ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
 
@@ -307,7 +299,6 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 if (textBefore.length >= 2) {
-
                     val high =
                         textBefore[textBefore.length - 2]
 
@@ -319,9 +310,7 @@ class SsulKeyboardService : InputMethodService() {
                     } else {
                         ic.deleteSurroundingText(1, 0)
                     }
-
                 } else {
-
                     ic.deleteSurroundingText(1, 0)
                 }
 
@@ -371,7 +360,7 @@ class SsulKeyboardService : InputMethodService() {
                 e.printStackTrace()
             }
         }
-    }
+    } // inner class KeyboardBridge 닫는 괄호
 
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -470,6 +459,4 @@ class SsulKeyboardService : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean {
         return false
     }
-}
-
-기다려 웹코드도 다시 줄께
+} // SsulKeyboardService 클래스 닫는 괄호
