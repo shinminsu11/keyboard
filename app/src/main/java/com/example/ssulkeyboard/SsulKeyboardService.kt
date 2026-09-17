@@ -173,39 +173,18 @@ class SsulKeyboardService : InputMethodService() {
             try {
                 ic.finishComposingText()
 
-                val before =
-                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+                // [핵심 수정] 위험한 전체 삭제 및 재조립을 제거하고,
+                // 안드로이드 기본 커서 이동 및 커밋 방식으로 안전하게 중간 삽입을 수행합니다.
+                ic.setSelection(target, target)
+                ic.commitText(text, 1)
 
-                val after =
-                    ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
-
-                val full = before + after
-
-                if (target < 0 || target > full.length) {
-                    pendingExternalCursorUtf16 = null
-                    return
-                }
-
-                val prefix = full.substring(0, target)
-                val suffix = full.substring(target)
-                val rebuilt = prefix + text + suffix
-
-                ic.deleteSurroundingText(
-                    before.length,
-                    after.length
-                )
-
-                ic.commitText(rebuilt, 1)
-
-                val newPos = (prefix + text).length
-
-                ic.setSelection(newPos, newPos)
+                val newPos = target + text.length
 
                 pendingExternalCursorUtf16 = null
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
-                val textJs = org.json.JSONObject.quote(rebuilt)
+                val textJs = org.json.JSONObject.quote(text)
 
                 webView.post {
                     webView.evaluateJavascript(
@@ -360,7 +339,7 @@ class SsulKeyboardService : InputMethodService() {
                 e.printStackTrace()
             }
         }
-    } // inner class KeyboardBridge 닫는 괄호
+    }
 
     override fun onUpdateSelection(
         oldSelStart: Int,
@@ -459,4 +438,4 @@ class SsulKeyboardService : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean {
         return false
     }
-} // SsulKeyboardService 클래스 닫는 괄호
+}
