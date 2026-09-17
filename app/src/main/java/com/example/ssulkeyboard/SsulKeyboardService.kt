@@ -192,7 +192,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 ic.setSelection(target, target)
-                ic.setComposingText(text, 1)
+                ic.commitText(text, 1)
 
                 val newPos = target + text.length
 
@@ -425,12 +425,13 @@ class SsulKeyboardService : InputMethodService() {
         suppressSelectionSyncUntil =
             android.os.SystemClock.uptimeMillis() + 150L
 
-        webView.post {
+        // Pair39: beginExternalCursorInsert()만 30ms 늦게 전달
+        webView.postDelayed({
             webView.evaluateJavascript(
                 "javascript:if(window.beginExternalCursorInsert) { window.beginExternalCursorInsert(); }",
                 null
             )
-        }
+        }, 30L)
 
         // 기존의 즉시 syncHtmlWithNativeText() 호출을 제거했습니다.
     }
