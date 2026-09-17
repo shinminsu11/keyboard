@@ -134,11 +134,21 @@ class SsulKeyboardService : InputMethodService() {
                 applyPendingExternalCursor(ic)
                 
                 // [엔터 3칸 뜀 현상 해결] 
-                // 웹 에디터(네이버, 다음카페 등)에서 \n 개행 문자가 들어올 때 
-                // 에디터 자체 태그 생성과 충돌하여 여러 칸이 뛰는 현상을 막기 위해 
-                // 단일 개행 명령으로 안전하게 처리합니다.
+                // 웹 에디터(네이버, 다음카페 등)의 중복 태그 충돌을 막기 위해 
+                // 문자열 대신 실제 엔터 키 이벤트(KEYCODE_ENTER)를 직접 쏩니다.
                 if (text == "\n") {
-                    ic.commitText("\n", 1)
+                    ic.sendKeyEvent(
+                        android.view.KeyEvent(
+                            android.view.KeyEvent.ACTION_DOWN,
+                            android.view.KeyEvent.KEYCODE_ENTER
+                        )
+                    )
+                    ic.sendKeyEvent(
+                        android.view.KeyEvent(
+                            android.view.KeyEvent.ACTION_UP,
+                            android.view.KeyEvent.KEYCODE_ENTER
+                        )
+                    )
                 } else {
                     ic.commitText(text, 1)
                 }
