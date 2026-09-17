@@ -1006,8 +1006,6 @@ window.resetKeyboardBuffer = resetKeyboardBuffer;
 
 // Android 실제 입력창에서 손가락으로 옮긴 커서 위치를
 // 이 HTML 자판의 cursorPos와 동기화합니다.
-// Android의 selectionStart/selectionEnd는 UTF-16 기준이고,
-// 이 자판의 cursorPos는 Array.from() 기준이므로 변환합니다.
 window.setNativeCursorPosition = function(start, end) {
     let text = committedText || '';
     let utf16Pos = Number.isFinite(start) ? start : 0;
@@ -1018,17 +1016,11 @@ window.setNativeCursorPosition = function(start, end) {
     let before = text.substring(0, utf16Pos);
     cursorPos = Array.from(before).length;
 
-    // 선택 영역이 남아 있거나 한글 조합 중이었다면
-    // 새 커서 위치에서 정상적으로 입력이 시작되도록 조합 버퍼를 비웁니다.
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     lastSlideDir = '';
 };
 
 // Android 실제 입력창의 삭제 결과를 HTML 자판 상태에 반영합니다.
-// 삭제 직후 committedText가 예전 문장을 계속 가지고 있으면
-// 다음 간띄기/특수문자 입력 때 HTML과 Android 위치가 어긋나
-// 마지막 글자가 사라질 수 있으므로, 실제 커서 앞/뒤 문자열을
-// 그대로 받아서 자판 상태를 다시 맞춥니다.
 window.syncNativeText = function(before, after) {
     renderVersion++;
     before = (before == null) ? '' : String(before);
@@ -1038,10 +1030,6 @@ window.syncNativeText = function(before, after) {
     cursorPos = Array.from(before).length;
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     lastSlideDir = '';
-
-    // 여기서는 updateScreen()을 호출하지 않습니다.
-    // updateScreen()은 setComposingText()를 호출하므로
-    // 삭제 직후 Android의 선택 위치를 다시 건드릴 수 있습니다.
 };
 
 function showCustomConfirm(message, onOk) {
@@ -1183,8 +1171,6 @@ function getUtf16Index(arr, pos) {
 }
 
 let externalCursorInsertMode = false;
-// 중간에 삽입한 첫 음절 뒤의 자음은
-// 종성인지 다음 음절의 초성인지 다음 모음/자음이 들어와야 확정할 수 있습니다.
 let externalFinalCandidate = null;
 let externalComposeTimer = null;
 window.beginExternalCursorInsert = function() {
@@ -1192,9 +1178,6 @@ window.beginExternalCursorInsert = function() {
     externalFinalCandidate = null;
 };
 
-// 중간 커서 한 글자 삽입이 Android에서 완료된 뒤
-// HTML의 상태도 같은 문장/커서 위치로 맞춥니다.
-// 다시 updateScreen()을 호출하지 않아 Android에 같은 글자를 재전송하지 않습니다.
 window.finishExternalInsert = function(fullText, utf16Cursor) {
     try {
         fullText = (fullText == null) ? '' : String(fullText);
@@ -1202,14 +1185,10 @@ window.finishExternalInsert = function(fullText, utf16Cursor) {
         if (!Number.isFinite(pos)) pos = fullText.length;
         pos = Math.max(0, Math.min(pos, fullText.length));
 
-        // UTF-16 위치를 Array.from 기준 문자 위치로 변환합니다.
         let left = fullText.substring(0, pos);
         committedText = fullText;
         cursorPos = Array.from(left).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-        // 삽입된 완성 음절을 기억합니다. 다음 자음이 오면 일단
-        // 종성 후보로 Android에 확정하고, 다음 입력이 모음이면
-        // 다시 원래 음절로 되돌려 다음 음절의 초성으로 처리합니다.
         externalFinalCandidate = {
             baseChar: (pos > 0 ? Array.from(fullText.substring(0, pos)).slice(-1)[0] : ''),
             start: Math.max(0, cursorPos - 1)
@@ -1230,8 +1209,6 @@ window.finishExternalInsert = function(fullText, utf16Cursor) {
     } catch(e) {}
 };
 
-// Android selection callback과 HTML 자판의 현재 입력 위치가 같은지
-// 판단하기 위한 UTF-16 기준 예상 커서 위치입니다.
 window.getKeyboardExpectedCursorUtf16 = function() {
     try {
         let chars = Array.from(committedText);
@@ -1255,11 +1232,15 @@ function updateScreen() {
         let beforeCursor = chars.slice(0, cursorPos).join('');
         let afterCursor = chars.slice(cursorPos).join('');
 
+        // [핵심 수정] 텍스트와 커서 바가 밀리지 않고 즉시 렌더링되도록 보장
         screenTextWrap.innerHTML = 
             escapeHtml(beforeCursor) + 
             escapeHtml(currentAssembled) + 
             '<span class="cursor-bar"></span>' + 
             escapeHtml(afterCursor);
+
+        // 레이아웃 리플로우 유발로 커서 바 숨김 현상(렌더링 지연) 원천 차단
+        void screenTextWrap.offsetHeight;
 
         if (activeTestInput && !window.AndroidBridge) {
             let fullStr = beforeCursor + currentAssembled + afterCursor;
@@ -1270,8 +1251,6 @@ function updateScreen() {
             } catch(e) {}
         }
 
-        // 이 프레임을 만드는 동안 상태가 바뀌었다면 현재 프레임에서
-        // Android 조합문자를 보내지 않습니다. 최신 상태를 다시 그립니다.
         if (requestedVersion !== renderVersion) {
             renderRequested = false;
             updateScreen();
@@ -1280,19 +1259,12 @@ function updateScreen() {
 
         if (window.AndroidBridge && currentAssembled) {
             if (externalCursorInsertMode && window.AndroidBridge.setComposing) {
-                // 중간 커서에서는 초성/중간 조합 상태(예: ㅇ)를 Android로
-                // 먼저 보내지 않습니다. 완성된 한글 음절(예: 아)이 된 순간
-                // 한 번만 외부 커서 삽입 경로로 보냅니다.
                 const isCompleteHangulSyllable =
                     currentAssembled.length === 1 &&
                     currentAssembled.charCodeAt(0) >= 0xAC00 &&
                     currentAssembled.charCodeAt(0) <= 0xD7A3;
 
                 if (isCompleteHangulSyllable) {
-                    // 중간 커서에서 ㅗ+ㅏ=ㅘ, ㅜ+ㅓ=ㅝ 같은 복합모음은
-                    // 첫 완성음절(예: 오)을 바로 Android에 보내면 다음 모음이
-                    // 별도 문자로 들어갑니다. 복합모음으로 이어질 수 있는
-                    // 음절만 잠시 기다렸다가 다음 모음과 합쳐서 한 번만 보냅니다.
                     const code = currentAssembled.charCodeAt(0);
                     const offset = code - 0xAC00;
                     const jungIndex = Math.floor((offset % (21 * 28)) / 28);
@@ -1362,19 +1334,8 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
-// 중간 삽입 직후의 첫 자음은 앞 음절의 종성일 수도 있고
-// 다음 음절의 초성일 수도 있습니다. 첫 자음은 일단 종성 후보로
-// 화면/Android에 반영하고, 다음 입력으로 최종 방향을 결정합니다.
 if (externalFinalCandidate) {
     if (choIdx !== -1 && jungIdx === -1 && !externalFinalCandidate.pendingConsonant) {
-        // Pair40 실험: 중간 커서에 삽입한 완성 음절 뒤의 첫 자음은
-        // 앞 음절의 종성으로 즉시 붙이지 않고 새 음절의 초성으로 시작합니다.
-        // 다른 로직은 그대로 둡니다.
-        externalFinalCandidate = null;
-        hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
-        updateScreen();
-        return;
-
         const jongTry = getJongIndex(inputChar);
         const base = externalFinalCandidate.baseChar || '';
         const code = base.charCodeAt(0);
@@ -1406,7 +1367,6 @@ if (externalFinalCandidate) {
             }
         }
 
-        // 종성으로 사용할 수 없거나 위치가 없으면 새 음절의 초성입니다.
         externalFinalCandidate = null;
         hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
         updateScreen();
@@ -1414,8 +1374,6 @@ if (externalFinalCandidate) {
     }
 
     if (jungIdx !== -1 && externalFinalCandidate.pendingConsonant) {
-        // 앞서 종성 후보로 넣었던 자음을 떼어내고
-        // 다음 음절의 초성으로 되돌립니다. 예: 아+ㄱ+ㅣ → 아기
         const chars = Array.from(committedText);
         const at = externalFinalCandidate.start;
         const original = externalFinalCandidate.originalChar || '';
@@ -1436,8 +1394,6 @@ if (externalFinalCandidate) {
         return;
     }
 
-    // 두 번째 자음이 들어오면 첫 자음은 종성으로 확정된 상태이므로,
-    // 현재 자음은 다음 음절의 초성으로 시작합니다. 예: 안+경.
     if (choIdx !== -1 && jungIdx === -1 && externalFinalCandidate.pendingConsonant) {
         externalFinalCandidate = null;
         hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
@@ -1498,6 +1454,7 @@ hangulBuffer.jung = jungIdx;
 }
 updateScreen();
 }
+
 function replaceLastVowel(newVowel) {
 if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
 hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
@@ -1512,11 +1469,6 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    // Android IME에서는 실제 삭제 위치를 Android가 관리합니다.
-    // 특히 문장 중간으로 커서를 옮긴 뒤 마지막 한글 조합 버퍼가 남아 있으면
-    // 버퍼를 먼저 지우면서 ㅏ/ㅁ처럼 조합이 분해되는 문제가 생길 수 있습니다.
-    // 따라서 APK에서는 버퍼를 건드리는 분기를 먼저 실행하지 않고,
-    // 현재 실제 커서 위치의 삭제를 Android에 맡깁니다.
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
@@ -1524,7 +1476,6 @@ function backspaceHangul() {
         return;
     }
 
-    // 브라우저 테스트에서는 기존의 조합 중 한글 삭제 동작을 그대로 유지합니다.
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
