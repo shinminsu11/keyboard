@@ -1297,26 +1297,12 @@ function updateScreen() {
                     const offset = code - 0xAC00;
                     const jungIndex = Math.floor((offset % (21 * 28)) / 28);
                     const currentVowel = JUNGSUNG[jungIndex];
-                    const canCombineVowel = Object.keys(VOWEL_COMBINE).some(key =>
-                        key.startsWith(currentVowel + '+')
-                    );
-
-                    if (canCombineVowel) {
-                        if (externalComposeTimer) clearTimeout(externalComposeTimer);
-                        externalComposeTimer = setTimeout(() => {
-                            if (!externalCursorInsertMode) return;
-                            externalCursorInsertMode = false;
-                            externalComposeTimer = null;
-                            window.AndroidBridge.setComposing(currentAssembled);
-                        }, 350);
-                    } else {
-                        if (externalComposeTimer) {
-                            clearTimeout(externalComposeTimer);
-                            externalComposeTimer = null;
-                        }
-                        externalCursorInsertMode = false;
-                        window.AndroidBridge.setComposing(currentAssembled);
+                    if (externalComposeTimer) {
+                        clearTimeout(externalComposeTimer);
+                        externalComposeTimer = null;
                     }
+                    externalCursorInsertMode = false;
+                    window.AndroidBridge.setComposing(currentAssembled);
                 }
             } else if (window.AndroidBridge.setComposing) {
                 window.AndroidBridge.setComposing(currentAssembled);
