@@ -161,11 +161,10 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // ============================
-        // Pair36 실험
-        // onUpdateSelection 직후의 150ms 동기화를 제거하고
-        // 실제 입력 커서가 확정된 뒤 HTML을 동기화합니다.
-        // ============================
+        // Pair37 실험:
+        // 중간 커서 입력 시 setSelection(target,target)를
+        // 다시 호출하지 않고 현재 InputConnection 위치에서
+        // commitText()만 실행합니다.
         private fun insertAtExternalCursor(
             text: String,
             target: Int
@@ -191,7 +190,8 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                ic.setSelection(target, target)
+                // Pair37 핵심 변경:
+                // Pair35/36의 ic.setSelection(target, target)를 제거.
                 ic.commitText(text, 1)
 
                 val newPos = target + text.length
@@ -254,9 +254,7 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // ============================
         // Pair33 삭제 코드 보존
-        // ============================
         @JavascriptInterface
         fun deleteText() {
             internalSelectionUntil =
@@ -417,9 +415,6 @@ class SsulKeyboardService : InputMethodService() {
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
 
-        // Pair36 실험:
-        // 커서 위치만 기록하고 즉시 HTML 동기화를 하지 않습니다.
-        // 다음 입력이 들어올 때까지 native 입력창을 건드리지 않습니다.
         pendingExternalCursorUtf16 = newSelStart
 
         suppressSelectionSyncUntil =
@@ -432,7 +427,8 @@ class SsulKeyboardService : InputMethodService() {
             )
         }
 
-        // 기존의 즉시 syncHtmlWithNativeText() 호출을 제거했습니다.
+        // Pair36에서 제거한 즉시 syncHtmlWithNativeText()는
+        // 그대로 호출하지 않습니다.
     }
 
     override fun onStartInputView(
