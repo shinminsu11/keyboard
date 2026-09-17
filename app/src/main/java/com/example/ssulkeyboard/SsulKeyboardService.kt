@@ -146,19 +146,7 @@ class SsulKeyboardService : InputMethodService() {
             val target = pendingExternalCursorUtf16
 
             if (target != null) {
-                // Pair41: 외부 커서 삽입 경로를 우회하고
-                // 현재 Android 커서에서 바로 조합문자를 입력한다.
-                pendingExternalCursorUtf16 = null
-
-                internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 300L
-
-                try {
-                    ic.setComposingText(text, 1)
-                    rememberActualSelection()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                insertAtExternalCursor(text, target)
                 return
             }
 
@@ -173,11 +161,6 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        // ============================
-        // Pair36 실험
-        // onUpdateSelection 직후의 150ms 동기화를 제거하고
-        // 실제 입력 커서가 확정된 뒤 HTML을 동기화합니다.
-        // ============================
         private fun insertAtExternalCursor(
             text: String,
             target: Int
@@ -203,22 +186,26 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                ic.setSelection(target, target)
-                ic.commitText(text, 1)
+                val prefix = full.substring(0, target)
+                val suffix = full.substring(target)
+                val rebuilt = prefix + text + suffix
 
-                val newPos = target + text.length
+                ic.deleteSurroundingText(
+                    before.length,
+                    after.length
+                )
+
+                ic.commitText(rebuilt, 1)
+
+                val newPos = (prefix + text).length
+
+                ic.setSelection(newPos, newPos)
 
                 pendingExternalCursorUtf16 = null
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
-                val rebuilt =
-                    full.substring(0, target) +
-                    text +
-                    full.substring(target)
-
-                val textJs =
-                    org.json.JSONObject.quote(rebuilt)
+                val textJs = org.json.JSONObject.quote(rebuilt)
 
                 webView.post {
                     webView.evaluateJavascript(
@@ -226,7 +213,6 @@ class SsulKeyboardService : InputMethodService() {
                         null
                     )
                 }
-
             } catch (e: Exception) {
                 pendingExternalCursorUtf16 = null
                 e.printStackTrace()
@@ -267,7 +253,7 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ============================
-        // Pair33 삭제 코드 보존
+        // Pair33 수정: 삭제
         // ============================
         @JavascriptInterface
         fun deleteText() {
@@ -286,6 +272,7 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
+                // 삭제 직전의 실제 커서 위치를 먼저 저장합니다.
                 val beforeNow =
                     ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
 
@@ -295,11 +282,14 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
+                // 메모장에서 composing 상태 때문에
+                // 삭제 위치가 흔들리는 것을 막기 위해 확정합니다.
                 try {
                     ic.finishComposingText()
                 } catch (_: Exception) {
                 }
 
+                // 확정 후 원래 커서 위치를 다시 복원합니다.
                 try {
                     ic.setSelection(
                         originalCursor,
@@ -308,6 +298,7 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
+                // 복원된 커서 바로 앞 글자를 확인합니다.
                 val textBefore =
                     ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
 
@@ -316,6 +307,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 if (textBefore.length >= 2) {
+
                     val high =
                         textBefore[textBefore.length - 2]
 
@@ -327,7 +319,9 @@ class SsulKeyboardService : InputMethodService() {
                     } else {
                         ic.deleteSurroundingText(1, 0)
                     }
+
                 } else {
+
                     ic.deleteSurroundingText(1, 0)
                 }
 
@@ -429,9 +423,6 @@ class SsulKeyboardService : InputMethodService() {
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
 
-        // Pair36 실험:
-        // 커서 위치만 기록하고 즉시 HTML 동기화를 하지 않습니다.
-        // 다음 입력이 들어올 때까지 native 입력창을 건드리지 않습니다.
         pendingExternalCursorUtf16 = newSelStart
 
         suppressSelectionSyncUntil =
@@ -444,7 +435,14 @@ class SsulKeyboardService : InputMethodService() {
             )
         }
 
-        // 기존의 즉시 syncHtmlWithNativeText() 호출을 제거했습니다.
+        webView.post {
+            if (
+                android.os.SystemClock.uptimeMillis() <=
+                suppressSelectionSyncUntil
+            ) {
+                syncHtmlWithNativeText()
+            }
+        }
     }
 
     override fun onStartInputView(
@@ -473,3 +471,5 @@ class SsulKeyboardService : InputMethodService() {
         return false
     }
 }
+
+기다려 웹코드도 다시 줄께
