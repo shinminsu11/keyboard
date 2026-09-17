@@ -125,34 +125,15 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun commitText(text: String) {
+            // 첫 글자 입력 시 커서 깜빡임/숨김 방지를 위해 내부 플래그 유예 시간을 타이트하게 조절
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
+                android.os.SystemClock.uptimeMillis() + 80L
 
             val ic = currentInputConnection ?: return
 
             try {
                 applyPendingExternalCursor(ic)
-                
-                // [엔터 3칸 뜀 현상 해결] 
-                // 웹 에디터(네이버, 다음카페 등)의 중복 태그 충돌을 막기 위해 
-                // 문자열 대신 실제 엔터 키 이벤트(KEYCODE_ENTER)를 직접 쏩니다.
-                if (text == "\n") {
-                    ic.sendKeyEvent(
-                        android.view.KeyEvent(
-                            android.view.KeyEvent.ACTION_DOWN,
-                            android.view.KeyEvent.KEYCODE_ENTER
-                        )
-                    )
-                    ic.sendKeyEvent(
-                        android.view.KeyEvent(
-                            android.view.KeyEvent.ACTION_UP,
-                            android.view.KeyEvent.KEYCODE_ENTER
-                        )
-                    )
-                } else {
-                    ic.commitText(text, 1)
-                }
-                
+                ic.commitText(text, 1)
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -171,7 +152,7 @@ class SsulKeyboardService : InputMethodService() {
             }
 
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
+                android.os.SystemClock.uptimeMillis() + 80L
 
             try {
                 ic.setComposingText(text, 1)
@@ -186,7 +167,7 @@ class SsulKeyboardService : InputMethodService() {
             target: Int
         ) {
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 300L
+                android.os.SystemClock.uptimeMillis() + 150L
 
             val ic = currentInputConnection ?: return
 
@@ -221,7 +202,7 @@ class SsulKeyboardService : InputMethodService() {
             val ic = currentInputConnection ?: return
 
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 180L
+                android.os.SystemClock.uptimeMillis() + 120L
 
             try {
                 ic.deleteSurroundingText(1, 0)
@@ -235,7 +216,7 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
+                android.os.SystemClock.uptimeMillis() + 80L
 
             val ic = currentInputConnection ?: return
 
@@ -252,7 +233,7 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteText() {
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
+                android.os.SystemClock.uptimeMillis() + 80L
 
             val ic = currentInputConnection ?: return
 
@@ -322,7 +303,7 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteOneCharForHanja() {
             internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
+                android.os.SystemClock.uptimeMillis() + 80L
 
             val ic = currentInputConnection ?: return
 
@@ -412,7 +393,7 @@ class SsulKeyboardService : InputMethodService() {
         pendingExternalCursorUtf16 = newSelStart
 
         suppressSelectionSyncUntil =
-            android.os.SystemClock.uptimeMillis() + 150L
+            android.os.SystemClock.uptimeMillis() + 100L
 
         webView.post {
             webView.evaluateJavascript(
