@@ -146,7 +146,19 @@ class SsulKeyboardService : InputMethodService() {
             val target = pendingExternalCursorUtf16
 
             if (target != null) {
-                insertAtExternalCursor(text, target)
+                // Pair41: 외부 커서 삽입 경로를 우회하고
+                // 현재 Android 커서에서 바로 조합문자를 입력한다.
+                pendingExternalCursorUtf16 = null
+
+                internalSelectionUntil =
+                    android.os.SystemClock.uptimeMillis() + 300L
+
+                try {
+                    ic.setComposingText(text, 1)
+                    rememberActualSelection()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 return
             }
 
@@ -425,13 +437,12 @@ class SsulKeyboardService : InputMethodService() {
         suppressSelectionSyncUntil =
             android.os.SystemClock.uptimeMillis() + 150L
 
-        // Pair39: beginExternalCursorInsert()만 30ms 늦게 전달
-        webView.postDelayed({
+        webView.post {
             webView.evaluateJavascript(
                 "javascript:if(window.beginExternalCursorInsert) { window.beginExternalCursorInsert(); }",
                 null
             )
-        }, 30L)
+        }
 
         // 기존의 즉시 syncHtmlWithNativeText() 호출을 제거했습니다.
     }
