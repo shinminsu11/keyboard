@@ -161,6 +161,10 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
+        // ============================
+        // Pair35 수정
+        // 중간 커서에 입력 문자만 직접 삽입
+        // ============================
         private fun insertAtExternalCursor(
             text: String,
             target: Int
@@ -186,26 +190,26 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                val prefix = full.substring(0, target)
-                val suffix = full.substring(target)
-                val rebuilt = prefix + text + suffix
+                // 실제 입력창의 중간 커서 위치로 이동
+                ic.setSelection(target, target)
 
-                ic.deleteSurroundingText(
-                    before.length,
-                    after.length
-                )
+                // 기존 문장은 건드리지 않고 입력 문자만 삽입
+                ic.commitText(text, 1)
 
-                ic.commitText(rebuilt, 1)
-
-                val newPos = (prefix + text).length
-
-                ic.setSelection(newPos, newPos)
+                val newPos = target + text.length
 
                 pendingExternalCursorUtf16 = null
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
-                val textJs = org.json.JSONObject.quote(rebuilt)
+                // HTML 자판 화면도 실제 입력창과 맞춤
+                val rebuilt =
+                    full.substring(0, target) +
+                    text +
+                    full.substring(target)
+
+                val textJs =
+                    org.json.JSONObject.quote(rebuilt)
 
                 webView.post {
                     webView.evaluateJavascript(
@@ -213,6 +217,7 @@ class SsulKeyboardService : InputMethodService() {
                         null
                     )
                 }
+
             } catch (e: Exception) {
                 pendingExternalCursorUtf16 = null
                 e.printStackTrace()
@@ -272,7 +277,6 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                // 삭제 직전의 실제 커서 위치를 먼저 저장합니다.
                 val beforeNow =
                     ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
 
@@ -282,14 +286,11 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                // 메모장에서 composing 상태 때문에
-                // 삭제 위치가 흔들리는 것을 막기 위해 확정합니다.
                 try {
                     ic.finishComposingText()
                 } catch (_: Exception) {
                 }
 
-                // 확정 후 원래 커서 위치를 다시 복원합니다.
                 try {
                     ic.setSelection(
                         originalCursor,
@@ -298,7 +299,6 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
-                // 복원된 커서 바로 앞 글자를 확인합니다.
                 val textBefore =
                     ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
 
