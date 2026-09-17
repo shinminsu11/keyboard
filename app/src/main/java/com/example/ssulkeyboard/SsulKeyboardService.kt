@@ -162,8 +162,9 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ============================
-        // Pair35 수정
-        // 중간 커서에 입력 문자만 직접 삽입
+        // Pair36 실험
+        // onUpdateSelection 직후의 150ms 동기화를 제거하고
+        // 실제 입력 커서가 확정된 뒤 HTML을 동기화합니다.
         // ============================
         private fun insertAtExternalCursor(
             text: String,
@@ -190,10 +191,7 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                // 실제 입력창의 중간 커서 위치로 이동
                 ic.setSelection(target, target)
-
-                // 기존 문장은 건드리지 않고 입력 문자만 삽입
                 ic.commitText(text, 1)
 
                 val newPos = target + text.length
@@ -202,7 +200,6 @@ class SsulKeyboardService : InputMethodService() {
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
-                // HTML 자판 화면도 실제 입력창과 맞춤
                 val rebuilt =
                     full.substring(0, target) +
                     text +
@@ -258,7 +255,7 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ============================
-        // Pair33 수정: 삭제
+        // Pair33 삭제 코드 보존
         // ============================
         @JavascriptInterface
         fun deleteText() {
@@ -307,7 +304,6 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 if (textBefore.length >= 2) {
-
                     val high =
                         textBefore[textBefore.length - 2]
 
@@ -319,9 +315,7 @@ class SsulKeyboardService : InputMethodService() {
                     } else {
                         ic.deleteSurroundingText(1, 0)
                     }
-
                 } else {
-
                     ic.deleteSurroundingText(1, 0)
                 }
 
@@ -423,6 +417,9 @@ class SsulKeyboardService : InputMethodService() {
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
 
+        // Pair36 실험:
+        // 커서 위치만 기록하고 즉시 HTML 동기화를 하지 않습니다.
+        // 다음 입력이 들어올 때까지 native 입력창을 건드리지 않습니다.
         pendingExternalCursorUtf16 = newSelStart
 
         suppressSelectionSyncUntil =
@@ -435,14 +432,7 @@ class SsulKeyboardService : InputMethodService() {
             )
         }
 
-        webView.post {
-            if (
-                android.os.SystemClock.uptimeMillis() <=
-                suppressSelectionSyncUntil
-            ) {
-                syncHtmlWithNativeText()
-            }
-        }
+        // 기존의 즉시 syncHtmlWithNativeText() 호출을 제거했습니다.
     }
 
     override fun onStartInputView(
