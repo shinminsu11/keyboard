@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.5 플로팅 통합본 (클립보드 단순화)</title>
+<title>쓸기자판 v9.5 플로팅 통합본 (복구완료)</title>
 <style>
 * {
 box-sizing: border-box;
@@ -217,7 +217,7 @@ background: #fff; width: 90%; max-width: 340px; border-radius: 12px; padding: 16
 .modal-close { cursor: pointer; font-size: 28px; color: #777; padding: 0 5px; line-height: 1; }
 .modal-input { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; }
 
-/* [핵심 수정] 클립보드 목록을 네이버처럼 단순하고 깔끔하게 제한 (말줄임표 적용) */
+/* 네이버 스타일 단일 라인 깔끔한 클립보드 */
 .clipboard-list {
 display: flex;
 flex-direction: column;
@@ -235,7 +235,6 @@ cursor: pointer;
 box-sizing: border-box;
 color: #333;
 user-select: none;
-/* 네이버처럼 한 줄로 깔끔하게 보이도록 제한 */
 white-space: nowrap;
 overflow: hidden;
 text-overflow: ellipsis;
@@ -988,7 +987,88 @@ document.querySelectorAll('.enter-btn').forEach(btn => {
     btn.addEventListener('touchend', (e) => { e.preventDefault(); commitCurrent(); appendSpecial('\n'); if (window.AndroidBridge && window.AndroidBridge.performSearch) window.AndroidBridge.performSearch(); });
 });
 
-// 클립보드 내역 처리 로직 (네이버 스타일 단일 라인 깔끔한 정돈)
+// [복구 완료] URL 및 상용구 슬롯 관리 로직
+function getDB() { let data = localStorage.getItem('fresh_design_db_v1'); return data ? JSON.parse(data) : {}; }
+function saveDB(db) { localStorage.setItem('fresh_design_db_v1', JSON.stringify(db)); }
+function renderSlots() {
+let db = getDB();
+document.querySelectorAll('.slot-key').forEach(el => {
+let slotKey = el.getAttribute('data-slot'), defaultHtml = el.getAttribute('data-default'), val = db[slotKey];
+if (val) {
+let temp = document.createElement('div'); temp.innerHTML = defaultHtml;
+let staticHtml = '', lbl = temp.querySelector('.label'), ico = temp.querySelector('.icon');
+if (lbl) staticHtml += lbl.outerHTML; if (ico) staticHtml += ico.outerHTML;
+let labelText = (typeof val === 'object' && val.title) ? val.title : val;
+el.innerHTML = staticHtml + `<span class="content-text">${labelText}</span>`;
+} else { el.innerHTML = defaultHtml; }
+});
+}
+
+document.querySelectorAll('.slot-key').forEach(el => {
+let slotKey = el.getAttribute('data-slot'), type = el.getAttribute('data-type');
+let pressTimer = null, isLongPress = false;
+el.addEventListener('touchstart', (e) => {
+isLongPress = false; if (pressTimer) clearTimeout(pressTimer);
+pressTimer = setTimeout(() => { isLongPress = true; openModal(slotKey, type); }, 550);
+}, { passive: true });
+el.addEventListener('touchend', (e) => {
+if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+if (isLongPress) { isLongPress = false; return; }
+let db = getDB(), val = db[slotKey];
+if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
+if (type === 'url') {
+let targetUrl = (typeof val === 'object' && val !== null) ? (val.url || val.title || '') : (typeof val === 'string' ? val : '');
+if (targetUrl) {
+let finalUrl = targetUrl.startsWith('http') ? targetUrl : 'https://' + targetUrl;
+if (window.AndroidBridge && window.AndroidBridge.openUrl) { window.AndroidBridge.openUrl(finalUrl); } else { window.open(finalUrl, '_blank'); }
+return;
+}
+}
+if (type === 'snippet' && val) { 
+    commitCurrent();
+    let textVal = (typeof val === 'object' && val.title) ? val.title : val;
+    appendSpecial(textVal);
+    return; 
+}
+});
+});
+
+let currentSlot = null, currentType = 'url';
+function openModal(slotKey, type) {
+currentSlot = slotKey; currentType = type;
+let db = getDB(), val = db[slotKey] || {};
+let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
+if (type === 'url') {
+sInput.style.display = 'none'; uFields.style.display = 'block';
+document.getElementById('urlTitle').value = (typeof val === 'object' && val !== null) ? (val.title || '') : '';
+document.getElementById('urlAddr').value = (typeof val === 'object' && val !== null) ? (val.url || '') : (typeof val === 'string' ? val : '');
+document.getElementById('modalTitle').textContent = 'URL 설정';
+} else {
+sInput.style.display = 'block'; uFields.style.display = 'none';
+sInput.value = (typeof val === 'string') ? val : ((typeof val === 'object' && val !== null) ? (val.title || '') : '');
+document.getElementById('modalTitle').textContent = '상용구 설정';
+}
+document.getElementById('slotModal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('slotModal').style.display = 'none'; currentSlot = null; }
+function saveData() {
+if (!currentSlot) return;
+let db = getDB();
+if (currentType === 'url') {
+let title = document.getElementById('urlTitle').value.trim(), url = document.getElementById('urlAddr').value.trim();
+if (title && url) db[currentSlot] = { title: title, url: url }; else delete db[currentSlot];
+} else {
+let text = document.getElementById('snippetInput').value.trim();
+if (text) db[currentSlot] = text; else delete db[currentSlot];
+}
+saveDB(db); renderSlots(); closeModal();
+}
+function deleteData() {
+if (!currentSlot) return;
+let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal();
+}
+
+// 클립보드 내역 처리 로직 (네이버 스타일 한 줄 정돈)
 const DEFAULT_CLIP_HISTORY = ["집필 중 참고할 첫 번째 문단 예시입니다.", "두 번째로 복사해 둔 핵심 문장입니다."];
 function getMergedClipHistory() {
 let saved = localStorage.getItem('my_clip_history_v3');
@@ -1046,7 +1126,6 @@ let history = getMergedClipHistory();
 history.forEach((text, index) => {
 let div = document.createElement('div');
 div.className = 'clipboard-item';
-// 줄바꿈 공백 제거 및 한 줄로 압축하여 표시 가독성 극대화
 div.textContent = text.replace(/[\r\n]+/g, " ").trim();
 div.onclick = () => { appendSpecial(text); closeClipboardModal(); };
 clipboardListContainer.appendChild(div);
@@ -1101,6 +1180,7 @@ addClipboardModal.addEventListener('click', (e) => { if (e.target === addClipboa
 emojiModal.addEventListener('click', (e) => { if (e.target === emojiModal) closeEmojiModal(); });
 hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) closeHanjaModal(); });
 
+// 초기 슬롯 렌더링 실행
 renderSlots();
 </script>
 </body>
