@@ -1263,30 +1263,21 @@ function updateScreen() {
                     currentAssembled.charCodeAt(0) >= 0xAC00 &&
                     currentAssembled.charCodeAt(0) <= 0xD7A3;
 
+                // Pair45: 중간 커서에서 첫 초성만 처음 한 번 안 보이는 문제를
+                // '확정 문자'가 아니라 네이티브 composing span으로 보여준다.
+                // 다음 모음은 같은 span을 setComposingText로 교체하므로 정상 조합된다.
                 if (!isCompleteHangulSyllable &&
                     currentAssembled.length === 1 &&
-                    CHOSUNG.indexOf(currentAssembled) !== -1) {
-                    // 중간 커서에서 첫 초성도 HTML 화면에 즉시 표시
-                    const currentSpan = screenTextWrap.querySelector('.text-current');
-                    if (currentSpan) {
-                        currentSpan.textContent = currentAssembled;
-                    }
-                }
-
-                if (!isCompleteHangulSyllable &&
-                    currentAssembled.length === 1 &&
-                    CHOSUNG.indexOf(currentAssembled) !== -1) {
-                    // 중간 커서에서 첫 초성이 처음 한 번만 안 보이는 현상만 보완
-                    const currentSpan = screenTextWrap.querySelector('.text-current');
-                    if (currentSpan) {
-                        currentSpan.textContent = currentAssembled;
-                    }
-                    if (window.AndroidBridge.setComposing) {
-                        window.AndroidBridge.setComposing(currentAssembled);
-                    }
+                    CHOSUNG.indexOf(currentAssembled) !== -1 &&
+                    window.AndroidBridge.setExternalComposing) {
+                    try {
+                        const targetUtf16 = getUtf16Index(chars, cursorPos);
+                        window.AndroidBridge.setExternalComposing(currentAssembled, targetUtf16);
+                    } catch (e) {}
                 }
 
                 if (isCompleteHangulSyllable) {
+
                     const code = currentAssembled.charCodeAt(0);
                     const offset = code - 0xAC00;
                     const jungIndex = Math.floor((offset % (21 * 28)) / 28);
