@@ -145,6 +145,20 @@ class SsulKeyboardService : InputMethodService() {
                 // 커서를 다시 옮기거나 commitText하지 않고 같은 composing span을 교체한다.
                 if (externalComposingActive) {
                     ic.setComposingText(text, 1)
+
+                    // Pair47: 외부 중간 커서에서 첫 음절이 완성되면
+                    // composing 상태를 다음 글자까지 유지하지 않고 확정한다.
+                    // 일부 입력창에서 다음 글자가 기존 composing 범위를
+                    // 다시 대체하여 앞 글자가 사라지는 현상을 막는다.
+                    val isCompleteHangul =
+                        text.length == 1 &&
+                        text[0].code in 0xAC00..0xD7A3
+
+                    if (isCompleteHangul) {
+                        ic.finishComposingText()
+                        externalComposingActive = false
+                    }
+
                     rememberActualSelection()
                     return
                 }
