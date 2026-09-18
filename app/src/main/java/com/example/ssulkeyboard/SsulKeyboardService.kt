@@ -173,6 +173,8 @@ class SsulKeyboardService : InputMethodService() {
             try {
                 ic.finishComposingText()
 
+                // 기존 정상 동작 유지:
+                // 안드로이드의 실제 커서를 목표 위치로 이동한 뒤 삽입합니다.
                 ic.setSelection(target, target)
                 ic.commitText(text, 1)
 
@@ -182,11 +184,18 @@ class SsulKeyboardService : InputMethodService() {
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
-                val textJs = org.json.JSONObject.quote(text)
+                // Pair42: HTML의 finishExternalInsert()는 전체 문장을 받습니다.
+                // 삽입 직후 실제 입력창의 커서 앞/뒤를 읽어 전체 텍스트를 구성합니다.
+                val beforeAfter =
+                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+                val afterAfter =
+                    ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+                val fullText = beforeAfter + afterAfter
+                val fullTextJs = org.json.JSONObject.quote(fullText)
 
                 webView.post {
                     webView.evaluateJavascript(
-                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($textJs,$newPos);}",
+                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($fullTextJs,$newPos);}",
                         null
                     )
                 }
@@ -335,19 +344,6 @@ class SsulKeyboardService : InputMethodService() {
                 startActivity(intent)
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }
-
-        // [추가된 클립보드 브리지] 시스템 클립보드 내용을 가져오는 함수
-        @JavascriptInterface
-        fun getSystemClipboardText(): String {
-            return try {
-                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                val item = clipboard.primaryClip?.getItemAt(0)
-                item?.coerceToText(this@SsulKeyboardService)?.toString() ?: ""
-            } catch (e: Exception) {
-                e.printStackTrace()
-                ""
             }
         }
     }
