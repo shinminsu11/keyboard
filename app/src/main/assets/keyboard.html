@@ -1220,6 +1220,36 @@ window.getKeyboardExpectedCursorUtf16 = function() {
 
 let renderRequested = false;
 let renderVersion = 0;
+
+// Pair46: 외부 중간커서에서 첫 음절이 완성된 순간,
+// HTML의 committedText/cursorPos도 실제 삽입된 음절 기준으로 즉시 전환한다.
+// 그래야 다음 자음 입력이 앞의 원래 글자(예: 가)를 잘못 조합하지 않고
+// 방금 입력한 음절(예: 아)을 기준으로 이어진다.
+function finalizeExternalComposedSyllable(text) {
+    if (!externalCursorInsertMode || !text) return;
+
+    try {
+        const chars = Array.from(committedText);
+        const at = Math.max(0, Math.min(cursorPos, chars.length));
+
+        chars.splice(at, 0, text);
+        committedText = chars.join('');
+        cursorPos = at + 1;
+
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        externalFinalCandidate = {
+            baseChar: text,
+            originalChar: text,
+            start: at
+        };
+        lastSlideDir = '';
+        externalCursorInsertMode = false;
+        renderVersion++;
+        renderRequested = false;
+        updateScreen();
+    } catch (e) {}
+}
+
 function updateScreen() {
     if (renderRequested) return;
     renderRequested = true;
@@ -1290,17 +1320,17 @@ function updateScreen() {
                         if (externalComposeTimer) clearTimeout(externalComposeTimer);
                         externalComposeTimer = setTimeout(() => {
                             if (!externalCursorInsertMode) return;
-                            externalCursorInsertMode = false;
                             externalComposeTimer = null;
                             window.AndroidBridge.setComposing(currentAssembled);
+                            finalizeExternalComposedSyllable(currentAssembled);
                         }, 350);
                     } else {
                         if (externalComposeTimer) {
                             clearTimeout(externalComposeTimer);
                             externalComposeTimer = null;
                         }
-                        externalCursorInsertMode = false;
                         window.AndroidBridge.setComposing(currentAssembled);
+                        finalizeExternalComposedSyllable(currentAssembled);
                     }
                 }
             } else if (window.AndroidBridge.setComposing) {
