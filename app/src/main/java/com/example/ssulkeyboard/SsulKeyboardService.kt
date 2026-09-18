@@ -27,6 +27,10 @@ class SsulKeyboardService : InputMethodService() {
     // 다음 모음이 같은 조합문자 안에서 합쳐지도록 유지한다.
     private var externalComposingActive = false
 
+    // Pair49: 엔터 직후 한 번의 선택 위치 이벤트는 이전 중간삽입 상태로
+    // 해석하지 않고 실제 새 커서 위치를 기준으로 동기화한다.
+    private var justEnteredNewLine = false
+
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -136,6 +140,7 @@ class SsulKeyboardService : InputMethodService() {
                 if (text.contains('\n') || text.contains('\r')) {
                     pendingExternalCursorUtf16 = null
                     externalComposingActive = false
+                    justEnteredNewLine = true
                     suppressSelectionSyncUntil =
                         android.os.SystemClock.uptimeMillis() + 250L
                     rememberActualSelection()
@@ -339,6 +344,21 @@ class SsulKeyboardService : InputMethodService() {
 
         if (android.os.SystemClock.uptimeMillis() < internalSelectionUntil) return
 
+        // Pair49: 엔터 직후 발생하는 첫 선택 위치 통지는 이전 중간 커서
+        // 삽입 상태의 연장으로 처리하지 않는다. 실제 새 줄의 위치를
+        // 기억하고 pending 상태를 완전히 비운다.
+        if (justEnteredNewLine) {
+            justEnteredNewLine = false
+            pendingExternalCursorUtf16 = null
+            externalComposingActive = false
+            lastKnownSelectionStart = newSelStart
+            lastKnownSelectionEnd = newSelEnd
+            suppressSelectionSyncUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+            webView.post { syncHtmlWithNativeText() }
+            return
+        }
+
         if (android.os.SystemClock.uptimeMillis() < suppressSelectionSyncUntil) {
             lastKnownSelectionStart = newSelStart
             lastKnownSelectionEnd = newSelEnd
@@ -376,6 +396,7 @@ class SsulKeyboardService : InputMethodService() {
         lastKnownSelectionEnd = -1
         pendingExternalCursorUtf16 = null
         externalComposingActive = false
+        justEnteredNewLine = false
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
