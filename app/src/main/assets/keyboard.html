@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.5 플로팅 통합본 (복구완료)</title>
+<title>쓸기자판 v9.7 완벽 통합본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -217,7 +217,7 @@ background: #fff; width: 90%; max-width: 340px; border-radius: 12px; padding: 16
 .modal-close { cursor: pointer; font-size: 28px; color: #777; padding: 0 5px; line-height: 1; }
 .modal-input { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; }
 
-/* 네이버 스타일 단일 라인 깔끔한 클립보드 */
+/* [네이버 스타일 핵심] 클립보드 목록 한 줄 말줄임표 정돈 */
 .clipboard-list {
 display: flex;
 flex-direction: column;
@@ -874,9 +874,27 @@ return;
 if (!isALong) { switchToBoard('alphaBoard'); }
 });
 
+function toggleShift(e) {
+if(e) e.preventDefault();
+isShiftActive = !isShiftActive;
+if (isShiftActive) { shiftBtn.classList.add('active-shift'); } else { shiftBtn.classList.remove('active-shift'); }
+document.querySelectorAll('.eng-long').forEach(key => {
+let charSpan = key.querySelector('.key-text');
+let baseChar = key.getAttribute('data-char');
+if (charSpan) { charSpan.textContent = isShiftActive ? baseChar.toUpperCase() : baseChar; }
+});
+}
+if (shiftBtn) {
+shiftBtn.addEventListener('touchend', toggleShift);
+shiftBtn.addEventListener('click', toggleShift);
+}
+
 const CHOSUNG = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
 const JUNGSUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
 const JONGSUNG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const SINGLE_JONGSUNG = {'ㄳ':'ㄱ', 'ㄵ':'ㄴ', 'ㄶ':'ㄴ', 'ㄺ':'ㄹ', 'ㄻ':'ㄹ', 'ㄼ':'ㄹ', 'ㄽ':'ㄹ', 'ㄾ':'ㄹ', 'ㄿ':'ㄹ', 'ㅀ':'ㄹ', 'ㅄ':'ㅂ'};
+const VOWEL_COMBINE = {'ㅗ+ㅏ':'ㅘ', 'ㅗ+ㅐ':'ㅙ', 'ㅗ+ㅣ':'ㅚ', 'ㅜ+ㅓ':'ㅝ', 'ㅜ+ㅔ':'ㅞ', 'ㅜ+ㅣ':'ㅟ', 'ㅡ+ㅣ':'ㅢ', 'ㅏ+ㅣ':'ㅐ', 'ㅓ+ㅣ':'ㅔ', 'ㅑ+ㅣ':'ㅒ', 'ㅕ+ㅣ':'ㅖ', 'ㅘ+ㅣ':'ㅙ', 'ㅝ+ㅣ':'ㅞ'};
+const CONSONANT_COMBINE = {'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ', 'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㄿ':'ㄿ', 'ㄹ+ㅎ':'ㅀ', 'ㅂ+ㅅ':'ㅄ'};
 
 let hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 let committedText = '';
@@ -911,32 +929,76 @@ if (window.AndroidBridge && window.AndroidBridge.commitText) {
 hangulBuffer = { cho: -1, jung: -1, jong: -1 };
 }
 
+function getJongIndex(char) { return JONGSUNG.indexOf(char); }
+
 function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 lastSlideDir = '';
 if (choIdx !== -1 && jungIdx === -1) {
-if (hangulBuffer.cho === -1) hangulBuffer.cho = choIdx;
-else if (hangulBuffer.jung === -1) { commitCurrent(); hangulBuffer.cho = choIdx; }
-else if (hangulBuffer.jong === -1) { let jongTry = JONGSUNG.indexOf(inputChar); if (jongTry !== -1) hangulBuffer.jong = jongTry; else { commitCurrent(); hangulBuffer.cho = choIdx; } }
+if (hangulBuffer.cho === -1) {
+hangulBuffer.cho = choIdx;
+} else if (hangulBuffer.jung === -1) {
+commitCurrent();
+hangulBuffer.cho = choIdx;
+} else if (hangulBuffer.jong === -1) {
+let jongTry = getJongIndex(inputChar);
+if (jongTry !== -1) { hangulBuffer.jong = jongTry; }
 else { commitCurrent(); hangulBuffer.cho = choIdx; }
+} else {
+let prevChar = JONGSUNG[hangulBuffer.jong];
+let combined = CONSONANT_COMBINE[prevChar + '+' + inputChar];
+if (combined) { hangulBuffer.jong = getJongIndex(combined); }
+else { commitCurrent(); hangulBuffer.cho = choIdx; }
+}
 } else if (jungIdx !== -1) {
 if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong !== -1) {
 let jongChar = JONGSUNG[hangulBuffer.jong];
-hangulBuffer.jong = -1;
+let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
+let remainingJong = '';
+for (let key in CONSONANT_COMBINE) {
+if (CONSONANT_COMBINE[key] === jongChar) {
+let parts = key.split('+');
+remainingJong = parts[0];
+splitCho = parts[1];
+break;
+}
+}
+hangulBuffer.jong = remainingJong ? getJongIndex(remainingJong) : -1;
 commitCurrent();
-hangulBuffer.cho = CHOSUNG.indexOf(jongChar);
+hangulBuffer.cho = CHOSUNG.indexOf(splitCho);
 hangulBuffer.jung = jungIdx;
+hangulBuffer.jong = -1;
+lastSlideDir = '';
+} else {
+let prevVowel = hangulBuffer.jung !== -1 ? JUNGSUNG[hangulBuffer.jung] : '';
+let combinedVowel = prevVowel ? VOWEL_COMBINE[prevVowel + '+' + inputChar] : null;
+if (combinedVowel) {
+hangulBuffer.jung = JUNGSUNG.indexOf(combinedVowel);
+lastSlideDir = '';
 } else {
 if (hangulBuffer.jung !== -1) commitCurrent();
 hangulBuffer.jung = jungIdx;
 }
 }
 }
+}
+
+function replaceLastVowel(newVowel) {
+if (hangulBuffer.cho === -1 && hangulBuffer.jong === -1 && hangulBuffer.jung !== -1) {
+hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
+} else if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
+hangulBuffer.jung = JUNGSUNG.indexOf(newVowel);
+} else {
+commitCurrent();
+appendHangul(newVowel);
+}
+}
 
 function backspaceHangul() {
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
         window.AndroidBridge.deleteText();
         return;
     }
@@ -950,6 +1012,7 @@ function backspaceHangul() {
         committedText = chars.join('');
         cursorPos--;
     }
+    lastSlideDir = '';
 }
 
 let bsTimer = null;
@@ -966,6 +1029,7 @@ bsKey.addEventListener('touchcancel', () => { if (bsTimer) { clearInterval(bsTim
 function appendSpecial(char) {
 if (!char) return;
 commitCurrent();
+lastSlideDir = '';
 let chars = Array.from(committedText);
 chars.splice(cursorPos, 0, char);
 committedText = chars.join('');
@@ -983,11 +1047,19 @@ document.querySelectorAll('.space-key-common, div.eng-key:not([data-char]), .sym
 });
 
 document.querySelectorAll('.enter-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => { e.preventDefault(); commitCurrent(); appendSpecial('\n'); if (window.AndroidBridge && window.AndroidBridge.performSearch) window.AndroidBridge.performSearch(); });
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); commitCurrent(); appendSpecial('\n'); if (window.AndroidBridge && window.AndroidBridge.performSearch) window.AndroidBridge.performSearch(); });
+    const handleEnter = (e) => {
+        e.preventDefault();
+        commitCurrent();
+        appendSpecial('\n');
+        if (window.AndroidBridge && window.AndroidBridge.performSearch) {
+            window.AndroidBridge.performSearch();
+        }
+    };
+    btn.addEventListener('click', handleEnter);
+    btn.addEventListener('touchend', handleEnter);
 });
 
-// [복구 완료] URL 및 상용구 슬롯 관리 로직
+// URL 및 상용구 슬롯 관리 로직
 function getDB() { let data = localStorage.getItem('fresh_design_db_v1'); return data ? JSON.parse(data) : {}; }
 function saveDB(db) { localStorage.setItem('fresh_design_db_v1', JSON.stringify(db)); }
 function renderSlots() {
@@ -1180,7 +1252,67 @@ addClipboardModal.addEventListener('click', (e) => { if (e.target === addClipboa
 emojiModal.addEventListener('click', (e) => { if (e.target === emojiModal) closeEmojiModal(); });
 hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) closeHanjaModal(); });
 
-// 초기 슬롯 렌더링 실행
+// 키보드 키 이벤트 및 슬라이드 바인딩
+function setupLongPressKey(keyElement, onShortAction) {
+let timer = null, isLongPressed = false;
+let longChar = keyElement.getAttribute('data-long');
+keyElement.addEventListener('touchstart', (e) => {
+isLongPressed = false;
+if (!longChar) return;
+timer = setTimeout(() => { isLongPressed = true; appendSpecial(longChar); if (navigator.vibrate) navigator.vibrate(40); }, 500);
+}, { passive: true });
+keyElement.addEventListener('touchend', (e) => { if (timer) { clearTimeout(timer); timer = null; } if (!isLongPressed) { onShortAction(e); } });
+keyElement.addEventListener('touchcancel', () => { if (timer) { clearTimeout(timer); timer = null; } isLongPressed = false; });
+}
+
+let iStartX = 0, iStartY = 0;
+iKey.addEventListener('touchstart', (e) => { if (e.touches.length > 0) { iStartX = e.touches[0].clientX; iStartY = e.touches[0].clientY; } }, { passive: true });
+setupLongPressKey(iKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - iStartX, diffY = t.clientY - iStartY;
+if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) { appendHangul('ㅣ'); }
+});
+
+let euStartX = 0, euStartY = 0;
+euKey.addEventListener('touchstart', (e) => { if (e.touches.length > 0) { euStartX = e.touches[0].clientX; euStartY = e.touches[0].clientY; } }, { passive: true });
+setupLongPressKey(euKey, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - euStartX, diffY = t.clientY - euStartY;
+if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) { appendHangul('ㅡ'); }
+});
+
+document.querySelectorAll('.slide-con').forEach(key => {
+let startX = 0, startY = 0;
+key.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; startY = e.touches[0].clientY; }, { passive: true });
+setupLongPressKey(key, (e) => {
+let t = e.changedTouches ? e.changedTouches[0] : e;
+let diffX = t.clientX - startX, diffY = t.clientY - startY;
+let base = key.getAttribute('data-base'), up = key.getAttribute('data-up'), right = key.getAttribute('data-right');
+if (Math.abs(diffX) > Math.abs(diffY) && diffX > 18 && right) { appendHangul(right); return; }
+if (Math.abs(diffY) > Math.abs(diffX) && diffY < -18 && up) { appendHangul(up); return; }
+if (diffY > 18 || diffX < -18) { return; }
+if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) { appendHangul(base); }
+});
+});
+
+let touchStartX = 0, touchStartY = 0;
+slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
+setupLongPressKey(slideKey, (e) => {
+let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
+if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
+let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
+let now = Date.now();
+let isDouble = (lastSlideDir === dir && now - lastSlideTime < 600);
+let target = '';
+if (!isDouble) {
+if (dir === 'right') target = 'ㅏ'; else if (dir === 'left') target = 'ㅓ'; else if (dir === 'up') target = 'ㅗ'; else if (dir === 'down') target = 'ㅜ';
+if (target) { appendHangul(target); lastSlideDir = dir; lastSlideTime = now; }
+} else {
+if (dir === 'right') target = 'ㅑ'; else if (dir === 'left') target = 'ㅕ'; else if (dir === 'up') target = 'ㅛ'; else if (dir === 'down') target = 'ㅠ';
+if (target) { replaceLastVowel(target); lastSlideDir = ''; lastSlideTime = 0; }
+}
+});
+
 renderSlots();
 </script>
 </body>
