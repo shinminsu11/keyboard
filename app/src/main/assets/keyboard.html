@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.43 최종수정본</title>
+<title>쓸기자판 v9.43 최종수정본 (클립보드 연동)</title>
 <style>
 * {
 box-sizing: border-box;
@@ -852,9 +852,12 @@ background: #e2e8f0;
 
 <div id="clipboardModal" class="modal-overlay">
 <div class="modal-box">
-<div class="modal-header">
+<div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
 <span>클립보드 (최신 50개)</span>
-<span class="modal-close" onclick="closeClipboardModal()">×</span>
+<div style="display:flex; gap:6px;">
+<button onclick="fetchSystemClipboardToHistory()" style="padding:4px 8px; background:#4285f4; color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">시스템 복사본 가져오기</button>
+<span class="modal-close" onclick="closeClipboardModal()" style="font-size:24px; cursor:pointer; line-height:1;">×</span>
+</div>
 </div>
 <div class="clipboard-list" id="clipboardListContainer"></div>
 </div>
@@ -1230,14 +1233,12 @@ function updateScreen() {
         let beforeCursor = chars.slice(0, cursorPos).join('');
         let afterCursor = chars.slice(cursorPos).join('');
 
-        // [최종 수정 반영] 개별 스팬으로 나누어 렌더링 지연 및 커서 숨김 원천 차단
         screenTextWrap.innerHTML = 
             '<span class="text-before">' + escapeHtml(beforeCursor) + '</span>' + 
             '<span class="text-current">' + escapeHtml(currentAssembled) + '</span>' + 
             '<span class="cursor-bar"></span>' + 
             '<span class="text-after">' + escapeHtml(afterCursor) + '</span>';
 
-        // 브라우저 DOM 강제 리플로우 유발
         void screenTextWrap.offsetWidth;
         void screenDiv.scrollTop;
 
@@ -1900,20 +1901,48 @@ isSwiping = false;
 isCbLong = false;
 return;
 }
+// [시스템 클립보드 자동 수집 연동] 브라우저 환경 및 네이티브 안드로이드 브리지 모두 대응
 try {
-if (navigator.clipboard && navigator.clipboard.readText) {
-let clipboardText = await navigator.clipboard.readText();
-if (clipboardText && clipboardText.trim() !== "") {
-let history = getMergedClipHistory();
-history = history.filter(item => item !== clipboardText);
-history.unshift(clipboardText);
-saveClipHistory(history);
-}
-}
+    let clipboardText = "";
+    if (window.AndroidBridge && window.AndroidBridge.getSystemClipboardText) {
+        clipboardText = window.AndroidBridge.getSystemClipboardText();
+    } else if (navigator.clipboard && navigator.clipboard.readText) {
+        clipboardText = await navigator.clipboard.readText();
+    }
+    if (clipboardText && clipboardText.trim() !== "") {
+        let history = getMergedClipHistory();
+        history = history.filter(item => item !== clipboardText);
+        history.unshift(clipboardText);
+        saveClipHistory(history);
+    }
 } catch (err) {}
 renderClipHistory();
 openClipboardModal();
 });
+
+// [추가] 클립보드 모달창 내부 버튼으로 즉시 시스템 복사본 가져오기 기능
+async function fetchSystemClipboardToHistory() {
+    try {
+        let clipboardText = "";
+        if (window.AndroidBridge && window.AndroidBridge.getSystemClipboardText) {
+            clipboardText = window.AndroidBridge.getSystemClipboardText();
+        } else if (navigator.clipboard && navigator.clipboard.readText) {
+            clipboardText = await navigator.clipboard.readText();
+        }
+        if (clipboardText && clipboardText.trim() !== "") {
+            let history = getMergedClipHistory();
+            history = history.filter(item => item !== clipboardText);
+            history.unshift(clipboardText);
+            saveClipHistory(history);
+            renderClipHistory();
+            showToast("시스템 클립보드를 가져왔습니다");
+        } else {
+            showToast("클립보드에 텍스트가 없습니다");
+        }
+    } catch (err) {
+        showToast("클립보드 권한을 확인해주세요");
+    }
+}
 
 function renderClipHistory() {
 clipboardListContainer.innerHTML = "";
