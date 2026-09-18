@@ -1273,6 +1273,19 @@ function updateScreen() {
                     }
                 }
 
+                if (!isCompleteHangulSyllable &&
+                    currentAssembled.length === 1 &&
+                    CHOSUNG.indexOf(currentAssembled) !== -1) {
+                    // 중간 커서에서 첫 초성이 처음 한 번만 안 보이는 현상만 보완
+                    const currentSpan = screenTextWrap.querySelector('.text-current');
+                    if (currentSpan) {
+                        currentSpan.textContent = currentAssembled;
+                    }
+                    if (window.AndroidBridge.setComposing) {
+                        window.AndroidBridge.setComposing(currentAssembled);
+                    }
+                }
+
                 if (isCompleteHangulSyllable) {
                     const code = currentAssembled.charCodeAt(0);
                     const offset = code - 0xAC00;
