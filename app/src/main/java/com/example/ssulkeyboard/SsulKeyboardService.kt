@@ -173,8 +173,6 @@ class SsulKeyboardService : InputMethodService() {
             try {
                 ic.finishComposingText()
 
-                // 기존 정상 동작 유지:
-                // 안드로이드의 실제 커서를 목표 위치로 이동한 뒤 삽입합니다.
                 ic.setSelection(target, target)
                 ic.commitText(text, 1)
 
@@ -184,18 +182,13 @@ class SsulKeyboardService : InputMethodService() {
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
-                // Pair42: HTML의 finishExternalInsert()는 전체 문장을 받습니다.
-                // 삽입 직후 실제 입력창의 커서 앞/뒤를 읽어 전체 텍스트를 구성합니다.
-                val beforeAfter =
-                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-                val afterAfter =
-                    ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
-                val fullText = beforeAfter + afterAfter
-                val fullTextJs = org.json.JSONObject.quote(fullText)
+                // Pair42 변경을 되돌림:
+                // 기존처럼 새로 입력한 text만 finishExternalInsert()에 전달합니다.
+                val textJs = org.json.JSONObject.quote(text)
 
                 webView.post {
                     webView.evaluateJavascript(
-                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($fullTextJs,$newPos);}",
+                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($textJs,$newPos);}",
                         null
                     )
                 }
