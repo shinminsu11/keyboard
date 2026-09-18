@@ -128,7 +128,20 @@ class SsulKeyboardService : InputMethodService() {
                 }
                 applyPendingExternalCursor(ic)
                 ic.commitText(text, 1)
-                rememberActualSelection()
+
+                // Pair48: 엔터(줄바꿈) 후에는 이전 중간커서 상태를 완전히 버린다.
+                // 일부 입력창에서는 엔터 직후 다음 입력의 커서가 이전
+                // pendingExternalCursorUtf16을 다시 사용하여 맨 앞으로 들어가는
+                // 현상이 생길 수 있으므로, 실제 새 커서 위치를 다시 기억한다.
+                if (text.contains('\n') || text.contains('\r')) {
+                    pendingExternalCursorUtf16 = null
+                    externalComposingActive = false
+                    suppressSelectionSyncUntil =
+                        android.os.SystemClock.uptimeMillis() + 250L
+                    rememberActualSelection()
+                } else {
+                    rememberActualSelection()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
