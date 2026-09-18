@@ -1263,6 +1263,16 @@ function updateScreen() {
                     currentAssembled.charCodeAt(0) >= 0xAC00 &&
                     currentAssembled.charCodeAt(0) <= 0xD7A3;
 
+                if (!isCompleteHangulSyllable &&
+                    currentAssembled.length === 1 &&
+                    CHOSUNG.indexOf(currentAssembled) !== -1) {
+                    // 중간 커서에서 첫 초성도 HTML 화면에 즉시 표시
+                    const currentSpan = screenTextWrap.querySelector('.text-current');
+                    if (currentSpan) {
+                        currentSpan.textContent = currentAssembled;
+                    }
+                }
+
                 if (isCompleteHangulSyllable) {
                     const code = currentAssembled.charCodeAt(0);
                     const offset = code - 0xAC00;
@@ -2015,7 +2025,7 @@ function closeClipboardModal() { clipboardModal.style.display = 'none'; }
 function openEmojiModal() { emojiModal.style.display = 'flex'; }
 function closeEmojiModal() { emojiModal.style.display = 'none'; }
 
-const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🤍', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '✨', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
+const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🤍', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '💕', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
 
 function getMergedEmojis() {
 let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
