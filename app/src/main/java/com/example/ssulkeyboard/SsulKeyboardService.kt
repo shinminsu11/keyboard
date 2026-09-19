@@ -22,6 +22,7 @@ class SsulKeyboardService : InputMethodService() {
     private var pendingExternalCursorUtf16: Int? = null
     private var suppressSelectionSyncUntil = 0L
     private var internalSelectionUntil = 0L
+    private var externalComposingActive = false
 
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
@@ -41,19 +42,11 @@ class SsulKeyboardService : InputMethodService() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 heightPx
             )
-
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             setBackgroundColor(Color.TRANSPARENT)
-
             addJavascriptInterface(KeyboardBridge(), "AndroidBridge")
-
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                }
-            }
-
+            webViewClient = object : WebViewClient() {}
             loadUrl("file:///android_asset/keyboard.html")
         }
 
@@ -63,11 +56,9 @@ class SsulKeyboardService : InputMethodService() {
 
     private fun rememberActualSelection() {
         val ic = currentInputConnection ?: return
-
         try {
             val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
             val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
-
             if (after >= 0) {
                 lastKnownSelectionStart = before
                 lastKnownSelectionEnd = before
@@ -78,16 +69,12 @@ class SsulKeyboardService : InputMethodService() {
 
     private fun syncHtmlWithNativeText() {
         if (!::webView.isInitialized) return
-
         val ic = currentInputConnection ?: return
-
         try {
             val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
             val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
-
             val beforeJs = org.json.JSONObject.quote(before)
             val afterJs = org.json.JSONObject.quote(after)
-
             webView.post {
                 webView.evaluateJavascript(
                     """
@@ -96,8 +83,7 @@ class SsulKeyboardService : InputMethodService() {
                             window.syncNativeText($beforeJs, $afterJs);
                         }
                     })();
-                    """.trimIndent(),
-                    null
+                    """.trimIndent(), null
                 )
             }
         } catch (e: Exception) {
@@ -105,71 +91,87 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
-    private fun applyPendingExternalCursor(
-        ic: android.view.inputmethod.InputConnection
-    ) {
+    private fun applyPendingExternalCursor(ic: android.view.inputmethod.InputConnection) {
         val pos = pendingExternalCursorUtf16 ?: return
-
         try {
             ic.finishComposingText()
             ic.setSelection(pos, pos)
         } catch (_: Exception) {
         }
-
         pendingExternalCursorUtf16 = null
         lastKnownSelectionStart = pos
         lastKnownSelectionEnd = pos
+    }
+
+    private fun cancelHtmlExternalCursorState() {
+        if (!::webView.isInitialized) return
+        webView.post {
+            webView.evaluateJavascript(
+                "javascript:if(window.cancelExternalCursorState) { window.cancelExternalCursorState(); }",
+                null
+            )
+        }
     }
 
     inner class KeyboardBridge {
 
         @JavascriptInterface
         fun commitText(text: String) {
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
-
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
-
             try {
-                applyPendingExternalCursor(ic)
-
-                // 검색창에서는 HTML의 엔터 입력을 검색 실행으로 처리합니다.
-                // 일반 본문/메모에서는 기존처럼 실제 줄바꿈을 입력합니다.
-                if (text == "\n" && isSearchField()) {
-                    ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
-                } else {
-                    ic.commitText(text, 1)
+                if (externalComposingActive) {
+                    ic.finishComposingText()
+                    externalComposingActive = false
                 }
+                applyPendingExternalCursor(ic)
+                ic.commitText(text, 1)
 
-                rememberActualSelection()
+                if (text.contains('\n') || text.contains('\r')) {
+                    pendingExternalCursorUtf16 = null
+                    externalComposingActive = false
+                    suppressSelectionSyncUntil =
+                        android.os.SystemClock.uptimeMillis() + 250L
+                    rememberActualSelection()
+                } else {
+                    rememberActualSelection()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        private fun isSearchField(): Boolean {
-            val info = currentInputEditorInfo ?: return false
-            val action = info.imeOptions and EditorInfo.IME_MASK_ACTION
-
-            return action == EditorInfo.IME_ACTION_SEARCH ||
-                   action == EditorInfo.IME_ACTION_GO
-        }
-
         @JavascriptInterface
         fun setComposing(text: String) {
             val ic = currentInputConnection ?: return
-
-            val target = pendingExternalCursorUtf16
-
-            if (target != null) {
-                insertAtExternalCursor(text, target)
-                return
-            }
-
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
-
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 180L
             try {
+                if (externalComposingActive) {
+                    ic.setComposingText(text, 1)
+                    val isCompleteHangul =
+                        text.length == 1 && text[0].code in 0xAC00..0xD7A3
+                    if (isCompleteHangul) {
+                        ic.finishComposingText()
+                        externalComposingActive = false
+                    }
+                    rememberActualSelection()
+                    return
+                }
+
+                val target = pendingExternalCursorUtf16
+                if (target != null) {
+                    ic.finishComposingText()
+                    ic.setSelection(target, target)
+                    ic.setComposingText(text, 1)
+                    pendingExternalCursorUtf16 = null
+                    externalComposingActive = true
+                    val newPos = target + text.length
+                    lastKnownSelectionStart = newPos
+                    lastKnownSelectionEnd = newPos
+                    rememberActualSelection()
+                    return
+                }
+
                 ic.setComposingText(text, 1)
                 rememberActualSelection()
             } catch (e: Exception) {
@@ -177,53 +179,32 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
-        private fun insertAtExternalCursor(
-            text: String,
-            target: Int
-        ) {
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 300L
-
+        @JavascriptInterface
+        fun setExternalComposing(text: String, target: Int) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 300L
             val ic = currentInputConnection ?: return
-
             try {
                 ic.finishComposingText()
-
                 ic.setSelection(target, target)
-                ic.commitText(text, 1)
-
-                val newPos = target + text.length
-
+                ic.setComposingText(text, 1)
                 pendingExternalCursorUtf16 = null
+                externalComposingActive = true
+                val newPos = target + text.length
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
-
-                // Pair42 변경을 되돌림:
-                // 기존처럼 새로 입력한 text만 finishExternalInsert()에 전달합니다.
-                val textJs = org.json.JSONObject.quote(text)
-
-                webView.post {
-                    webView.evaluateJavascript(
-                        "javascript:if(window.finishExternalInsert){window.finishExternalInsert($textJs,$newPos);}",
-                        null
-                    )
-                }
             } catch (e: Exception) {
-                pendingExternalCursorUtf16 = null
                 e.printStackTrace()
             }
         }
 
         @JavascriptInterface
         fun extendExternalSyllable(text: String) {
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 180L
             val ic = currentInputConnection ?: return
-
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 180L
-
             try {
                 ic.deleteSurroundingText(1, 0)
                 ic.commitText(text, 1)
+                externalComposingActive = false
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -232,14 +213,10 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun setSelection(start: Int, end: Int) {
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
-
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
-
             try {
                 ic.setSelection(start, end)
-
                 lastKnownSelectionStart = start
                 lastKnownSelectionEnd = end
             } catch (e: Exception) {
@@ -249,15 +226,11 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteText() {
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
-
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 180L
             val ic = currentInputConnection ?: return
-
             try {
-                // 일부 앱에서는 getSelectedText()가 실제 선택 영역 전체가 아니라
-                // 선택 영역의 마지막 문자만 반환하는 경우가 있습니다.
-                // onUpdateSelection에서 기억해 둔 실제 선택 범위를 우선 사용합니다.
+                // 핵심: 선택 영역이 있으면 getSelectedText()의 결과에 의존하지 않고
+                // onUpdateSelection에서 기억한 실제 native selection 범위를 삭제한다.
                 val rememberedStart = lastKnownSelectionStart
                 val rememberedEnd = lastKnownSelectionEnd
 
@@ -268,68 +241,48 @@ class SsulKeyboardService : InputMethodService() {
                     val selectionStart = minOf(rememberedStart, rememberedEnd)
                     val selectionEnd = maxOf(rememberedStart, rememberedEnd)
 
-                    try {
-                        ic.finishComposingText()
-                    } catch (_: Exception) {
-                    }
+                    externalComposingActive = false
+                    pendingExternalCursorUtf16 = null
 
+                    try { ic.finishComposingText() } catch (_: Exception) {}
                     ic.setSelection(selectionStart, selectionEnd)
                     ic.commitText("", 1)
 
-                    lastKnownSelectionStart = selectionStart
-                    lastKnownSelectionEnd = selectionStart
-                    pendingExternalCursorUtf16 = null
+                    val newCursor = selectionStart
+                    lastKnownSelectionStart = newCursor
+                    lastKnownSelectionEnd = newCursor
 
+                    // 선택삭제 직후 HTML의 외부 중간커서 상태도 함께 초기화한다.
+                    cancelHtmlExternalCursorState()
                     rememberActualSelection()
                     syncHtmlWithNativeText()
                     return
                 }
 
+                externalComposingActive = false
                 val selectedText = ic.getSelectedText(0)
-
                 if (!selectedText.isNullOrEmpty()) {
+                    pendingExternalCursorUtf16 = null
                     ic.commitText("", 1)
+                    cancelHtmlExternalCursorState()
                     rememberActualSelection()
                     syncHtmlWithNativeText()
                     return
                 }
 
-                val beforeNow =
-                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-
+                val beforeNow = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
                 val originalCursor = beforeNow.length
+                if (originalCursor <= 0) return
 
-                if (originalCursor <= 0) {
-                    return
-                }
+                try { ic.finishComposingText() } catch (_: Exception) {}
+                try { ic.setSelection(originalCursor, originalCursor) } catch (_: Exception) {}
 
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
-
-                try {
-                    ic.setSelection(
-                        originalCursor,
-                        originalCursor
-                    )
-                } catch (_: Exception) {
-                }
-
-                val textBefore =
-                    ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
-
-                if (textBefore.isEmpty()) {
-                    return
-                }
+                val textBefore = ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+                if (textBefore.isEmpty()) return
 
                 if (textBefore.length >= 2) {
-                    val high =
-                        textBefore[textBefore.length - 2]
-
-                    val low =
-                        textBefore[textBefore.length - 1]
-
+                    val high = textBefore[textBefore.length - 2]
+                    val low = textBefore[textBefore.length - 1]
                     if (Character.isSurrogatePair(high, low)) {
                         ic.deleteSurroundingText(2, 0)
                     } else {
@@ -339,9 +292,9 @@ class SsulKeyboardService : InputMethodService() {
                     ic.deleteSurroundingText(1, 0)
                 }
 
+                pendingExternalCursorUtf16 = null
                 rememberActualSelection()
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -349,12 +302,11 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun deleteOneCharForHanja() {
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() + 120L
-
+            internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 120L
             val ic = currentInputConnection ?: return
-
             try {
+                externalComposingActive = false
+                pendingExternalCursorUtf16 = null
                 ic.finishComposingText()
                 ic.deleteSurroundingText(1, 0)
                 rememberActualSelection()
@@ -362,6 +314,13 @@ class SsulKeyboardService : InputMethodService() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+
+        @JavascriptInterface
+        fun isSearchField(): Boolean {
+            val info = currentInputEditorInfo ?: return false
+            val action = info.imeOptions and EditorInfo.IME_MASK_ACTION
+            return action == EditorInfo.IME_ACTION_SEARCH
         }
 
         @JavascriptInterface
@@ -373,13 +332,9 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun openUrl(url: String) {
             try {
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(url)
-                ).apply {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-
                 startActivity(intent)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -396,51 +351,40 @@ class SsulKeyboardService : InputMethodService() {
         candidatesEnd: Int
     ) {
         super.onUpdateSelection(
-            oldSelStart,
-            oldSelEnd,
-            newSelStart,
-            newSelEnd,
-            candidatesStart,
-            candidatesEnd
+            oldSelStart, oldSelEnd, newSelStart, newSelEnd,
+            candidatesStart, candidatesEnd
         )
 
-        if (!::webView.isInitialized ||
-            newSelStart < 0 ||
-            newSelEnd < 0
-        ) {
+        if (!::webView.isInitialized || newSelStart < 0 || newSelEnd < 0) return
+        if (android.os.SystemClock.uptimeMillis() < internalSelectionUntil) return
+
+        // 선택 영역은 '외부 커서 이동'으로 취급하지 않는다.
+        // 이전 버전에서는 선택할 때도 pendingExternalCursorUtf16과
+        // external cursor mode를 켜서, 선택삭제 후 다음 초성 입력에
+        // 이전 중간커서 조합 상태가 남는 문제가 생길 수 있었다.
+        if (newSelStart != newSelEnd) {
+            lastKnownSelectionStart = newSelStart
+            lastKnownSelectionEnd = newSelEnd
+            pendingExternalCursorUtf16 = null
+            externalComposingActive = false
+            suppressSelectionSyncUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
             return
         }
 
-        if (
-            android.os.SystemClock.uptimeMillis() <
-            internalSelectionUntil
-        ) {
-            return
-        }
-
-        if (
-            android.os.SystemClock.uptimeMillis() <
-            suppressSelectionSyncUntil
-        ) {
+        if (android.os.SystemClock.uptimeMillis() < suppressSelectionSyncUntil) {
             lastKnownSelectionStart = newSelStart
             lastKnownSelectionEnd = newSelEnd
             return
         }
 
-        if (
-            newSelStart == lastKnownSelectionStart &&
-            newSelEnd == lastKnownSelectionEnd
-        ) {
-            return
-        }
+        if (newSelStart == lastKnownSelectionStart && newSelEnd == lastKnownSelectionEnd) return
 
+        externalComposingActive = false
         lastKnownSelectionStart = newSelStart
         lastKnownSelectionEnd = newSelEnd
-
         pendingExternalCursorUtf16 = newSelStart
-
-        suppressSelectionSyncUntil =
-            android.os.SystemClock.uptimeMillis() + 150L
+        suppressSelectionSyncUntil = android.os.SystemClock.uptimeMillis() + 150L
 
         webView.post {
             webView.evaluateJavascript(
@@ -450,24 +394,19 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         webView.post {
-            if (
-                android.os.SystemClock.uptimeMillis() <=
-                suppressSelectionSyncUntil
-            ) {
+            if (android.os.SystemClock.uptimeMillis() <= suppressSelectionSyncUntil) {
                 syncHtmlWithNativeText()
             }
         }
     }
 
-    override fun onStartInputView(
-        info: EditorInfo?,
-        restarting: Boolean
-    ) {
+    override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
 
         lastKnownSelectionStart = -1
         lastKnownSelectionEnd = -1
         pendingExternalCursorUtf16 = null
+        externalComposingActive = false
 
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
@@ -476,12 +415,8 @@ class SsulKeyboardService : InputMethodService() {
             )
         }
 
-        webView.post {
-            rememberActualSelection()
-        }
+        webView.post { rememberActualSelection() }
     }
 
-    override fun onEvaluateFullscreenMode(): Boolean {
-        return false
-    }
+    override fun onEvaluateFullscreenMode(): Boolean = false
 }
