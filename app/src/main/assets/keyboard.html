@@ -1588,6 +1588,19 @@ bsTimer = null;
 
 function appendSpecial(char) {
 if (!char) return;
+
+// [Pair50] 엔터 직후 첫 입력이 이전 중간삽입 상태를 다시 사용하지 않도록
+// 줄바꿈 시 외부 커서/후보 상태만 초기화합니다.
+if (char === '\n') {
+    if (externalComposeTimer) {
+        clearTimeout(externalComposeTimer);
+        externalComposeTimer = null;
+    }
+    externalCursorInsertMode = false;
+    externalFinalCandidate = null;
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+}
+
 commitCurrent();
 lastSlideDir = '';
 let chars = Array.from(committedText);
