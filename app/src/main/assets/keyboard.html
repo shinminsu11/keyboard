@@ -1175,20 +1175,6 @@ window.beginExternalCursorInsert = function() {
     externalFinalCandidate = null;
 };
 
-// 선택 영역 삭제 후에는 중간 커서 입력용 상태를 완전히 버린다.
-// 일반적인 커서 이동 상태에는 영향을 주지 않고, 선택삭제 직후의
-// 다음 초성 입력이 이전 선택 영역의 상태를 이어받지 않도록 한다.
-window.cancelExternalCursorState = function() {
-    if (externalComposeTimer) {
-        clearTimeout(externalComposeTimer);
-        externalComposeTimer = null;
-    }
-    externalCursorInsertMode = false;
-    externalFinalCandidate = null;
-    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-    lastSlideDir = '';
-};
-
 window.finishExternalInsert = function(fullText, utf16Cursor) {
     try {
         fullText = (fullText == null) ? '' : String(fullText);
@@ -1620,14 +1606,37 @@ bsTimer = null;
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
 if (endX - bsStartX < -30) {
-hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-committedText = '';
-cursorPos = 0;
-updateScreen();
-if (window.AndroidBridge && window.AndroidBridge.setSelection) {
-    window.AndroidBridge.setSelection(0, 0);
-}
-return;
+    // 왼쪽 스와이프 = 전체삭제
+    // 화면의 committedText만 비우면 실제 IME 입력창에는 기존 문자가 남을 수 있으므로
+    // 먼저 현재 조합을 확정한 뒤 네이티브 전체 범위를 선택하고 기존 deleteText()로 삭제한다.
+    try {
+        commitCurrent();
+
+        const totalUtf16 = committedText.length;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        externalFinalCandidate = null;
+        externalCursorInsertMode = false;
+
+        if (totalUtf16 > 0 &&
+            window.AndroidBridge &&
+            window.AndroidBridge.setSelection &&
+            window.AndroidBridge.deleteText) {
+            window.AndroidBridge.setSelection(0, totalUtf16);
+            window.AndroidBridge.deleteText();
+        }
+
+        committedText = '';
+        cursorPos = 0;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        externalFinalCandidate = null;
+        externalCursorInsertMode = false;
+        renderVersion++;
+        renderRequested = false;
+        updateScreen();
+    } catch (e) {}
+    return;
 }
 }
 });
