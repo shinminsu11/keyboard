@@ -1377,6 +1377,31 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
+// 빠른 연속 입력 보호:
+// 중간 커서에서 완성된 외부 삽입 음절(예: 아)의 350ms 확정 대기 중
+// 다음 자음이 들어오면, 다음 입력을 처리하기 전에 앞 음절을 즉시 확정한다.
+// 이렇게 해야 빠르게 ㅇ→ㅏ→ㄱ→ㅣ를 입력해도 ㅇ이 중복되거나 원래 글자와 섞이지 않는다.
+if (
+    externalCursorInsertMode &&
+    externalComposeTimer &&
+    hangulBuffer.cho !== -1 &&
+    hangulBuffer.jung !== -1 &&
+    hangulBuffer.jong === -1
+) {
+    const pendingText = assembleCurrent();
+    if (pendingText &&
+        pendingText.length === 1 &&
+        pendingText.charCodeAt(0) >= 0xAC00 &&
+        pendingText.charCodeAt(0) <= 0xD7A3) {
+        clearTimeout(externalComposeTimer);
+        externalComposeTimer = null;
+        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
+            window.AndroidBridge.setComposing(pendingText);
+        }
+        finalizeExternalComposedSyllable(pendingText);
+    }
+}
+
 if (externalFinalCandidate) {
     if (choIdx !== -1 && jungIdx === -1 && !externalFinalCandidate.pendingConsonant) {
         const jongTry = getJongIndex(inputChar);
