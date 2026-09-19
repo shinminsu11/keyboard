@@ -132,11 +132,27 @@ class SsulKeyboardService : InputMethodService() {
 
             try {
                 applyPendingExternalCursor(ic)
-                ic.commitText(text, 1)
+
+                // 검색창에서는 HTML의 엔터 입력을 검색 실행으로 처리합니다.
+                // 일반 본문/메모에서는 기존처럼 실제 줄바꿈을 입력합니다.
+                if (text == "\n" && isSearchField()) {
+                    ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
+                } else {
+                    ic.commitText(text, 1)
+                }
+
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+
+        private fun isSearchField(): Boolean {
+            val info = currentInputEditorInfo ?: return false
+            val action = info.imeOptions and EditorInfo.IME_MASK_ACTION
+
+            return action == EditorInfo.IME_ACTION_SEARCH ||
+                   action == EditorInfo.IME_ACTION_GO
         }
 
         @JavascriptInterface
