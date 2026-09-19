@@ -1644,7 +1644,11 @@ document.querySelectorAll('.enter-btn').forEach(btn => {
     const handleEnter = (e) => {
         e.preventDefault();
         commitCurrent();
-        appendSpecial('\n');
+        if (window.AndroidBridge && window.AndroidBridge.isSearchField && window.AndroidBridge.isSearchField()) {
+            window.AndroidBridge.performSearch();
+        } else {
+            appendSpecial('\n');
+        }
     };
     btn.addEventListener('click', handleEnter);
     btn.addEventListener('touchend', handleEnter);
