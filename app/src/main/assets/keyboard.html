@@ -739,7 +739,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -770,16 +770,15 @@ background: #e2e8f0;
 </div>
 <div class="key slot-key" data-slot="url_8" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_9" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
-<div class="key slot-key" data-slot="url_10" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
-<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>
-</div>
+<div class="key slot-key" data-slot="url_10" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_12" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_13" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_14" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="right-split-area">
 <div class="key blue-tint slot-key" data-slot="snippet_13" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key blue-tint slot-key" data-slot="snippet_14" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
-<div class="key blue-tint slot-key" data-slot="snippet_15" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+<!-- [4행 4열 위치: snippet_15 ('사용법' 버튼 및 노래 링크 탑재 유지)] -->
+<div class="key blue-tint slot-key" data-slot="snippet_15" data-type="url" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key" id="homeBtn" style="background-color:#ffffff; justify-content:center; align-items:center;" onclick="switchToBoard('mainBoard')">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="#4285f4"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
@@ -1221,10 +1220,6 @@ window.getKeyboardExpectedCursorUtf16 = function() {
 let renderRequested = false;
 let renderVersion = 0;
 
-// Pair46: 외부 중간커서에서 첫 음절이 완성된 순간,
-// HTML의 committedText/cursorPos도 실제 삽입된 음절 기준으로 즉시 전환한다.
-// 그래야 다음 자음 입력이 앞의 원래 글자(예: 가)를 잘못 조합하지 않고
-// 방금 입력한 음절(예: 아)을 기준으로 이어진다.
 function finalizeExternalComposedSyllable(text) {
     if (!externalCursorInsertMode || !text) return;
 
@@ -1260,14 +1255,12 @@ function updateScreen() {
         let beforeCursor = chars.slice(0, cursorPos).join('');
         let afterCursor = chars.slice(cursorPos).join('');
 
-        // [최종 수정 반영] 개별 스팬으로 나누어 렌더링 지연 및 커서 숨김 원천 차단
         screenTextWrap.innerHTML = 
             '<span class="text-before">' + escapeHtml(beforeCursor) + '</span>' + 
             '<span class="text-current">' + escapeHtml(currentAssembled) + '</span>' + 
             '<span class="cursor-bar"></span>' + 
             '<span class="text-after">' + escapeHtml(afterCursor) + '</span>';
 
-        // 브라우저 DOM 강제 리플로우 유발
         void screenTextWrap.offsetWidth;
         void screenDiv.scrollTop;
 
@@ -1293,9 +1286,6 @@ function updateScreen() {
                     currentAssembled.charCodeAt(0) >= 0xAC00 &&
                     currentAssembled.charCodeAt(0) <= 0xD7A3;
 
-                // Pair45: 중간 커서에서 첫 초성만 처음 한 번 안 보이는 문제를
-                // '확정 문자'가 아니라 네이티브 composing span으로 보여준다.
-                // 다음 모음은 같은 span을 setComposingText로 교체하므로 정상 조합된다.
                 if (!isCompleteHangulSyllable &&
                     currentAssembled.length === 1 &&
                     CHOSUNG.indexOf(currentAssembled) !== -1 &&
@@ -1377,10 +1367,6 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
-// 빠른 연속 입력 보호:
-// 중간 커서에서 완성된 외부 삽입 음절(예: 아)의 350ms 확정 대기 중
-// 다음 자음이 들어오면, 다음 입력을 처리하기 전에 앞 음절을 즉시 확정한다.
-// 이렇게 해야 빠르게 ㅇ→ㅏ→ㄱ→ㅣ를 입력해도 ㅇ이 중복되거나 원래 글자와 섞이지 않는다.
 if (
     externalCursorInsertMode &&
     externalComposeTimer &&
@@ -1474,8 +1460,6 @@ if (externalFinalCandidate) {
 
 lastSlideDir = '';
 
-// 단독 모음(ㅣ/ㅡ) 뒤의 ㅇ은 모음과 결합하지 않고 별도 글자로 입력
-// 기존 다른 한글 조합 기능에는 영향을 주지 않도록 ㅇ인 경우만 처리한다.
 if (
     inputChar === 'ㅇ' &&
     hangulBuffer.cho === -1 &&
@@ -1606,9 +1590,6 @@ bsTimer = null;
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
 if (endX - bsStartX < -30) {
-    // 왼쪽 스와이프 = 전체삭제
-    // 화면의 committedText만 비우면 실제 IME 입력창에는 기존 문자가 남을 수 있으므로
-    // 먼저 현재 조합을 확정한 뒤 네이티브 전체 범위를 선택하고 기존 deleteText()로 삭제한다.
     try {
         commitCurrent();
 
@@ -1652,8 +1633,6 @@ bsTimer = null;
 function appendSpecial(char) {
 if (!char) return;
 
-// [Pair50] 엔터 직후 첫 입력이 이전 중간삽입 상태를 다시 사용하지 않도록
-// 줄바꿈 시 외부 커서/후보 상태만 초기화합니다.
 if (char === '\n') {
     if (externalComposeTimer) {
         clearTimeout(externalComposeTimer);
@@ -2440,7 +2419,14 @@ if (dy > 25 && Math.abs(dy) > Math.abs(dx)) { twinBoard.classList.remove('active
 });
 
 let currentSlot = null, currentType = 'url';
-function getDB() { let data = localStorage.getItem('fresh_design_db_v1'); return data ? JSON.parse(data) : {}; }
+function getDB() { 
+    let data = localStorage.getItem('fresh_design_db_v1'); 
+    let db = data ? JSON.parse(data) : {};
+    if (!db['snippet_15']) {
+        db['snippet_15'] = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+    }
+    return db;
+}
 function saveDB(db) { localStorage.setItem('fresh_design_db_v1', JSON.stringify(db)); }
 function renderSlots() {
 let db = getDB();
@@ -2448,6 +2434,9 @@ document.querySelectorAll('.slot-key').forEach(el => {
 let slotKey = el.getAttribute('data-slot');
 let defaultHtml = el.getAttribute('data-default');
 let val = db[slotKey];
+if (slotKey === 'snippet_15' && !val) {
+    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+}
 if (val) {
 let temp = document.createElement('div'); temp.innerHTML = defaultHtml;
 let staticHtml = '';
@@ -2472,8 +2461,11 @@ el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
+if (slotKey === 'snippet_15' && !val) {
+    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+}
 if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
-if (type === 'url') {
+if (type === 'url' || slotKey === 'snippet_15') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
 targetUrl = val.url || val.title || '';
@@ -2541,10 +2533,14 @@ if (window.AndroidBridge && window.AndroidBridge.openUrl) {
 });
 
 function openModal(slotKey, type) {
-currentSlot = slotKey; currentType = type;
+currentSlot = slotKey; 
+currentType = (slotKey === 'snippet_15') ? 'url' : type;
 let db = getDB(), val = db[slotKey] || {};
+if (slotKey === 'snippet_15' && !db['snippet_15']) {
+    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+}
 let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
-if (type === 'url') {
+if (currentType === 'url') {
 sInput.style.display = 'none'; uFields.style.display = 'block';
 document.getElementById('urlTitle').value = (typeof val === 'object' && val !== null) ? (val.title || '') : '';
 document.getElementById('urlAddr').value = (typeof val === 'object' && val !== null) ? (val.url || '') : (typeof val === 'string' ? val : '');
@@ -2557,7 +2553,7 @@ document.getElementById('modalTitle').textContent = '상용구 설정';
 document.getElementById('slotModal').style.display = 'flex';
 
 setTimeout(() => {
-    if (type === 'url') {
+    if (currentType === 'url') {
         document.getElementById('urlTitle').focus();
     } else {
         sInput.focus();
@@ -2568,7 +2564,7 @@ function closeModal() { document.getElementById('slotModal').style.display = 'no
 function saveData() {
 if (!currentSlot) return;
 let db = getDB();
-if (currentType === 'url') {
+if (currentType === 'url' || currentSlot === 'snippet_15') {
 let title = document.getElementById('urlTitle').value.trim();
 let url = document.getElementById('urlAddr').value.trim();
 if (title && url) db[currentSlot] = { title: title, url: url };
