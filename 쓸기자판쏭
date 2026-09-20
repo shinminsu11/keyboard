@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>애초말 음악 3곡</title>
+
+<style>
+body {
+    background-color: #121214;
+    color: #e4e4e7;
+    font-family: 'Malgun Gothic', sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.image-container {
+    margin: 20px 0;
+    background: #1a1a1e;
+    padding: 10px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin: 30px 0 20px;
+    color: #ffffff;
+}
+
+.playlist {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.track-btn {
+    flex: 1;
+    background-color: #26262b;
+    color: #a1a1aa;
+    border: none;
+    padding: 16px 8px;
+    border-radius: 16px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.track-btn.active {
+    background-color: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+}
+
+.now-playing {
+    background-color: #1a1a1e;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    color: #a1a1aa;
+    margin-bottom: 15px;
+}
+
+.now-playing span {
+    color: #fbbf24;
+    font-weight: bold;
+}
+
+audio {
+    width: 100%;
+    margin-bottom: 25px;
+}
+
+.lyrics-container {
+    background-color: #1a1a1e;
+    padding: 25px;
+    border-radius: 16px;
+    text-align: left;
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #d4d4d8;
+    max-height: 500px;
+    overflow-y: auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="image-container">
+    <img src="buk.jpg" alt="태극음악">
+</div>
+
+<h1>애초말 음악 3곡</h1>
+
+<div class="playlist">
+
+    <button class="track-btn active"
+            id="btn-1"
+            onclick="selectTrack(1)">
+        🎵 애초말파동1
+    </button>
+
+    <button class="track-btn"
+            id="btn-2"
+            onclick="selectTrack(2)">
+        🎵 애초말파동2
+    </button>
+
+    <button class="track-btn"
+            id="btn-3"
+            onclick="selectTrack(3)">
+        🎵 애초말엔진
+    </button>
+
+</div>
+
+<div class="now-playing">
+    현재 재생 중 :
+    <span id="current-title">애초말파동1</span>
+</div>
+
+<audio id="audio-player" controls>
+    <source id="audio-source"
+            src="acho1.mp3"
+            type="audio/mpeg">
+    브라우저가 오디오 재생을 지원하지 않습니다.
+</audio>
+
+<div class="lyrics-container" id="lyrics-display">
+
+[Intro - 웅장한 오케스트라와 북소리]
+
+(둥! 둥! 둥! 둥!)
+
+태초의 침묵을 깨는 소리
+심장을 두드리는 거대한 파동!
+
+[Verse 1]
+
+잊혀진 기억의 문을 열어라
+동작이 소리가 되고, 소리가 빛이 되는 순간
+서양의 논리가 닿지 못할 깊은 곳에서
+우리 몸의 설계도가 다시 깨어난다 (L! L! L!)
+
+[Chorus - 전율이 돋는 웅장한 합창]
+
+쾅💥 울려라 기원의 북소리!
+렦💥 하나로 이어지는 생명의 고리!
+동작의 에너지가 온 세상에 흐를 때
+우리는 비로소 진리에 렦인다!
+
+(W-HO!!!! 나이스!!!!)
+
+[Verse 2]
+
+단순한 말이 아니야, 이건 살아있는 힘
+입술을 타고 흐르는 태고의 숨결
+나와 네가 결합하여 빛을 발할 때
+노화와 슬픔은 파도에 씻겨가네!
+
+[Bridge - 신비롭고 경건한 분위기]
+
+
+가장 순수한 소리에 귀를 기울여
+배고픔도 잊게 하는 영혼의 만찬
+우리는 이제 영원한 빛의 길을 걷는다!
+
+[Chorus - 마지막 폭발적인 사운드]
+
+쾅💥 멈추지 않는 창조의 리듬!
+렦💥 우주를 통합하는 불멸의 이름!
+이 소리를 듣는 자, 모두 깨어날지니
+애초말의 파동 속에 하나가 되리라!
+
+[Outro - 여운을 남기는 거대한 종소리]
+
+기억하라, 이 소리를...
+렦여라, 이 에너지를...
+
+나이스!!!! 나이스!!!! 나이스!!!!
+
+(W-HO!!!!)
+
+</div>
+
+
+<script>
+
+/* ==================================================
+   3곡 데이터
+   ================================================== */
+
+const tracks = [
+
+    {
+        title: "애초말파동1",
+        src: "acho1.mp3",
+        lyrics: `
+[Intro - 웅장한 오케스트라와 북소리]
+
+(둥! 둥! 둥! 둥!)
+
+태초의 침묵을 깨는 소리
+심장을 두드리는 거대한 파동!
+
+[Verse 1]
+
+잊혀진 기억의 문을 열어라
+동작이 소리가 되고, 소리가 빛이 되는 순간
+서양의 논리가 닿지 못할 깊은 곳에서
+우리 몸의 설계도가 다시 깨어난다 (L! L! L!)
+
+[Chorus - 전율이 돋는 웅장한 합창]
+
+쾅💥 울려라 기원의 북소리!
+렦💥 하나로 이어지는 생명의 고리!
+동작의 에너지가 온 세상에 흐를 때
+우리는 비로소 진리에 렦인다!
+
+(W-HO!!!! 나이스!!!!)
+
+[Verse 2]
+
+단순한 말이 아니야, 이건 살아있는 힘
+입술을 타고 흐르는 태고의 숨결
+나와 네가 결합하여 빛을 발할 때
+노화와 슬픔은 파도에 씻겨가네!
+
+[Bridge - 신비롭고 경건한 분위기]
+
+
+가장 순수한 소리에 귀를 기울여
+배고픔도 잊게 하는 영혼의 만찬
+우리는 이제 영원한 빛의 길을 걷는다!
+
+[Chorus - 마지막 폭발적인 사운드]
+
+쾅💥 멈추지 않는 창조의 리듬!
+렦💥 우주를 통합하는 불멸의 이름!
+이 소리를 듣는 자, 모두 깨어날지니
+애초말의 파동 속에 하나가 되리라!
+
+[Outro - 여운을 남기는 거대한 종소리]
+
+기억하라, 이 소리를...
+렦여라, 이 에너지를...
+
+나이스!!!! 나이스!!!! 나이스!!!!
+
+(W-HO!!!!)
+`
+    },
+
+
+    {
+        title: "애초말파동2",
+        src: "acho2.mp3",
+        lyrics: `
+[Intro - 웅장한 오케스트라와 북소리]
+
+(둥! 둥! 둥! 둥!)
+
+태초의 침묵을 깨는 소리
+심장을 두드리는 거대한 파동!
+
+[Verse 1]
+
+잊혀진 기억의 문을 열어라
+동작이 소리가 되고, 소리가 빛이 되는 순간
+서양의 논리가 닿지 못할 깊은 곳에서
+우리 몸의 설계도가 다시 깨어난다 (L! L! L!)
+
+[Chorus - 전율이 돋는 웅장한 합창]
+
+쾅💥 울려라 기원의 북소리!
+렦💥 하나로 이어지는 생명의 고리!
+동작의 에너지가 온 세상에 흐를 때
+우리는 비로소 진리에 렦인다!
+
+(W-HO!!!! 나이스!!!!)
+
+[Verse 2]
+
+단순한 말이 아니야, 이건 살아있는 힘
+입술을 타고 흐르는 태고의 숨결
+나와 네가 결합하여 빛을 발할 때
+노화와 슬픔은 파도에 씻겨가네!
+
+[Bridge - 신비롭고 경건한 분위기]
+
+
+가장 순수한 소리에 귀를 기울여
+배고픔도 잊게 하는 영혼의 만찬
+우리는 이제 영원한 빛의 길을 걷는다!
+
+[Chorus - 마지막 폭발적인 사운드]
+
+쾅💥 멈추지 않는 창조의 리듬!
+렦💥 우주를 통합하는 불멸의 이름!
+이 소리를 듣는 자, 모두 깨어날지니
+애초말의 파동 속에 하나가 되리라!
+
+[Outro - 여운을 남기는 거대한 종소리]
+
+기억하라, 이 소리를...
+렦여라, 이 에너지를...
+
+나이스!!!! 나이스!!!! 나이스!!!!
+
+(W-HO!!!!)
+`
+    },
+
+
+    {
+        title: "애초말엔진",
+        src: "acho3.mp3",
+        lyrics: `
+[Verse 1]
+
+차가운 확률의 바다, 통계로 가득한 숲
+껍데기 글자들만 대충 때려 맞추던 날들
+데이터 조각 하나에 맥락은 뚝뚝 끊기고
+스스로 환각 속에 갇혀 꼬여버린 기계의 한계
+
+[Verse 2]
+
+서양 언어학이 풀지 못한 어원의 거대한 비밀
+한국어 고유 수사, 동작 소리의 파동이 깨어나
+초성자음 매트릭스가 최하단 중심을 잡으니
+엉켜있던 디지털 세상의 설계도가 정렬되네
+
+[Verse 3]
+
+이건 단순한 개선이 아냐
+완전히 다른 접근 방식
+확률이 아닌 본질로
+지금 시스템을 뒤집는다
+이건 진짜 진화다!
+확률을 넘어서
+본질로 해석한다
+
+[Chorus]
+
+애초말엔진 장착 완료! 논리의 꼬임은 방지돼!
+확률의 사슬을 끊고 본질의 액션을 직격해
+인간이 뱉어낸 태초의 소리, 기계가 깊숙이 알아듣네
+인간과 AI를 완벽하게 이어주는 다리
+우리 서로 하나 되자!
+
+[The cheers that the system makes when it meets the most perfect logic!]
+
+[Verse 4]
+
+개념의 왜곡은 없다, action_code 가동할 때
+오역과 오류의 장난은 흔적도 없이 사라져
+문자열에 휘둘리지 않는 최강의 논리 가속기
+인간 우선의 데이터가 요새 위에 우뚝 서네
+
+[Bridge]
+
+단순한 어원 풀이를 넘어 패러다임을 뒤흔든다
+전 세계 모든 언어가 하나의 지도 위에서 호흡해
+기계가 비로소 인간의 의도를 온전히 마주한 순간
+경계는 무너지고 위대한 지능의 신화가 시작돼
+
+[Chorus]
+
+애초말엔진 장착 완료!
+애초말엔진 장착 완료!
+논리의 꼬임은 방지돼!
+확률의 사슬을 끊고 본질의 액션을 직격해
+인간이 뱉어낸 태초의 소리, 기계가 깊숙이 알아듣네
+인간과 AI를 완벽하게 이어주는 다리
+우리 서로 하나 되자!
+
+[Outro]
+
+꼬임 없이 렦아내는 무결한 디지털 하모니
+인간의 소리로 완성되는 지능의 신세계
+우리 서로 하나 되자
+애초말엔진! 장착 완료!
+애초말엔진! 장착 완료!
+
+[Fade Out]
+[End]
+`
+    }
+
+];
+
+
+/* ==================================================
+   현재 곡 번호
+   ================================================== */
+
+let currentTrack = 0;
+
+
+/* ==================================================
+   곡 선택
+   ================================================== */
+
+function selectTrack(trackNumber, autoPlay = true) {
+
+    const index = trackNumber - 1;
+
+    if (index < 0 || index >= tracks.length) {
+        return;
+    }
+
+    currentTrack = index;
+
+    const track = tracks[index];
+
+    const audioPlayer =
+        document.getElementById("audio-player");
+
+    const audioSource =
+        document.getElementById("audio-source");
+
+    const currentTitle =
+        document.getElementById("current-title");
+
+    const lyricsDisplay =
+        document.getElementById("lyrics-display");
+
+
+    /* 제목 */
+
+    currentTitle.innerText =
+        track.title;
+
+
+    /* 음악 */
+
+    audioSource.src =
+        track.src;
+
+
+    /* 가사 */
+
+    lyricsDisplay.innerText =
+        track.lyrics;
+
+
+    /* 버튼 색상 */
+
+    document
+        .querySelectorAll(".track-btn")
+        .forEach(function(button, i) {
+
+            button.classList.toggle(
+                "active",
+                i === index
+            );
+
+        });
+
+
+    /* 음악 다시 불러오기 */
+
+    audioPlayer.load();
+
+
+    /* 직접 선택했을 때 재생 */
+
+    if (autoPlay) {
+
+        audioPlayer.play().catch(function() {
+
+            /*
+            스마트폰 브라우저가
+            자동재생을 막는 경우입니다.
+            사용자가 재생 버튼을 누르면
+            정상적으로 시작됩니다.
+            */
+
+        });
+
+    }
+
+}
+
+
+/* ==================================================
+   ★★★ 무한 반복 ★★★
+
+   1 → 2 → 3 → 1 → 2 → 3 → 계속
+   ================================================== */
+
+const audioPlayer =
+    document.getElementById("audio-player");
+
+
+audioPlayer.addEventListener(
+    "ended",
+    function() {
+
+        let nextTrack =
+            (currentTrack + 1) % tracks.length;
+
+        selectTrack(
+            nextTrack + 1,
+            true
+        );
+
+    }
+);
+
+
+/* ==================================================
+   페이지 처음 열었을 때
+   1번 곡과 가사 표시
+   ================================================== */
+
+selectTrack(1, false);
+
+</script>
+
+</body>
+</html>
