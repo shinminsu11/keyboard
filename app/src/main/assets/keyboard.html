@@ -458,18 +458,17 @@ background: #e2e8f0;
   grid-row: 2;
 }
 #alphaBoard .grid-eng-container > :nth-child(n+21):nth-child(-n+29) {
-  grid-column: span 2;
   grid-row: 3;
 }
-#alphaBoard .grid-eng-container > :nth-child(21) { grid-column-start: 2; }
-#alphaBoard .grid-eng-container > :nth-child(22) { grid-column-start: 4; }
-#alphaBoard .grid-eng-container > :nth-child(23) { grid-column-start: 6; }
-#alphaBoard .grid-eng-container > :nth-child(24) { grid-column-start: 8; }
-#alphaBoard .grid-eng-container > :nth-child(25) { grid-column-start: 10; }
-#alphaBoard .grid-eng-container > :nth-child(26) { grid-column-start: 12; }
-#alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
-#alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
-#alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
+#alphaBoard .grid-eng-container > :nth-child(21) { grid-column: 2 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(22) { grid-column: 4 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(23) { grid-column: 6 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(24) { grid-column: 8 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(25) { grid-column: 10 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(26) { grid-column: 12 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(27) { grid-column: 14 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(28) { grid-column: 16 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(29) { grid-column: 18 / span 2 !important; }
 #alphaBoard .grid-eng-container > :nth-child(30) { display: none; }
 #alphaBoard .grid-eng-container > :nth-child(31) { grid-column: 1 / span 3 !important; grid-row: 4; }
 #alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) { grid-column: span 2; grid-row: 4; }
@@ -686,7 +685,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" id="symToggleBtn1" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -739,7 +738,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" id="symToggleBtn2" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -777,7 +776,6 @@ background: #e2e8f0;
 <div class="right-split-area">
 <div class="key blue-tint slot-key" data-slot="snippet_13" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key blue-tint slot-key" data-slot="snippet_14" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
-<!-- [4행 4열 위치: snippet_15 ('사용법' 버튼 및 노래 링크 탑재 유지)] -->
 <div class="key blue-tint slot-key" data-slot="snippet_15" data-type="url" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key" id="homeBtn" style="background-color:#ffffff; justify-content:center; align-items:center;" onclick="switchToBoard('mainBoard')">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="#4285f4"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
@@ -1069,21 +1067,11 @@ if (board) board.classList.remove('active');
 });
 const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
-
-// 기호판 1과 2 간의 이동 시 버튼 텍스트를 상호 동적으로 변경
-if (boardId === 'symbolBoard1') {
-    let btn1 = document.getElementById('symToggleBtn1');
-    if (btn1) btn1.textContent = '기호2';
-} else if (boardId === 'symbolBoard2') {
-    let btn2 = document.getElementById('symToggleBtn2');
-    if (btn2) btn2.textContent = '기호1';
-}
 }
 
-// 새 입력창이 열릴 때 항상 메인판으로 시작
-function resetToMainBoard() {
+window.resetToMainBoard = function() {
     switchToBoard('mainBoard');
-}
+};
 
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
@@ -2599,6 +2587,7 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 
 renderSlots();
 updateScreen();
+switchToBoard('mainBoard');
 </script>
 </body>
 </html>
