@@ -1070,6 +1070,11 @@ const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
 
+// 외부(앱 호스트)나 새창 오픈 시 강제로 메인판을 호출할 수 있도록 전역 함수 등록
+window.resetToMainBoard = function() {
+    switchToBoard('mainBoard');
+};
+
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
 let aStartX = 0, aStartY = 0;
@@ -2584,7 +2589,7 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 
 renderSlots();
 updateScreen();
-switchToBoard('mainBoard'); // <-- 새로고침/새창 시 항상 메인판으로 시작하도록 안전하게 강제 초기화 추가
+switchToBoard('mainBoard'); // 기준판 초기화 시 항상 메인판으로 시작
 </script>
 </body>
 </html>
