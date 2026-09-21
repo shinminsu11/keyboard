@@ -229,30 +229,20 @@ class SsulKeyboardService : InputMethodService() {
             internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 180L
             val ic = currentInputConnection ?: return
             try {
-                // 핵심: 선택 영역이 있으면 getSelectedText()의 결과에 의존하지 않고
-                // onUpdateSelection에서 기억한 실제 native selection 범위를 삭제한다.
                 val rememberedStart = lastKnownSelectionStart
                 val rememberedEnd = lastKnownSelectionEnd
 
-                if (rememberedStart >= 0 &&
-                    rememberedEnd >= 0 &&
-                    rememberedStart != rememberedEnd
-                ) {
+                if (rememberedStart >= 0 && rememberedEnd >= 0 && rememberedStart != rememberedEnd) {
                     val selectionStart = minOf(rememberedStart, rememberedEnd)
                     val selectionEnd = maxOf(rememberedStart, rememberedEnd)
-
                     externalComposingActive = false
                     pendingExternalCursorUtf16 = null
-
                     try { ic.finishComposingText() } catch (_: Exception) {}
                     ic.setSelection(selectionStart, selectionEnd)
                     ic.commitText("", 1)
-
                     val newCursor = selectionStart
                     lastKnownSelectionStart = newCursor
                     lastKnownSelectionEnd = newCursor
-
-                    // 선택삭제 직후 HTML의 외부 중간커서 상태도 함께 초기화한다.
                     cancelHtmlExternalCursorState()
                     rememberActualSelection()
                     syncHtmlWithNativeText()
@@ -358,10 +348,6 @@ class SsulKeyboardService : InputMethodService() {
         if (!::webView.isInitialized || newSelStart < 0 || newSelEnd < 0) return
         if (android.os.SystemClock.uptimeMillis() < internalSelectionUntil) return
 
-        // 선택 영역은 '외부 커서 이동'으로 취급하지 않는다.
-        // 이전 버전에서는 선택할 때도 pendingExternalCursorUtf16과
-        // external cursor mode를 켜서, 선택삭제 후 다음 초성 입력에
-        // 이전 중간커서 조합 상태가 남는 문제가 생길 수 있었다.
         if (newSelStart != newSelEnd) {
             lastKnownSelectionStart = newSelStart
             lastKnownSelectionEnd = newSelEnd
@@ -411,6 +397,12 @@ class SsulKeyboardService : InputMethodService() {
         if (::webView.isInitialized) {
             webView.evaluateJavascript(
                 "javascript:if(window.resetKeyboardBuffer) { window.resetKeyboardBuffer(); }",
+                null
+            )
+            // 새 입력창에서는 이전에 사용하던 기호/쌍둥이/영문판을 유지하지 않고
+            // 항상 메인판에서 시작한다. 기존 입력/조합/커서 로직은 건드리지 않는다.
+            webView.evaluateJavascript(
+                "javascript:if(window.resetToMainBoard) { window.resetToMainBoard(); }",
                 null
             )
         }
