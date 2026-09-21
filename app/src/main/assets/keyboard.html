@@ -686,7 +686,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
+<div class="sym-key func" id="symToggleBtn1" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -739,7 +739,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" id="symToggleBtn2" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1069,6 +1069,15 @@ if (board) board.classList.remove('active');
 });
 const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
+
+// 기호판 1과 2 간의 이동 시 버튼 텍스트를 상호 동적으로 변경
+if (boardId === 'symbolBoard1') {
+    let btn1 = document.getElementById('symToggleBtn1');
+    if (btn1) btn1.textContent = '기호2';
+} else if (boardId === 'symbolBoard2') {
+    let btn2 = document.getElementById('symToggleBtn2');
+    if (btn2) btn2.textContent = '기호1';
+}
 }
 
 // 새 입력창이 열릴 때 항상 메인판으로 시작
@@ -2500,7 +2509,6 @@ if (type === 'snippet' && val) {
         window.AndroidBridge.commitText(textVal);
     }
     
-    // 상용구 입력 후 메인 자판으로 자동 전환
     switchToBoard('mainBoard');
     return; 
 }
