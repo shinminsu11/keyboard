@@ -458,17 +458,18 @@ background: #e2e8f0;
   grid-row: 2;
 }
 #alphaBoard .grid-eng-container > :nth-child(n+21):nth-child(-n+29) {
+  grid-column: span 2;
   grid-row: 3;
 }
-#alphaBoard .grid-eng-container > :nth-child(21) { grid-column: 2 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(22) { grid-column: 4 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(23) { grid-column: 6 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(24) { grid-column: 8 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(25) { grid-column: 10 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(26) { grid-column: 12 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(27) { grid-column: 14 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(28) { grid-column: 16 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(29) { grid-column: 18 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(21) { grid-column-start: 2; }
+#alphaBoard .grid-eng-container > :nth-child(22) { grid-column-start: 4; }
+#alphaBoard .grid-eng-container > :nth-child(23) { grid-column-start: 6; }
+#alphaBoard .grid-eng-container > :nth-child(24) { grid-column-start: 8; }
+#alphaBoard .grid-eng-container > :nth-child(25) { grid-column-start: 10; }
+#alphaBoard .grid-eng-container > :nth-child(26) { grid-column-start: 12; }
+#alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
+#alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
+#alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
 #alphaBoard .grid-eng-container > :nth-child(30) { display: none; }
 #alphaBoard .grid-eng-container > :nth-child(31) { grid-column: 1 / span 3 !important; grid-row: 4; }
 #alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) { grid-column: span 2; grid-row: 4; }
@@ -1070,10 +1071,10 @@ const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
 
-// 외부(앱 호스트)나 새창 오픈 시 강제로 메인판을 호출할 수 있도록 전역 함수 등록
-window.resetToMainBoard = function() {
+// 새 입력창이 열릴 때 항상 메인판으로 시작
+function resetToMainBoard() {
     switchToBoard('mainBoard');
-};
+}
 
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
@@ -2499,6 +2500,7 @@ if (type === 'snippet' && val) {
         window.AndroidBridge.commitText(textVal);
     }
     
+    // 상용구 입력 후 메인 자판으로 자동 전환
     switchToBoard('mainBoard');
     return; 
 }
@@ -2589,7 +2591,6 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 
 renderSlots();
 updateScreen();
-switchToBoard('mainBoard'); // 기준판 초기화 시 항상 메인판으로 시작
 </script>
 </body>
 </html>
