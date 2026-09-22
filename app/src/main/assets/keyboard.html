@@ -458,17 +458,18 @@ background: #e2e8f0;
   grid-row: 2;
 }
 #alphaBoard .grid-eng-container > :nth-child(n+21):nth-child(-n+29) {
+  grid-column: span 2;
   grid-row: 3;
 }
-#alphaBoard .grid-eng-container > :nth-child(21) { grid-column: 2 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(22) { grid-column: 4 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(23) { grid-column: 6 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(24) { grid-column: 8 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(25) { grid-column: 10 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(26) { grid-column: 12 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(27) { grid-column: 14 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(28) { grid-column: 16 / span 2 !important; }
-#alphaBoard .grid-eng-container > :nth-child(29) { grid-column: 18 / span 2 !important; }
+#alphaBoard .grid-eng-container > :nth-child(21) { grid-column-start: 2; }
+#alphaBoard .grid-eng-container > :nth-child(22) { grid-column-start: 4; }
+#alphaBoard .grid-eng-container > :nth-child(23) { grid-column-start: 6; }
+#alphaBoard .grid-eng-container > :nth-child(24) { grid-column-start: 8; }
+#alphaBoard .grid-eng-container > :nth-child(25) { grid-column-start: 10; }
+#alphaBoard .grid-eng-container > :nth-child(26) { grid-column-start: 12; }
+#alphaBoard .grid-eng-container > :nth-child(27) { grid-column-start: 14; }
+#alphaBoard .grid-eng-container > :nth-child(28) { grid-column-start: 16; }
+#alphaBoard .grid-eng-container > :nth-child(29) { grid-column-start: 18; }
 #alphaBoard .grid-eng-container > :nth-child(30) { display: none; }
 #alphaBoard .grid-eng-container > :nth-child(31) { grid-column: 1 / span 3 !important; grid-row: 4; }
 #alphaBoard .grid-eng-container > :nth-child(n+32):nth-child(-n+38) { grid-column: span 2; grid-row: 4; }
@@ -576,26 +577,13 @@ background: #e2e8f0;
 </div>
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
-<div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-  
-  <!-- 1.입술과 화살표 영역 (좌우, 위아래 독립 조절) -->
-  <div style="font-size:8px; line-height:1; display:flex; flex-direction:column; align-items:center; margin-bottom:1px; color:#777777; filter: grayscale(100%); opacity: 0.75; transform: translate(0px,0px);">
-    <span style="font-size:8px;">👄</span>
-    <span style="font-size:7px; font-weight:bold; margin-top:0px;">↑</span>
-  </div>
-  
-  <!-- 2. 천·클립보드 영역 (좌우, 위아래 독립 조절) -->
-  <div style="display:flex; justify-content:center; align-items:center; gap:0px;transform: translate(0.1px, -2px);">
-    <span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
-    <span style="font-size:11px; margin:0 1px;">📋</span>
-    <span style="font-size:9px; color:#555;">→</span><span style="font-size:1px; position:relative; top:0px; margin-left:1px;">😊</span>
-  </div>
-  
-  <span class="sub-top" style="top:2px; right:4px;">#</span>
+<div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
+<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:14px; margin:1 3px;">📋</span>
+<span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:0px; margin-left:1px;">😊</span>
+<span class="sub-top" style="top:2px; right:4px;">#</span>
 </div>
 </div>
-
-
 </div>
 </div>
 
@@ -782,14 +770,16 @@ background: #e2e8f0;
 </div>
 <div class="key slot-key" data-slot="url_8" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_9" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
-<div class="key slot-key" data-slot="url_10" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
+<div class="key slot-key" data-slot="url_10" data-type="url" data-default='<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>'>
+<span class="label">URL</span><span class="icon">🌐</span><span class="plus">+</span>
+</div>
 <div class="key slot-key" data-slot="url_12" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_13" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="key slot-key" data-slot="url_14" data-type="url" data-default='<span class="plus">+</span>'><span class="plus">+</span></div>
 <div class="right-split-area">
 <div class="key blue-tint slot-key" data-slot="snippet_13" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key blue-tint slot-key" data-slot="snippet_14" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
-<div class="key blue-tint slot-key" data-slot="snippet_15" data-type="url" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
+<div class="key blue-tint slot-key" data-slot="snippet_15" data-type="snippet" data-default='<span class="plus" style="color:#1a73e8;">+</span>'><span class="plus" style="color:#1a73e8;">+</span></div>
 <div class="key" id="homeBtn" style="background-color:#ffffff; justify-content:center; align-items:center;" onclick="switchToBoard('mainBoard')">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="#4285f4"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
@@ -1082,10 +1072,6 @@ const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
 
-window.resetToMainBoard = function() {
-    switchToBoard('mainBoard');
-};
-
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
 let aStartX = 0, aStartY = 0;
@@ -1235,6 +1221,10 @@ window.getKeyboardExpectedCursorUtf16 = function() {
 let renderRequested = false;
 let renderVersion = 0;
 
+// Pair46: 외부 중간커서에서 첫 음절이 완성된 순간,
+// HTML의 committedText/cursorPos도 실제 삽입된 음절 기준으로 즉시 전환한다.
+// 그래야 다음 자음 입력이 앞의 원래 글자(예: 가)를 잘못 조합하지 않고
+// 방금 입력한 음절(예: 아)을 기준으로 이어진다.
 function finalizeExternalComposedSyllable(text) {
     if (!externalCursorInsertMode || !text) return;
 
@@ -1270,12 +1260,14 @@ function updateScreen() {
         let beforeCursor = chars.slice(0, cursorPos).join('');
         let afterCursor = chars.slice(cursorPos).join('');
 
+        // [최종 수정 반영] 개별 스팬으로 나누어 렌더링 지연 및 커서 숨김 원천 차단
         screenTextWrap.innerHTML = 
             '<span class="text-before">' + escapeHtml(beforeCursor) + '</span>' + 
             '<span class="text-current">' + escapeHtml(currentAssembled) + '</span>' + 
             '<span class="cursor-bar"></span>' + 
             '<span class="text-after">' + escapeHtml(afterCursor) + '</span>';
 
+        // 브라우저 DOM 강제 리플로우 유발
         void screenTextWrap.offsetWidth;
         void screenDiv.scrollTop;
 
@@ -1301,6 +1293,9 @@ function updateScreen() {
                     currentAssembled.charCodeAt(0) >= 0xAC00 &&
                     currentAssembled.charCodeAt(0) <= 0xD7A3;
 
+                // Pair45: 중간 커서에서 첫 초성만 처음 한 번 안 보이는 문제를
+                // '확정 문자'가 아니라 네이티브 composing span으로 보여준다.
+                // 다음 모음은 같은 span을 setComposingText로 교체하므로 정상 조합된다.
                 if (!isCompleteHangulSyllable &&
                     currentAssembled.length === 1 &&
                     CHOSUNG.indexOf(currentAssembled) !== -1 &&
@@ -1382,36 +1377,6 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
-// [핵심 수정] 모음만 입력되어 있는 상태(초성 없고, 중성만 있음)에서 자음이 들어오면 무조건 커밋 후 새 자음 시작
-if (choIdx !== -1 && hangulBuffer.cho === -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
-    commitCurrent();
-    hangulBuffer.cho = choIdx;
-    lastSlideDir = '';
-    updateScreen();
-    return;
-}
-
-if (
-    externalCursorInsertMode &&
-    externalComposeTimer &&
-    hangulBuffer.cho !== -1 &&
-    hangulBuffer.jung !== -1 &&
-    hangulBuffer.jong === -1
-) {
-    const pendingText = assembleCurrent();
-    if (pendingText &&
-        pendingText.length === 1 &&
-        pendingText.charCodeAt(0) >= 0xAC00 &&
-        pendingText.charCodeAt(0) <= 0xD7A3) {
-        clearTimeout(externalComposeTimer);
-        externalComposeTimer = null;
-        if (window.AndroidBridge && window.AndroidBridge.setComposing) {
-            window.AndroidBridge.setComposing(pendingText);
-        }
-        finalizeExternalComposedSyllable(pendingText);
-    }
-}
-
 if (externalFinalCandidate) {
     if (choIdx !== -1 && jungIdx === -1 && !externalFinalCandidate.pendingConsonant) {
         const jongTry = getJongIndex(inputChar);
@@ -1483,26 +1448,17 @@ if (externalFinalCandidate) {
 }
 
 lastSlideDir = '';
-
-if (
-    inputChar === 'ㅇ' &&
-    hangulBuffer.cho === -1 &&
-    hangulBuffer.jung !== -1 &&
-    hangulBuffer.jong === -1
-) {
-    commitCurrent();
-    hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
-    updateScreen();
-    return;
-}
-
 if (choIdx !== -1 && jungIdx === -1) {
 if (hangulBuffer.cho === -1) {
-hangulBuffer.cho = choIdx;
+    // 독립 모음(ㅏㅓㅗㅜㅑㅕㅛㅠ) 뒤에 자음이 오면
+    // 모음과 자음을 한 음절로 조합하지 않고 각각 분리한다.
+    if (hangulBuffer.jung !== -1) {
+        commitCurrent();
+        hangulBuffer.cho = choIdx;
+    } else {
+        hangulBuffer.cho = choIdx;
+    }
 } else if (hangulBuffer.jung === -1) {
-commitCurrent();
-hangulBuffer.cho = choIdx;
-} else if (hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
 commitCurrent();
 hangulBuffer.cho = choIdx;
 } else if (hangulBuffer.jong === -1) {
@@ -1617,34 +1573,14 @@ bsTimer = null;
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
 if (endX - bsStartX < -30) {
-    try {
-        commitCurrent();
-
-        const totalUtf16 = committedText.length;
-        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-        lastSlideDir = '';
-        externalFinalCandidate = null;
-        externalCursorInsertMode = false;
-
-        if (totalUtf16 > 0 &&
-            window.AndroidBridge &&
-            window.AndroidBridge.setSelection &&
-            window.AndroidBridge.deleteText) {
-            window.AndroidBridge.setSelection(0, totalUtf16);
-            window.AndroidBridge.deleteText();
-        }
-
-        committedText = '';
-        cursorPos = 0;
-        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-        lastSlideDir = '';
-        externalFinalCandidate = null;
-        externalCursorInsertMode = false;
-        renderVersion++;
-        renderRequested = false;
-        updateScreen();
-    } catch (e) {}
-    return;
+hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+committedText = '';
+cursorPos = 0;
+updateScreen();
+if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+    window.AndroidBridge.setSelection(0, 0);
+}
+return;
 }
 }
 });
@@ -1660,6 +1596,8 @@ bsTimer = null;
 function appendSpecial(char) {
 if (!char) return;
 
+// [Pair50] 엔터 직후 첫 입력이 이전 중간삽입 상태를 다시 사용하지 않도록
+// 줄바꿈 시 외부 커서/후보 상태만 초기화합니다.
 if (char === '\n') {
     if (externalComposeTimer) {
         clearTimeout(externalComposeTimer);
@@ -2142,7 +2080,7 @@ function closeClipboardModal() { clipboardModal.style.display = 'none'; }
 function openEmojiModal() { emojiModal.style.display = 'flex'; }
 function closeEmojiModal() { emojiModal.style.display = 'none'; }
 
-const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🛌🏻', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '💕', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
+const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🤍', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '💕', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
 
 function getMergedEmojis() {
 let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
@@ -2446,14 +2384,7 @@ if (dy > 25 && Math.abs(dy) > Math.abs(dx)) { twinBoard.classList.remove('active
 });
 
 let currentSlot = null, currentType = 'url';
-function getDB() { 
-    let data = localStorage.getItem('fresh_design_db_v1'); 
-    let db = data ? JSON.parse(data) : {};
-    if (!db['snippet_15']) {
-        db['snippet_15'] = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
-    }
-    return db;
-}
+function getDB() { let data = localStorage.getItem('fresh_design_db_v1'); return data ? JSON.parse(data) : {}; }
 function saveDB(db) { localStorage.setItem('fresh_design_db_v1', JSON.stringify(db)); }
 function renderSlots() {
 let db = getDB();
@@ -2461,9 +2392,6 @@ document.querySelectorAll('.slot-key').forEach(el => {
 let slotKey = el.getAttribute('data-slot');
 let defaultHtml = el.getAttribute('data-default');
 let val = db[slotKey];
-if (slotKey === 'snippet_15' && !val) {
-    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
-}
 if (val) {
 let temp = document.createElement('div'); temp.innerHTML = defaultHtml;
 let staticHtml = '';
@@ -2488,11 +2416,8 @@ el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
 if (isLongPress) { isLongPress = false; return; }
 let db = getDB(), val = db[slotKey];
-if (slotKey === 'snippet_15' && !val) {
-    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
-}
 if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
-if (type === 'url' || slotKey === 'snippet_15') {
+if (type === 'url') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
 targetUrl = val.url || val.title || '';
@@ -2521,8 +2446,6 @@ if (type === 'snippet' && val) {
     if (window.AndroidBridge && window.AndroidBridge.commitText) {
         window.AndroidBridge.commitText(textVal);
     }
-    
-    switchToBoard('mainBoard');
     return; 
 }
 });
@@ -2562,14 +2485,10 @@ if (window.AndroidBridge && window.AndroidBridge.openUrl) {
 });
 
 function openModal(slotKey, type) {
-currentSlot = slotKey; 
-currentType = (slotKey === 'snippet_15') ? 'url' : type;
+currentSlot = slotKey; currentType = type;
 let db = getDB(), val = db[slotKey] || {};
-if (slotKey === 'snippet_15' && !db['snippet_15']) {
-    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
-}
 let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
-if (currentType === 'url') {
+if (type === 'url') {
 sInput.style.display = 'none'; uFields.style.display = 'block';
 document.getElementById('urlTitle').value = (typeof val === 'object' && val !== null) ? (val.title || '') : '';
 document.getElementById('urlAddr').value = (typeof val === 'object' && val !== null) ? (val.url || '') : (typeof val === 'string' ? val : '');
@@ -2582,7 +2501,7 @@ document.getElementById('modalTitle').textContent = '상용구 설정';
 document.getElementById('slotModal').style.display = 'flex';
 
 setTimeout(() => {
-    if (currentType === 'url') {
+    if (type === 'url') {
         document.getElementById('urlTitle').focus();
     } else {
         sInput.focus();
@@ -2593,7 +2512,7 @@ function closeModal() { document.getElementById('slotModal').style.display = 'no
 function saveData() {
 if (!currentSlot) return;
 let db = getDB();
-if (currentType === 'url' || currentSlot === 'snippet_15') {
+if (currentType === 'url') {
 let title = document.getElementById('urlTitle').value.trim();
 let url = document.getElementById('urlAddr').value.trim();
 if (title && url) db[currentSlot] = { title: title, url: url };
@@ -2612,7 +2531,6 @@ let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal(
 
 renderSlots();
 updateScreen();
-switchToBoard('mainBoard');
 </script>
 </body>
 </html>
