@@ -1382,6 +1382,15 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
+// [핵심 수정] 모음만 입력되어 있는 상태(초성 없고, 중성만 있음)에서 자음이 들어오면 무조건 커밋 후 새 자음 시작
+if (choIdx !== -1 && hangulBuffer.cho === -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
+    commitCurrent();
+    hangulBuffer.cho = choIdx;
+    lastSlideDir = '';
+    updateScreen();
+    return;
+}
+
 if (
     externalCursorInsertMode &&
     externalComposeTimer &&
@@ -1491,6 +1500,9 @@ if (choIdx !== -1 && jungIdx === -1) {
 if (hangulBuffer.cho === -1) {
 hangulBuffer.cho = choIdx;
 } else if (hangulBuffer.jung === -1) {
+commitCurrent();
+hangulBuffer.cho = choIdx;
+} else if (hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
 commitCurrent();
 hangulBuffer.cho = choIdx;
 } else if (hangulBuffer.jong === -1) {
