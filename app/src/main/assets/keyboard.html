@@ -509,7 +509,7 @@ background: #e2e8f0;
 
 <div id="mainBoard" class="keyboard-frame active">
 <div class="grid-container">
-<div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-long="1">
+<div class="key red slide-con" data-base="ㅇ" data-right="ㅎ" data-down="ㅎ" data-long="1">
 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e63935" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg>
 <span class="sub-top">1</span>
 </div>
@@ -521,7 +521,7 @@ background: #e2e8f0;
 <div class="key func" id="backspaceBtn">
 <svg width="28" height="20" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
 </div>
-<div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
+<div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-down="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
 <div class="key slide-con" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
 <div class="key" id="slideKey" data-long="6">
 <svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1369,8 +1369,6 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
-// [핵심] 순수 모음 상태(초성 없음, 중성 있음, 종성 없음)에서 자음이 들어올 때만 독립 분리 (`ㅏ` + `ㄱ` = `ㅏ`, `ㄱ`)
-// 이미 완성된 글자(`가` 등) 뒤에서 자음이 들어오면 정상적으로 받침(종성)으로 결합 (`가` + `ㅁ` = `감`)
 if (choIdx !== -1 && hangulBuffer.cho === -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
     commitCurrent();
     hangulBuffer.cho = choIdx;
@@ -1898,6 +1896,7 @@ let diffY = t.clientY - startY;
 let base = key.getAttribute('data-base');
 let up = key.getAttribute('data-up');
 let right = key.getAttribute('data-right');
+let down = key.getAttribute('data-down');
 
 if (Math.abs(diffX) > Math.abs(diffY) && diffX > 18 && right) {
 appendHangul(right);
@@ -1907,7 +1906,11 @@ if (Math.abs(diffY) > Math.abs(diffX) && diffY < -18 && up) {
 appendHangul(up);
 return;
 }
-if (diffY > 18 || diffX < -18) {
+if (Math.abs(diffY) > Math.abs(diffX) && diffY > 18 && down) {
+appendHangul(down);
+return;
+}
+if (diffX < -18) {
 return;
 }
 if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
