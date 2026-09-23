@@ -738,7 +738,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1568,34 +1568,11 @@ function backspaceHangul() {
     }
 
     let chars = Array.from(committedText);
-    if (chars.length > 0 && cursorPos > 0) {
-        let lastChar = chars[cursorPos - 1];
-        let code = lastChar.charCodeAt(0);
-
-        if (code >= 0xAC00 && code <= 0xD7A3) {
-            let offset = code - 0xAC00;
-            let cho = Math.floor(offset / (21 * 28));
-            let jung = Math.floor((offset % (21 * 28)) / 28);
-            let jong = offset % 28;
-
-            chars.splice(cursorPos - 1, 1);
-            committedText = chars.join('');
-            cursorPos--;
-
-            if (jong > 0) {
-                hangulBuffer = { cho: cho, jung: jung, jong: -1 };
-            } else {
-                hangulBuffer = { cho: cho, jung: -1, jong: -1 };
-            }
-            updateScreen();
-            return;
-        }
-
+    if (cursorPos > 0) {
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
     }
-    
     lastSlideDir = '';
     updateScreen();
 }
@@ -1885,6 +1862,7 @@ setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
+// 첫 터치 씹힘 방지: 초기 위치 오차가 있거나 단순 탭 형태일 경우 즉시 'ㅣ' 입력
 if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
     appendHangul('ㅣ');
     return;
