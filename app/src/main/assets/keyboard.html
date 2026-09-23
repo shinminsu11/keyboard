@@ -738,7 +738,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -1849,11 +1849,12 @@ isLongPressed = false;
 });
 }
 
-let iStartX = 0, iStartY = 0;
+let iStartX = 0, iStartY = 0, iTouchTime = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
 iStartX = e.touches[0].clientX;
 iStartY = e.touches[0].clientY;
+iTouchTime = Date.now();
 }
 }, { passive: true });
 
@@ -1861,8 +1862,13 @@ setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
+// 첫 터치 씹힘 방지: 초기 위치 오차가 있거나 단순 탭 형태일 경우 즉시 'ㅣ' 입력
+if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
+    appendHangul('ㅣ');
+    return;
+}
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
-appendHangul('ㅣ');
+    appendHangul('ㅣ');
 }
 });
 
@@ -1878,8 +1884,12 @@ setupLongPressKey(euKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
+if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
+    appendHangul('ㅡ');
+    return;
+}
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
-appendHangul('ㅡ');
+    appendHangul('ㅡ');
 }
 });
 
