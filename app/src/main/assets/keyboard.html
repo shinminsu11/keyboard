@@ -385,9 +385,11 @@ border-radius: 6px;
 font-size: 13px;
 cursor: pointer;
 box-sizing: border-box;
-word-break: break-all;
 color: #333;
 user-select: none;
+white-space: nowrap;          /* 줄바꿈 방지 (한 줄로 표시) */
+overflow: hidden;             /* 넘치는 텍스트 숨김 */
+text-overflow: ellipsis;      /* 넘치는 문장은 말줄임표(...) 처리 */
 }
 .clipboard-item:active {
 background: #e2e8f0;
@@ -1966,7 +1968,6 @@ const DEFAULT_CLIP_HISTORY = [
 function getMergedClipHistory() {
 let saved = localStorage.getItem('my_clip_history_v3');
 let history = saved ? JSON.parse(saved) : DEFAULT_CLIP_HISTORY;
-// 기존 데이터들도 불러올 때 줄바꿈이 있다면 한 줄로 일괄 압축 정돈합니다
 history = history.map(item => (typeof item === 'string' ? item.replace(/[\r\n]+/g, ' ').trim() : item));
 if (history.length > 50) {
 history = history.slice(0, 50);
