@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.43 최종수정본</title>
+<title>쓸기자판 v7.1 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -387,9 +387,11 @@ cursor: pointer;
 box-sizing: border-box;
 color: #333;
 user-select: none;
-white-space: nowrap;          /* 줄바꿈 방지 (한 줄로 표시) */
-overflow: hidden;             /* 넘치는 텍스트 숨김 */
-text-overflow: ellipsis;      /* 넘치는 문장은 말줄임표(...) 처리 */
+display: block;
+width: 100%;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 }
 .clipboard-item:active {
 background: #e2e8f0;
