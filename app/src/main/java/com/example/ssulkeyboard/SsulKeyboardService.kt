@@ -541,9 +541,6 @@ class SsulKeyboardService : InputMethodService() {
                         /*
                          * 현재 한 글자를 선택하고
                          * 이전 단계 글자로 교체
-                         *
-                         * finishComposingText()를
-                         * 이 부분에서는 호출하지 않는다.
                          */
                         ic.setSelection(
                             start,
@@ -576,49 +573,11 @@ class SsulKeyboardService : InputMethodService() {
 
                     /*
                      * ------------------------------------------------
-                     * 종성 없음 + 중성 있음
+                     * 종성 없음 (중성 'ㅏ'(인덱스 0) 포함 모든 모음 대상)
                      *
                      * 하 → ㅎ
                      *
-                     * ㅏ를 제거한다.
-                     * ------------------------------------------------
-                     */
-                    if (jung != 0) {
-
-                        ic.setSelection(
-                            start,
-                            cursor
-                        )
-
-                        ic.commitText(
-                            choseong,
-                            1
-                        )
-
-                        val newCursor =
-                            start + choseong.length
-
-                        lastKnownSelectionStart =
-                            newCursor
-
-                        lastKnownSelectionEnd =
-                            newCursor
-
-                        pendingExternalCursorUtf16 = null
-                        externalComposingActive = false
-
-                        cancelHtmlExternalCursorState()
-                        rememberActualSelection()
-                        syncHtmlWithNativeText()
-
-                        return
-                    }
-
-                    /*
-                     * ------------------------------------------------
-                     * 초성만 남음
-                     *
-                     * ㅎ → 빈칸
+                     * 중성을 제거하고 초성만 남긴다.
                      * ------------------------------------------------
                      */
                     ic.setSelection(
@@ -627,15 +586,18 @@ class SsulKeyboardService : InputMethodService() {
                     )
 
                     ic.commitText(
-                        "",
+                        choseong,
                         1
                     )
 
+                    val newCursor =
+                        start + choseong.length
+
                     lastKnownSelectionStart =
-                        start
+                        newCursor
 
                     lastKnownSelectionEnd =
-                        start
+                        newCursor
 
                     pendingExternalCursorUtf16 = null
                     externalComposingActive = false
