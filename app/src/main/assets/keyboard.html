@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v7.1.6 최종수정본</title>
+<title>쓸기자판 v7.1.7 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -373,17 +373,17 @@ margin-bottom: 8px;
 .clipboard-list {
 display: flex;
 flex-direction: column;
-gap: 12px;
+gap: 10px;
 max-height: 55vh;
 overflow-y: auto;
 -webkit-overflow-scrolling: touch;
 }
 .clipboard-item {
-padding: 26px 16px;
+padding: 18px 16px;
 background: #f1f3f5;
 border-radius: 8px;
 font-size: 13px;
-line-height: 2.8;
+line-height: normal;
 cursor: pointer;
 box-sizing: border-box;
 color: #333;
@@ -391,6 +391,9 @@ user-select: none;
 white-space: nowrap;
 overflow: hidden;
 text-overflow: ellipsis;
+display: flex;
+align-items: center;
+justify-content: flex-start;
 }
 .clipboard-item:active {
 background: #e2e8f0;
@@ -741,7 +744,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard2')">기호2</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -2063,6 +2066,7 @@ addBtn.style.background = '#e8f0fe';
 addBtn.style.color = '#1a73e8';
 addBtn.style.fontWeight = 'bold';
 addBtn.style.textAlign = 'center';
+addBtn.style.justifyContent = 'center';
 addBtn.textContent = '+ 사용자 문구 추가하기';
 addBtn.onclick = () => {
 closeClipboardModal();
