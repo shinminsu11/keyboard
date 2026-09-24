@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.45 - 네이버식 자동 클립보드</title>
+<title>쓸기자판 1.0 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -370,91 +370,30 @@ border: 1px solid #ccc;
 border-radius: 6px;
 margin-bottom: 8px;
 }
-.clipboard-toolbar {
-display:flex;
-gap:6px;
-margin-bottom:8px;
-}
-.clipboard-tab {
-flex:1;
-padding:7px 4px;
-border:0;
-border-radius:7px;
-background:#eef1f4;
-color:#666;
-font-size:12px;
-font-weight:bold;
-}
-.clipboard-tab.active {
-background:#4285f4;
-color:#fff;
-}
-.clipboard-actions {
-display:flex;
-gap:5px;
-margin-bottom:8px;
-}
-.clipboard-action {
-flex:1;
-padding:7px 4px;
-border:1px solid #d7dce1;
-border-radius:7px;
-background:#fff;
-color:#555;
-font-size:11px;
-font-weight:bold;
-}
 .clipboard-list {
-display:flex;
-flex-direction:column;
-gap:7px;
-max-height:52vh;
-overflow-y:auto;
--webkit-overflow-scrolling:touch;
-padding-right:2px;
+display: flex;
+flex-direction: column;
+gap: 6px;
+max-height: 50vh;
+overflow-y: auto;
+-webkit-overflow-scrolling: touch;
 }
 .clipboard-item {
-position:relative;
-padding:11px 42px 11px 11px;
-background:#f7f8fa;
-border:1px solid #e4e7eb;
-border-radius:8px;
-font-size:13px;
-cursor:pointer;
-box-sizing:border-box;
-word-break:break-all;
-color:#333;
-user-select:none;
-min-height:44px;
+padding: 12px 10px;
+background: #f1f3f5;
+border-radius: 6px;
+font-size: 13px;
+cursor: pointer;
+box-sizing: border-box;
+word-break: break-all;
+color: #333;
+user-select: none;
 }
-.clipboard-item:active { background:#e8f0fe; }
-.clipboard-item.pinned {
-background:#fff8df;
-border-color:#f1d36a;
+.clipboard-item:active {
+background: #e2e8f0;
 }
-.clipboard-item .clip-pin {
-position:absolute;
-right:9px;
-top:8px;
-font-size:14px;
-}
-.clipboard-item .clip-meta {
-font-size:10px;
-color:#999;
-margin-top:4px;
-}
-.clipboard-empty {
-padding:24px 10px;
-text-align:center;
-color:#999;
-font-size:12px;
-}
-.clipboard-add {
-background:#e8f0fe !important;
-color:#1a73e8 !important;
-font-weight:bold;
-text-align:center;
-padding-right:10px;
+.clipboard-item.deletable-active {
+background: #ffd9d9;
 }
 .emoji-list {
 display: grid;
@@ -911,32 +850,23 @@ background: #e2e8f0;
 <div id="clipboardModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>클립보드 · 자동저장</span>
+<span>클립보드 (최신 50개)</span>
 <span class="modal-close" onclick="closeClipboardModal()">×</span>
-</div>
-<div class="clipboard-toolbar">
-<button class="clipboard-tab active" data-clip-tab="all">전체</button>
-<button class="clipboard-tab" data-clip-tab="pinned">고정</button>
-<button class="clipboard-tab" data-clip-tab="text">문구</button>
-</div>
-<div class="clipboard-actions">
-<button class="clipboard-action" id="clipRefreshBtn">↻ 새로고침</button>
-<button class="clipboard-action" id="clipClearBtn">전체 삭제</button>
 </div>
 <div class="clipboard-list" id="clipboardListContainer"></div>
 </div>
 </div>
 
-<div id="addClipboardModal" class="modal-overlay" style="display:none !important;">
+<div id="addClipboardModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>자주 쓰는 문구 추가</span>
+<span>사용자 클립보드(문구) 추가</span>
 <span class="modal-close" onclick="closeAddClipboardModal()">×</span>
 </div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;">복사한 내용이 자동으로 저장됩니다. 항목을 길게 누르면 고정·수정·삭제할 수 있습니다.</div>
-<input type="text" id="customClipText" class="modal-input" placeholder="저장할 문구 입력...">
+<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 문장이나 메모를 입력해주세요.</div>
+<input type="text" id="customClipText" class="modal-input" placeholder="저장할 텍스트 입력...">
 <div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
+<button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
 <button onclick="closeAddClipboardModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
 </div>
 </div>
@@ -2022,268 +1952,192 @@ if (target) { replaceLastVowel(target); lastSlideDir = ''; lastSlideTime = 0; }
 }
 });
 
-const CLIP_DB_KEY = 'ssul_clipboard_naver_v1';
-const CLIP_MAX_ITEMS = 50;
-let clipboardTab = 'all';
+let cbStartX = 0, cbStartY = 0;
+let cbTimer = null;
+let isCbLong = false;
+let isSwiping = false;
 
-function getClipDB() {
-    try {
-        const saved = localStorage.getItem(CLIP_DB_KEY);
-        const db = saved ? JSON.parse(saved) : { items: [] };
-        if (!Array.isArray(db.items)) db.items = [];
-        return db;
-    } catch (_) {
-        return { items: [] };
-    }
+const DEFAULT_CLIP_HISTORY = [
+"집필 중 참고할 첫 번째 문단 예시입니다.",
+"두 번째로 복사해 둔 핵심 문장입니다.",
+"세 번째 참고 자료 링크 또는 메모입니다."
+];
+
+function getMergedClipHistory() {
+let saved = localStorage.getItem('my_clip_history_v3');
+let history = saved ? JSON.parse(saved) : DEFAULT_CLIP_HISTORY;
+if (history.length > 50) {
+history = history.slice(0, 50);
+saveClipHistory(history);
+}
+return history;
+}
+function saveClipHistory(arr) {
+if (arr.length > 50) { arr = arr.slice(0, 50); }
+localStorage.setItem('my_clip_history_v3', JSON.stringify(arr));
 }
 
-function saveClipDB(db) {
-    if (db.items.length > CLIP_MAX_ITEMS) {
-        const pinned = db.items.filter(x => x.pinned);
-        const normal = db.items.filter(x => !x.pinned).slice(0, Math.max(0, CLIP_MAX_ITEMS - pinned.length));
-        db.items = [...pinned, ...normal].slice(0, CLIP_MAX_ITEMS);
-    }
-    localStorage.setItem(CLIP_DB_KEY, JSON.stringify(db));
+clipboardKey.addEventListener('touchstart', function(e) {
+const touch = e.touches[0];
+cbStartX = touch.clientX;
+cbStartY = touch.clientY;
+isSwiping = false;
+isCbLong = false;
+cbTimer = setTimeout(function() {
+isCbLong = true;
+appendSpecial('#');
+if (navigator.vibrate) navigator.vibrate(40);
+}, 500);
+}, { passive: true });
+
+clipboardKey.addEventListener('touchmove', function(e) {
+const touch = e.touches[0];
+const diffX = touch.clientX - cbStartX;
+const diffY = touch.clientY - cbStartY;
+if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
+if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
 }
+}, { passive: true });
 
-function makeClipItem(text, kind = 'clipboard') {
-    return {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        text: String(text),
-        kind,
-        pinned: false,
-        createdAt: Date.now()
-    };
+clipboardKey.addEventListener('touchend', function(e) {
+if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
+if (isCbLong) return;
+const touch = e.changedTouches[0];
+const diffX = touch.clientX - cbStartX;
+const diffY = touch.clientY - cbStartY;
+if (diffX > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+isSwiping = true;
+renderEmojiModal();
+openEmojiModal();
+return;
 }
-
-function saveAutoClipboardText(rawText) {
-    const text = String(rawText || '').trim();
-    if (!text) return false;
-
-    const db = getClipDB();
-    const existing = db.items.find(x => x.text === text);
-
-    if (existing) {
-        existing.createdAt = Date.now();
-        existing.kind = 'clipboard';
-        db.items = db.items.filter(x => x.id !== existing.id);
-        if (existing.pinned) {
-            const firstUnpinned = db.items.findIndex(x => !x.pinned);
-            if (firstUnpinned < 0) db.items.unshift(existing);
-            else db.items.splice(firstUnpinned, 0, existing);
-        } else {
-            const firstUnpinned = db.items.findIndex(x => !x.pinned);
-            if (firstUnpinned < 0) db.items.push(existing);
-            else db.items.splice(firstUnpinned, 0, existing);
-        }
-    } else {
-        const item = makeClipItem(text, 'clipboard');
-        const firstUnpinned = db.items.findIndex(x => !x.pinned);
-        if (firstUnpinned < 0) db.items.push(item);
-        else db.items.splice(firstUnpinned, 0, item);
-    }
-
-    saveClipDB(db);
-    if (clipboardModal.style.display === 'flex') renderClipHistory();
-    return true;
+if (diffX < -40 && Math.abs(diffX) > Math.abs(diffY)) {
+isSwiping = true;
+openHanjaModal();
+return;
 }
+}, { passive: true });
 
-// Android IME가 시스템 클립보드가 바뀔 때 호출한다.
-window.onSystemClipboardChanged = function(text) {
-    saveAutoClipboardText(text);
-};
-
-function importSystemClipboard() {
-    if (window.AndroidBridge && window.AndroidBridge.getClipboardText) {
-        try {
-            const text = window.AndroidBridge.getClipboardText();
-            if (text) {
-                saveAutoClipboardText(text);
-                return Promise.resolve(true);
-            }
-        } catch (_) {}
-    }
-    if (!navigator.clipboard || !navigator.clipboard.readText) return Promise.resolve(false);
-    return navigator.clipboard.readText().then(text => saveAutoClipboardText(text)).catch(() => false);
+clipboardKey.addEventListener('click', async function() {
+if (isSwiping || isCbLong) {
+isSwiping = false;
+isCbLong = false;
+return;
 }
-
-function formatClipDate(ts) {
-    if (!ts) return '';
-    const d = new Date(ts);
-    const now = new Date();
-    if (d.toDateString() === now.toDateString()) {
-        return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-    }
-    return d.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
+try {
+if (navigator.clipboard && navigator.clipboard.readText) {
+let clipboardText = await navigator.clipboard.readText();
+if (clipboardText && clipboardText.trim() !== "") {
+let history = getMergedClipHistory();
+history = history.filter(item => item !== clipboardText);
+history.unshift(clipboardText);
+saveClipHistory(history);
 }
-
-function filteredClipItems() {
-    const items = getClipDB().items;
-    if (clipboardTab === 'pinned') return items.filter(x => x.pinned);
-    if (clipboardTab === 'text') return items.filter(x => x.kind === 'clipboard');
-    return items;
 }
+} catch (err) {}
+renderClipHistory();
+openClipboardModal();
+});
 
 function renderClipHistory() {
-    clipboardListContainer.innerHTML = '';
-    const items = filteredClipItems();
-    if (!items.length) {
-        const empty = document.createElement('div');
-        empty.className = 'clipboard-empty';
-        empty.textContent = clipboardTab === 'pinned' ? '고정한 항목이 없습니다.' : '복사한 내용이 없습니다.';
-        clipboardListContainer.appendChild(empty);
-    }
-
-    items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'clipboard-item' + (item.pinned ? ' pinned' : '');
-        div.dataset.id = item.id;
-        const text = document.createElement('div');
-        text.textContent = item.text;
-        const meta = document.createElement('div');
-        meta.className = 'clip-meta';
-        meta.textContent = (item.pinned ? '📌 고정 · ' : '') + (item.kind === 'saved' ? '자주 쓰는 문구 · ' : '클립보드 · ') + formatClipDate(item.createdAt);
-        const pin = document.createElement('span');
-        pin.className = 'clip-pin';
-        pin.textContent = item.pinned ? '📌' : '';
-        div.appendChild(text);
-        div.appendChild(meta);
-        div.appendChild(pin);
-        attachClipItemHandlers(div, item);
-        clipboardListContainer.appendChild(div);
-    });
-
-    const addBtn = document.createElement('div');
-    }
-
-function attachClipItemHandlers(itemEl, item) {
-    let timer = null, moved = false, longDone = false, startX = 0, startY = 0;
-    itemEl.addEventListener('touchstart', e => {
-        moved = false; longDone = false;
-        startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-        timer = setTimeout(() => {
-            if (moved) return;
-            longDone = true;
-            itemEl.classList.add('deletable-active');
-            if (navigator.vibrate) navigator.vibrate(35);
-            showClipEditMenu(item);
-        }, 550);
-    }, { passive: true });
-    itemEl.addEventListener('touchmove', e => {
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-            moved = true;
-            if (timer) { clearTimeout(timer); timer = null; }
-        }
-    }, { passive: true });
-    itemEl.addEventListener('touchend', () => {
-        if (timer) { clearTimeout(timer); timer = null; }
-        itemEl.classList.remove('deletable-active');
-        if (!moved && !longDone) pasteClipItem(item);
-    });
-    itemEl.onclick = e => {
-        if (e.target === itemEl) pasteClipItem(item);
-    };
-}
-
-function pasteClipItem(item) {
-    commitCurrent();
-    appendSpecial(item.text);
-    closeClipboardModal();
-}
-
-function showClipEditMenu(item) {
-    const action = item.pinned ? '고정 해제' : '고정';
-    const choice = prompt(`클립보드 항목\n\n${item.text}\n\n번호를 선택하세요.\n1. ${action}\n2. 수정\n3. 삭제\n4. 취소`, '1');
-    if (choice === '1') {
-        const db = getClipDB();
-        const target = db.items.find(x => x.id === item.id);
-        if (target) target.pinned = !target.pinned;
-        saveClipDB(db); renderClipHistory();
-    } else if (choice === '2') {
-        const edited = prompt('문구 수정', item.text);
-        if (edited !== null && edited.trim() !== '') {
-            const db = getClipDB();
-            const target = db.items.find(x => x.id === item.id);
-            if (target) { target.text = edited.trim(); target.kind = 'saved'; target.createdAt = Date.now(); }
-            saveClipDB(db); renderClipHistory();
-        }
-    } else if (choice === '3') {
-        const db = getClipDB();
-        db.items = db.items.filter(x => x.id !== item.id);
-        saveClipDB(db); renderClipHistory(); showToast('삭제되었습니다');
-    }
-}
-
-async function openClipboardFromKey() {
-    await importSystemClipboard();
-    renderClipHistory();
-    openClipboardModal();
-}
-
-let cbStartX = 0, cbStartY = 0, cbTimer = null, isCbLong = false, isCbSwiping = false;
-clipboardKey.addEventListener('touchstart', function(e) {
-    const t = e.touches[0]; cbStartX = t.clientX; cbStartY = t.clientY;
-    isCbLong = false; isCbSwiping = false;
-    cbTimer = setTimeout(() => { isCbLong = true; appendSpecial('#'); if (navigator.vibrate) navigator.vibrate(35); }, 500);
-}, { passive: true });
-clipboardKey.addEventListener('touchmove', function(e) {
-    const t = e.touches[0];
-    if (Math.abs(t.clientX-cbStartX) > 15 || Math.abs(t.clientY-cbStartY) > 15) {
-        isCbSwiping = true;
-        if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
-    }
-}, { passive: true });
-clipboardKey.addEventListener('touchend', function(e) {
-    if (cbTimer) { clearTimeout(cbTimer); cbTimer = null; }
-    if (isCbLong) return;
-    const t = e.changedTouches[0], dx=t.clientX-cbStartX, dy=t.clientY-cbStartY;
-    if (dx > 40 && Math.abs(dx) > Math.abs(dy)) { renderEmojiModal(); openEmojiModal(); return; }
-    if (dx < -40 && Math.abs(dx) > Math.abs(dy)) { openHanjaModal(); return; }
-}, { passive: true });
-clipboardKey.addEventListener('click', function() {
-    if (isCbSwiping || isCbLong) { isCbSwiping=false; isCbLong=false; return; }
-    openClipboardFromKey();
+clipboardListContainer.innerHTML = "";
+let history = getMergedClipHistory();
+history.forEach((text, index) => {
+let div = document.createElement('div');
+div.className = 'clipboard-item';
+div.textContent = text;
+attachClipItemHandlers(div, text, index);
+clipboardListContainer.appendChild(div);
 });
 
-document.querySelectorAll('.clipboard-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        clipboardTab = tab.dataset.clipTab;
-        document.querySelectorAll('.clipboard-tab').forEach(x => x.classList.toggle('active', x === tab));
-        renderClipHistory();
-    });
-});
-document.getElementById('clipRefreshBtn').onclick = () => { importSystemClipboard().then(() => { renderClipHistory(); openClipboardModal(); }); };
-document.getElementById('clipClearBtn').onclick = () => {
-    if (!confirm('고정한 항목을 포함하여 클립보드를 모두 삭제할까요?')) return;
-    localStorage.removeItem(CLIP_DB_KEY);
-    renderClipHistory();
-    showToast('전체 삭제되었습니다');
+let addBtn = document.createElement('div');
+addBtn.className = 'clipboard-item';
+addBtn.style.background = '#e8f0fe';
+addBtn.style.color = '#1a73e8';
+addBtn.style.fontWeight = 'bold';
+addBtn.style.textAlign = 'center';
+addBtn.textContent = '+ 사용자 문구 추가하기';
+addBtn.onclick = () => {
+closeClipboardModal();
+openAddClipboardModal();
 };
+clipboardListContainer.appendChild(addBtn);
+}
+
+function attachClipItemHandlers(item, text, index) {
+let timer = null;
+let isLong = false;
+let startX = 0, startY = 0;
+let hasMoved = false;
+
+item.addEventListener('touchstart', (e) => {
+isLong = false;
+hasMoved = false;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+timer = setTimeout(() => {
+if (!hasMoved) {
+isLong = true;
+item.classList.add('deletable-active');
+if (navigator.vibrate) navigator.vibrate(40);
+confirmDeleteClip(index, text);
+}
+}, 550);
+}, { passive: true });
+
+item.addEventListener('touchmove', (e) => {
+let dx = e.touches[0].clientX - startX;
+let dy = e.touches[0].clientY - startY;
+if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+hasMoved = true;
+if (timer) { clearTimeout(timer); timer = null; }
+}
+}, { passive: true });
+
+item.addEventListener('touchend', (e) => {
+if (timer) { clearTimeout(timer); timer = null; }
+item.classList.remove('deletable-active');
+if (!isLong && !hasMoved) {
+appendSpecial(text);
+closeClipboardModal();
+}
+});
+}
+
+function confirmDeleteClip(index, text) {
+showCustomConfirm(`'${text}' 문구를 삭제할까요?`, () => {
+let history = getMergedClipHistory();
+history.splice(index, 1);
+saveClipHistory(history);
+showToast("삭제되었습니다");
+renderClipHistory();
+openClipboardModal();
+});
+}
 
 function openAddClipboardModal() {
-    document.getElementById('customClipText').value = '';
-    addClipboardModal.style.display = 'flex';
-    setTimeout(() => document.getElementById('customClipText').focus(), 50);
+document.getElementById('customClipText').value = '';
+addClipboardModal.style.display = 'flex';
 }
 function closeAddClipboardModal() { addClipboardModal.style.display = 'none'; }
+
 function saveCustomClip() {
-    const val = document.getElementById('customClipText').value.trim();
-    if (!val) return;
-    const db = getClipDB();
-    db.items = db.items.filter(x => x.text !== val);
-    db.items.unshift(makeClipItem(val, 'saved'));
-    saveClipDB(db);
-    closeAddClipboardModal();
-    clipboardTab = 'all';
-    document.querySelectorAll('.clipboard-tab').forEach(x => x.classList.toggle('active', x.dataset.clipTab === 'all'));
-    renderClipHistory();
-    openClipboardModal();
-    showToast('문구가 추가되었습니다');
+let val = document.getElementById('customClipText').value.trim();
+if (!val) { alert('저장할 텍스트를 입력해주세요.'); return; }
+let history = getMergedClipHistory();
+history = history.filter(item => item !== val);
+history.unshift(val);
+saveClipHistory(history);
+closeAddClipboardModal();
+showToast("문구가 추가되었습니다");
+renderClipHistory();
+openClipboardModal();
 }
-function openClipboardModal() { renderClipHistory(); clipboardModal.style.display = 'flex'; }
+
+function openClipboardModal() { clipboardModal.style.display = 'flex'; }
 function closeClipboardModal() { clipboardModal.style.display = 'none'; }
+function openEmojiModal() { emojiModal.style.display = 'flex'; }
+function closeEmojiModal() { emojiModal.style.display = 'none'; }
 
 const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🛌🏻', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '💕', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
 
