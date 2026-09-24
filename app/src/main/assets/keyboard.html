@@ -2114,18 +2114,34 @@ history.forEach((text, index) => {
     
     div.onclick = (e) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
-        commitCurrent();
-        lastSlideDir = '';
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, 0, text);
-        committedText = chars.join('');
-        cursorPos += getCharLen(text);
-        updateScreen();
-
-        if (window.AndroidBridge && window.AndroidBridge.commitText) {
-            window.AndroidBridge.commitText(text);
-        }
         closeClipboardModal();
+
+        let lines = text.split(/\r?\n/);
+        lines.forEach((line, idx) => {
+            if (line.length > 0) {
+                commitCurrent();
+                lastSlideDir = '';
+                let chars = Array.from(committedText);
+                chars.splice(cursorPos, 0, line);
+                committedText = chars.join('');
+                cursorPos += getCharLen(line);
+                updateScreen();
+                if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                    window.AndroidBridge.commitText(line);
+                }
+            }
+            if (idx < lines.length - 1) {
+                commitCurrent();
+                let chars = Array.from(committedText);
+                chars.splice(cursorPos, 0, '\n');
+                committedText = chars.join('');
+                cursorPos += 1;
+                updateScreen();
+                if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                    window.AndroidBridge.commitText('\n');
+                }
+            }
+        });
     };
 
     let delBtn = document.createElement('span');
