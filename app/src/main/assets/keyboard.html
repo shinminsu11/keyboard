@@ -2114,7 +2114,17 @@ history.forEach((text, index) => {
     
     div.onclick = (e) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
-        appendSpecial(text);
+        commitCurrent();
+        lastSlideDir = '';
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos, 0, text);
+        committedText = chars.join('');
+        cursorPos += getCharLen(text);
+        updateScreen();
+
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(text);
+        }
         closeClipboardModal();
     };
 
