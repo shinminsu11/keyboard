@@ -1608,22 +1608,61 @@ function backspaceHangul() {
         return;
     }
 
+    // 1. 현재 자판 버퍼에 받침(jong)이 있으면 받침만 제거
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
         return;
-    } else if (hangulBuffer.jung !== -1) {
+    } 
+    // 2. 현재 자판 버퍼에 모음(jung)이 있으면 모음만 제거하고 초성(cho)은 남김 (핵심 수정 부분)
+    else if (hangulBuffer.jung !== -1) {
         hangulBuffer.jung = -1;
         updateScreen();
         return;
-    } else if (hangulBuffer.cho !== -1) {
+    } 
+    // 3. 초성(cho)만 남아있으면 초성 제거
+    else if (hangulBuffer.cho !== -1) {
         hangulBuffer.cho = -1;
         updateScreen();
         return;
     }
 
+    // 4. 버퍼가 비어있다면 이미 커밋된(완성된) 글자열에서 마지막 글자를 가져와서 조합 버퍼로 역분해
     let chars = Array.from(committedText);
-    if (cursorPos > 0) {
+    if (cursorPos > 0 && chars.length > 0) {
+        let lastChar = chars[cursorPos - 1];
+        let code = lastChar.charCodeAt(0);
+
+        // 완성된 한글 글자(가-힣)인지 확인
+        if (code >= 0xAC00 && code <= 0xD7A3) {
+            let offset = code - 0xAC00;
+            let choIdx = Math.floor(offset / (21 * 28));
+            let jungIdx = Math.floor((offset % (21 * 28)) / 28);
+            let jongIdx = offset % 28;
+
+            // 이미 committedText에서 제거
+            chars.splice(cursorPos - 1, 1);
+            committedText = chars.join('');
+            cursorPos--;
+
+            if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
+                window.AndroidBridge.deleteOneCharForHanja();
+            }
+
+            // 받침이 있었다면: 받침을 떼고 초성+중성 상태로 버퍼에 올림
+            if (jongIdx > 0) {
+                hangulBuffer = { cho: choIdx, jung: jungIdx, jong: -1 };
+            } 
+            // 받침이 없고 중성만 있었다면: 중성을 떼고 초성만 버퍼에 올림! (가 -> ㄱ 상태로 복원)
+            else {
+                hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
+            }
+            lastSlideDir = '';
+            updateScreen();
+            return;
+        }
+
+        // 한글이 아닌 일반 글자나 기호일 경우 일반 삭제
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
@@ -2114,18 +2153,29 @@ history.forEach((text, index) => {
     
     div.onclick = (e) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
-        commitCurrent();
-        lastSlideDir = '';
-        let chars = Array.from(committedText);
-        chars.splice(cursorPos, 0, text);
-        committedText = chars.join('');
-        cursorPos += getCharLen(text);
-        updateScreen();
-
-        if (window.AndroidBridge && window.AndroidBridge.commitText) {
-            window.AndroidBridge.commitText(text);
-        }
         closeClipboardModal();
+
+        let chunkSize = 200;
+        let indexChar = 0;
+        function insertNextChunk() {
+            if (indexChar < text.length) {
+                let chunk = text.substring(indexChar, indexChar + chunkSize);
+                indexChar += chunkSize;
+
+                commitCurrent();
+                lastSlideDir = '';
+                let chars = Array.from(committedText);
+                chars.splice(cursorPos, 0, chunk);
+                committedText = chars.join('');
+                cursorPos += getCharLen(chunk);
+                updateScreen();
+                if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                    window.AndroidBridge.commitText(chunk);
+                }
+                setTimeout(insertNextChunk, 2);
+            }
+        }
+        insertNextChunk();
     };
 
     let delBtn = document.createElement('span');
