@@ -791,7 +791,7 @@ background: #e2e8f0;
 <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path></svg>
 </div>
 <div class="sym-key space-key-common" style="grid-column: span 5; color:#555;">space</div>
-<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호2</div>
+<div class="sym-key func" style="grid-column: span 1;" onclick="switchToBoard('symbolBoard1')">기호1</div>
 <div class="brand-btn enter-btn" style="grid-column: span 2;">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
 </div>
@@ -2116,12 +2116,13 @@ history.forEach((text, index) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
         closeClipboardModal();
 
-        // 웹뷰 에디터(네이버 카페 등)에서 장문이 깨지지 않도록 글자 단위로 안전하게 나누어 전송
+        // 200자 단위로 큼직하게 묶어서 순식간에 입력 (속도 극대화)
+        let chunkSize = 200;
         let indexChar = 0;
         function insertNextChunk() {
             if (indexChar < text.length) {
-                let chunk = text.substring(indexChar, indexChar + 10); // 10글자씩 안전하게 분할 전송
-                indexChar += 10;
+                let chunk = text.substring(indexChar, indexChar + chunkSize);
+                indexChar += chunkSize;
 
                 commitCurrent();
                 lastSlideDir = '';
@@ -2133,7 +2134,7 @@ history.forEach((text, index) => {
                 if (window.AndroidBridge && window.AndroidBridge.commitText) {
                     window.AndroidBridge.commitText(chunk);
                 }
-                setTimeout(insertNextChunk, 15); // 에디터 부하 방지를 위한 미세 딜레이
+                setTimeout(insertNextChunk, 2);
             }
         }
         insertNextChunk();
