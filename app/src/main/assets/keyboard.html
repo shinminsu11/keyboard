@@ -1862,8 +1862,8 @@ setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
-if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
-    appendHangul('ㅣ');
+// ⭐️ 'ㅣ' 키: 단순 톡(작은 움직임)일 때는 입력되지 않도록 차단하고, 아래쪽이나 유효한 슬라이드 방향일 때만 입력
+if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
     return;
 }
 if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
@@ -1883,8 +1883,8 @@ setupLongPressKey(euKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
-if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
-    appendHangul('ㅡ');
+// ⭐️ 'ㅡ' 키: 단순 톡(작은 움직임)일 때는 입력되지 않도록 차단하고, 좌우 등 유효한 슬라이드일 때만 입력
+if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
     return;
 }
 if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
