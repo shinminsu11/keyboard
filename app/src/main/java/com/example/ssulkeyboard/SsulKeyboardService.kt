@@ -1,11 +1,11 @@
 package com.example.ssulkeyboard
 
 import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import org.json.JSONObject
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -13,29 +13,21 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.LinearLayout
-import org.json.JSONArray
 
 class SsulKeyboardService : InputMethodService() {
 
     private lateinit var webView: WebView
     private lateinit var clipboardManager: ClipboardManager
 
-    private val clipboardPrefs by lazy {
-        getSharedPreferences("ssul_clipboard_v1", Context.MODE_PRIVATE)
-    }
-
     private val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener {
-        captureCurrentClipboard()
+        sendPrimaryClipboardToWebView()
     }
 
     override fun onCreate() {
         super.onCreate()
 
-        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         clipboardManager.addPrimaryClipChangedListener(clipboardListener)
-
-        // 키보드가 시작될 때 현재 시스템 클립보드의 텍스트도 한 번 확인한다.
-        captureCurrentClipboard()
     }
 
     override fun onCreateInputView(): View {
@@ -66,7 +58,7 @@ class SsulKeyboardService : InputMethodService() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    sendClipboardHistoryToJs()
+                    sendPrimaryClipboardToWebView()
                 }
             }
 
@@ -144,21 +136,17 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun deleteClipboardItem(index: Int) {
-            val history = getClipboardHistory().toMutableList()
-            if (index < 0 || index >= history.size) return
-            history.removeAt(index)
-            saveClipboardHistory(history)
-            sendClipboardHistoryToJs()
-        }
-
-        @JavascriptInterface
         fun performSearch() {
             val inputConnection = currentInputConnection ?: return
 
             inputConnection.performEditorAction(
                 EditorInfo.IME_ACTION_SEARCH
             )
+        }
+
+        @JavascriptInterface
+        fun getClipboardText(): String {
+            return readPrimaryClipboardText() ?: ""
         }
 
         @JavascriptInterface
@@ -178,68 +166,33 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
-    private fun captureCurrentClipboard() {
-        if (!::clipboardManager.isInitialized) return
-
-        try {
-            val clip = clipboardManager.primaryClip ?: return
-            if (clip.itemCount <= 0) return
-
-            val item = clip.getItemAt(0)
-            val text = item.coerceToText(this)?.toString() ?: return
-            if (text.trim().isEmpty()) return
-
-            // 텍스트 클립만 자동 저장한다. 이미 같은 내용이 있으면 맨 앞으로 이동한다.
-            val history = getClipboardHistory().toMutableList()
-            history.remove(text)
-            history.add(0, text)
-            saveClipboardHistory(history.take(40))
-            sendClipboardHistoryToJs()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun getClipboardHistory(): List<String> {
-        val raw = clipboardPrefs.getString("history", "[]") ?: "[]"
+    private fun readPrimaryClipboardText(): String? {
         return try {
-            val arr = JSONArray(raw)
-            val list = mutableListOf<String>()
-            for (i in 0 until arr.length()) {
-                val value = arr.optString(i, "")
-                if (value.isNotBlank()) list.add(value)
-            }
-            list.take(40)
+            if (!::clipboardManager.isInitialized) return null
+            val clip = clipboardManager.primaryClip ?: return null
+            if (clip.itemCount == 0) return null
+            clip.getItemAt(0).coerceToText(this)?.toString()?.trim()?.takeIf { it.isNotEmpty() }
         } catch (e: Exception) {
-            emptyList()
+            null
         }
     }
 
-    private fun saveClipboardHistory(history: List<String>) {
-        val arr = JSONArray()
-        history.distinct().take(40).forEach { arr.put(it) }
-        clipboardPrefs.edit().putString("history", arr.toString()).apply()
-    }
-
-    private fun sendClipboardHistoryToJs() {
+    private fun sendPrimaryClipboardToWebView() {
         if (!::webView.isInitialized) return
 
-        val arr = JSONArray()
-        getClipboardHistory().forEach { arr.put(it) }
-        val js = "window.setNativeClipboardHistory && window.setNativeClipboardHistory(${arr});"
-
+        val text = readPrimaryClipboardText() ?: return
+        val quoted = JSONObject.quote(text)
         webView.post {
-            webView.evaluateJavascript(js, null)
+            webView.evaluateJavascript(
+                "if(window.onSystemClipboardChanged){window.onSystemClipboardChanged($quoted);}",
+                null
+            )
         }
     }
 
     override fun onDestroy() {
         if (::clipboardManager.isInitialized) {
-            try {
-                clipboardManager.removePrimaryClipChangedListener(clipboardListener)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            clipboardManager.removePrimaryClipChangedListener(clipboardListener)
         }
         super.onDestroy()
     }
