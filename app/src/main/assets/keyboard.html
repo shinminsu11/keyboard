@@ -1601,75 +1601,34 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    // 1. 현재 자판 버퍼에 받침(jong)이 있으면 받침만 제거
-    if (hangulBuffer.jong !== -1) {
-        hangulBuffer.jong = -1;
-        updateScreen();
-        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
-            window.AndroidBridge.deleteOneCharForHanja();
-        }
-        return;
-    } 
-    // 2. 현재 자판 버퍼에 모음(jung)이 있으면 모음만 제거하고 초성(cho)은 남김 ('가' -> 'ㄱ' 상태 복원)
-    else if (hangulBuffer.jung !== -1) {
-        hangulBuffer.jung = -1;
-        updateScreen();
-        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
-            window.AndroidBridge.deleteOneCharForHanja();
-        }
-        return;
-    } 
-    // 3. 초성(cho)만 남아있으면 초성 제거
-    else if (hangulBuffer.cho !== -1) {
-        hangulBuffer.cho = -1;
-        updateScreen();
-        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
-            window.AndroidBridge.deleteOneCharForHanja();
-        }
+    // 안드로이드 앱 환경에서는 코틀린의 완벽한 deleteText() 로직이 글자 분해 및 삭제를 담당하도록 위임합니다.
+    if (window.AndroidBridge && window.AndroidBridge.deleteText) {
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        window.AndroidBridge.deleteText();
         return;
     }
 
-    // 4. 버퍼가 비어있다면 이미 committedText에 있는 완성된 글자 분해
+    // 웹 브라우저 테스트 환경용 백스페이스 처리
+    if (hangulBuffer.jong !== -1) {
+        hangulBuffer.jong = -1;
+        updateScreen();
+        return;
+    } else if (hangulBuffer.jung !== -1) {
+        hangulBuffer.jung = -1;
+        updateScreen();
+        return;
+    } else if (hangulBuffer.cho !== -1) {
+        hangulBuffer.cho = -1;
+        updateScreen();
+        return;
+    }
+
     let chars = Array.from(committedText);
-    if (cursorPos > 0 && chars.length > 0) {
-        let lastChar = chars[cursorPos - 1];
-        let code = lastChar.charCodeAt(0);
-
-        if (code >= 0xAC00 && code <= 0xD7A3) {
-            let offset = code - 0xAC00;
-            let choIdx = Math.floor(offset / (21 * 28));
-            let jungIdx = Math.floor((offset % (21 * 28)) / 28);
-            let jongIdx = offset % 28;
-
-            chars.splice(cursorPos - 1, 1);
-            committedText = chars.join('');
-            cursorPos--;
-
-            // 안드로이드 네이티브 입력창에서 1글자 삭제 실행
-            if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
-                window.AndroidBridge.deleteOneCharForHanja();
-            }
-
-            // 받침이 있으면 초성+중성 상태로 버퍼에 올림 ('국' -> '구')
-            if (jongIdx > 0) {
-                hangulBuffer = { cho: choIdx, jung: jungIdx, jong: -1 };
-            } 
-            // 받침이 없으면 초성만 버퍼에 올림 ('가' -> 'ㄱ')
-            else {
-                hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
-            }
-            lastSlideDir = '';
-            updateScreen();
-            return;
-        }
-
-        // 일반 기호나 글자 삭제
+    if (cursorPos > 0) {
         chars.splice(cursorPos - 1, 1);
         committedText = chars.join('');
         cursorPos--;
-        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
-            window.AndroidBridge.deleteOneCharForHanja();
-        }
     }
     lastSlideDir = '';
     updateScreen();
