@@ -2114,30 +2114,18 @@ history.forEach((text, index) => {
     
     div.onclick = (e) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
-        closeClipboardModal();
+        commitCurrent();
+        lastSlideDir = '';
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos, 0, text);
+        committedText = chars.join('');
+        cursorPos += getCharLen(text);
+        updateScreen();
 
-        // 200자 단위로 큼직하게 묶어서 순식간에 입력 (속도 극대화)
-        let chunkSize = 200;
-        let indexChar = 0;
-        function insertNextChunk() {
-            if (indexChar < text.length) {
-                let chunk = text.substring(indexChar, indexChar + chunkSize);
-                indexChar += chunkSize;
-
-                commitCurrent();
-                lastSlideDir = '';
-                let chars = Array.from(committedText);
-                chars.splice(cursorPos, 0, chunk);
-                committedText = chars.join('');
-                cursorPos += getCharLen(chunk);
-                updateScreen();
-                if (window.AndroidBridge && window.AndroidBridge.commitText) {
-                    window.AndroidBridge.commitText(chunk);
-                }
-                setTimeout(insertNextChunk, 2);
-            }
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(text);
         }
-        insertNextChunk();
+        closeClipboardModal();
     };
 
     let delBtn = document.createElement('span');
