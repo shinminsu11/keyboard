@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v7.1.8 최종수정본</title>
+<title>쓸기자판 v7.1.9 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -378,14 +378,23 @@ max-height: 55vh;
 overflow-y: auto;
 -webkit-overflow-scrolling: touch;
 }
-.clipboard-item {
-padding: 18px 16px;
+.clipboard-item-row {
+display: flex;
+align-items: center;
 background: #f1f3f5;
 border-radius: 8px;
+overflow: hidden;
+box-sizing: border-box;
+}
+.clipboard-item-row:active {
+background: #e2e8f0;
+}
+.clipboard-item {
+flex: 1;
+padding: 18px 14px;
 font-size: 13px;
 line-height: normal;
 cursor: pointer;
-box-sizing: border-box;
 color: #333;
 user-select: none;
 white-space: nowrap;
@@ -395,12 +404,24 @@ display: flex;
 align-items: center;
 justify-content: flex-start;
 }
-.clipboard-item:active {
-background: #e2e8f0;
+.clipboard-del-btn {
+width: 44px;
+height: 100%;
+background: transparent;
+border: none;
+color: #e63935;
+font-size: 18px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+user-select: none;
 }
-.clipboard-item.deletable-active {
+.clipboard-del-btn:active {
 background: #ffd9d9;
 }
+
 .emoji-list {
 display: grid;
 grid-template-columns: repeat(5, 1fr);
@@ -583,7 +604,7 @@ background: #e2e8f0;
 <div class="key slide-con" data-base="ㅂ" data-up="ㅃ" data-right="ㅍ" data-long="0">ㅂ<span class="sub-top">0</span></div>
 <div class="key" id="clipboardKey" data-long="#">
 <div style="position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; gap:0px;">
-<span style="font-size:9px; color:#555; margin-right:1px;">天</span><span style="font-size:9px; color:#555;">←</span>
+<span style="font-size:9px; color:#555; margin-right:1px;">천</span><span style="font-size:9px; color:#555;">←</span>
 <span style="font-size:14px; margin:1 3px;">📋</span>
 <span style="font-size:9px; color:#555;">→</span><span style="font-size:8px; position:relative; top:0px; margin-left:1px;">😊</span>
 <span class="sub-top" style="top:2px; right:4px;">#</span>
@@ -2062,66 +2083,48 @@ function renderClipHistory() {
 clipboardListContainer.innerHTML = "";
 let history = getMergedClipHistory();
 history.forEach((text, index) => {
-let div = document.createElement('div');
-div.className = 'clipboard-item';
-div.textContent = text;
-attachClipItemHandlers(div, text, index);
-clipboardListContainer.appendChild(div);
+let row = document.createElement('div');
+row.className = 'clipboard-item-row';
+
+let textDiv = document.createElement('div');
+textDiv.className = 'clipboard-item';
+textDiv.textContent = text;
+textDiv.onclick = () => {
+appendSpecial(text);
+closeClipboardModal();
+};
+
+let delBtn = document.createElement('button');
+delBtn.className = 'clipboard-del-btn';
+delBtn.innerHTML = '×';
+delBtn.title = '삭제';
+delBtn.onclick = (e) => {
+e.stopPropagation();
+confirmDeleteClip(index, text);
+};
+
+row.appendChild(textDiv);
+row.appendChild(delBtn);
+clipboardListContainer.appendChild(row);
 });
 
 let addBtn = document.createElement('div');
-addBtn.className = 'clipboard-item';
+addBtn.className = 'clipboard-item-row';
 addBtn.style.background = '#e8f0fe';
 addBtn.style.color = '#1a73e8';
 addBtn.style.fontWeight = 'bold';
-addBtn.style.textAlign = 'center';
 addBtn.style.justifyContent = 'center';
-addBtn.textContent = '+ 사용자 문구 추가하기';
+let addTextDiv = document.createElement('div');
+addTextDiv.className = 'clipboard-item';
+addTextDiv.style.justifyContent = 'center';
+addTextDiv.style.color = '#1a73e8';
+addTextDiv.textContent = '+ 사용자 문구 추가하기';
+addBtn.appendChild(addTextDiv);
 addBtn.onclick = () => {
 closeClipboardModal();
 openAddClipboardModal();
 };
 clipboardListContainer.appendChild(addBtn);
-}
-
-function attachClipItemHandlers(item, text, index) {
-let timer = null;
-let isLong = false;
-let startX = 0, startY = 0;
-let hasMoved = false;
-
-item.addEventListener('touchstart', (e) => {
-isLong = false;
-hasMoved = false;
-startX = e.touches[0].clientX;
-startY = e.touches[0].clientY;
-timer = setTimeout(() => {
-if (!hasMoved) {
-isLong = true;
-item.classList.add('deletable-active');
-if (navigator.vibrate) navigator.vibrate(40);
-confirmDeleteClip(index, text);
-}
-}, 550);
-}, { passive: true });
-
-item.addEventListener('touchmove', (e) => {
-let dx = e.touches[0].clientX - startX;
-let dy = e.touches[0].clientY - startY;
-if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-hasMoved = true;
-if (timer) { clearTimeout(timer); timer = null; }
-}
-}, { passive: true });
-
-item.addEventListener('touchend', (e) => {
-if (timer) { clearTimeout(timer); timer = null; }
-item.classList.remove('deletable-active');
-if (!isLong && !hasMoved) {
-appendSpecial(text);
-closeClipboardModal();
-}
-});
 }
 
 function confirmDeleteClip(index, text) {
