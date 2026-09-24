@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 v9.44 - 네이버식 클립보드</title>
+<title>쓸기자판 v9.45 - 네이버식 자동 클립보드</title>
 <style>
 * {
 box-sizing: border-box;
@@ -911,7 +911,7 @@ background: #e2e8f0;
 <div id="clipboardModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>클립보드</span>
+<span>클립보드 · 자동저장</span>
 <span class="modal-close" onclick="closeClipboardModal()">×</span>
 </div>
 <div class="clipboard-toolbar">
@@ -920,7 +920,6 @@ background: #e2e8f0;
 <button class="clipboard-tab" data-clip-tab="text">문구</button>
 </div>
 <div class="clipboard-actions">
-<button class="clipboard-action" id="clipAddBtn">＋ 문구 추가</button>
 <button class="clipboard-action" id="clipRefreshBtn">↻ 새로고침</button>
 <button class="clipboard-action" id="clipClearBtn">전체 삭제</button>
 </div>
@@ -928,13 +927,13 @@ background: #e2e8f0;
 </div>
 </div>
 
-<div id="addClipboardModal" class="modal-overlay">
+<div id="addClipboardModal" class="modal-overlay" style="display:none !important;">
 <div class="modal-box">
 <div class="modal-header">
 <span>자주 쓰는 문구 추가</span>
 <span class="modal-close" onclick="closeAddClipboardModal()">×</span>
 </div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 사용하는 문장을 저장해 두고 한 번에 입력할 수 있습니다.</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;">복사한 내용이 자동으로 저장됩니다. 항목을 길게 누르면 고정·수정·삭제할 수 있습니다.</div>
 <input type="text" id="customClipText" class="modal-input" placeholder="저장할 문구 입력...">
 <div style="display:flex; gap:6px; margin-top:4px;">
 <button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
@@ -1933,8 +1932,11 @@ setupLongPressKey(iKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - iStartX;
 let diffY = t.clientY - iStartY;
-// ㅣ는 '톡'이 아니라 아래로 쓸어서만 입력
-if (diffY > 18 && Math.abs(diffY) > Math.abs(diffX)) {
+if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
+    appendHangul('ㅣ');
+    return;
+}
+if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
     appendHangul('ㅣ');
 }
 });
@@ -1951,8 +1953,11 @@ setupLongPressKey(euKey, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
 let diffX = t.clientX - euStartX;
 let diffY = t.clientY - euStartY;
-// ㅡ는 '톡'이 아니라 좌우로 쓸어서만 입력
-if (Math.abs(diffX) > 18 && Math.abs(diffX) > Math.abs(diffY)) {
+if (Math.abs(diffX) < 25 && Math.abs(diffY) < 25) {
+    appendHangul('ㅡ');
+    return;
+}
+if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
     appendHangul('ㅡ');
 }
 });
@@ -2051,25 +2056,55 @@ function makeClipItem(text, kind = 'clipboard') {
     };
 }
 
-function importSystemClipboard() {
-    if (!navigator.clipboard || !navigator.clipboard.readText) return Promise.resolve(false);
-    return navigator.clipboard.readText().then(text => {
-        text = String(text || '').trim();
-        if (!text) return false;
-        const db = getClipDB();
-        const existing = db.items.find(x => x.text === text);
-        if (existing) {
-            existing.createdAt = Date.now();
-            const pinned = existing.pinned;
-            db.items = db.items.filter(x => x.id !== existing.id);
-            if (pinned) db.items.unshift(existing);
-            else db.items.unshift(existing);
+function saveAutoClipboardText(rawText) {
+    const text = String(rawText || '').trim();
+    if (!text) return false;
+
+    const db = getClipDB();
+    const existing = db.items.find(x => x.text === text);
+
+    if (existing) {
+        existing.createdAt = Date.now();
+        existing.kind = 'clipboard';
+        db.items = db.items.filter(x => x.id !== existing.id);
+        if (existing.pinned) {
+            const firstUnpinned = db.items.findIndex(x => !x.pinned);
+            if (firstUnpinned < 0) db.items.unshift(existing);
+            else db.items.splice(firstUnpinned, 0, existing);
         } else {
-            db.items.unshift(makeClipItem(text, 'clipboard'));
+            const firstUnpinned = db.items.findIndex(x => !x.pinned);
+            if (firstUnpinned < 0) db.items.push(existing);
+            else db.items.splice(firstUnpinned, 0, existing);
         }
-        saveClipDB(db);
-        return true;
-    }).catch(() => false);
+    } else {
+        const item = makeClipItem(text, 'clipboard');
+        const firstUnpinned = db.items.findIndex(x => !x.pinned);
+        if (firstUnpinned < 0) db.items.push(item);
+        else db.items.splice(firstUnpinned, 0, item);
+    }
+
+    saveClipDB(db);
+    if (clipboardModal.style.display === 'flex') renderClipHistory();
+    return true;
+}
+
+// Android IME가 시스템 클립보드가 바뀔 때 호출한다.
+window.onSystemClipboardChanged = function(text) {
+    saveAutoClipboardText(text);
+};
+
+function importSystemClipboard() {
+    if (window.AndroidBridge && window.AndroidBridge.getClipboardText) {
+        try {
+            const text = window.AndroidBridge.getClipboardText();
+            if (text) {
+                saveAutoClipboardText(text);
+                return Promise.resolve(true);
+            }
+        } catch (_) {}
+    }
+    if (!navigator.clipboard || !navigator.clipboard.readText) return Promise.resolve(false);
+    return navigator.clipboard.readText().then(text => saveAutoClipboardText(text)).catch(() => false);
 }
 
 function formatClipDate(ts) {
@@ -2085,7 +2120,7 @@ function formatClipDate(ts) {
 function filteredClipItems() {
     const items = getClipDB().items;
     if (clipboardTab === 'pinned') return items.filter(x => x.pinned);
-    if (clipboardTab === 'text') return items.filter(x => x.kind === 'saved');
+    if (clipboardTab === 'text') return items.filter(x => x.kind === 'clipboard');
     return items;
 }
 
@@ -2095,7 +2130,7 @@ function renderClipHistory() {
     if (!items.length) {
         const empty = document.createElement('div');
         empty.className = 'clipboard-empty';
-        empty.textContent = clipboardTab === 'pinned' ? '고정한 항목이 없습니다.' : '클립보드가 비어 있습니다.';
+        empty.textContent = clipboardTab === 'pinned' ? '고정한 항목이 없습니다.' : '복사한 내용이 없습니다.';
         clipboardListContainer.appendChild(empty);
     }
 
@@ -2119,11 +2154,7 @@ function renderClipHistory() {
     });
 
     const addBtn = document.createElement('div');
-    addBtn.className = 'clipboard-item clipboard-add';
-    addBtn.textContent = '＋ 자주 쓰는 문구 추가';
-    addBtn.onclick = () => { closeClipboardModal(); openAddClipboardModal(); };
-    clipboardListContainer.appendChild(addBtn);
-}
+    }
 
 function attachClipItemHandlers(itemEl, item) {
     let timer = null, moved = false, longDone = false, startX = 0, startY = 0;
@@ -2223,8 +2254,7 @@ document.querySelectorAll('.clipboard-tab').forEach(tab => {
         renderClipHistory();
     });
 });
-document.getElementById('clipAddBtn').onclick = () => { closeClipboardModal(); openAddClipboardModal(); };
-document.getElementById('clipRefreshBtn').onclick = () => { openClipboardFromKey(); };
+document.getElementById('clipRefreshBtn').onclick = () => { importSystemClipboard().then(() => { renderClipHistory(); openClipboardModal(); }); };
 document.getElementById('clipClearBtn').onclick = () => {
     if (!confirm('고정한 항목을 포함하여 클립보드를 모두 삭제할까요?')) return;
     localStorage.removeItem(CLIP_DB_KEY);
@@ -2359,10 +2389,18 @@ renderEmojiModal();
 openEmojiModal();
 }
 function selectEmoji(emoji) {
-    // 이모지는 일반 특수문자와 동일한 입력 경로를 사용해야
-    // 현재 커서 위치와 네이티브 입력창이 함께 움직인다.
-    appendSpecial(emoji);
-    closeEmojiModal();
+commitCurrent();
+lastSlideDir = '';
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, emoji);
+committedText = chars.join('');
+cursorPos += getCharLen(emoji);
+updateScreen();
+closeEmojiModal();
+
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
+    window.AndroidBridge.commitText(emoji);
+}
 }
 
 const DEFAULT_HANJA_DICT = {
