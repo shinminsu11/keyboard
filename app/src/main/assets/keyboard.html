@@ -2158,23 +2158,56 @@ history.forEach((text, index) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
         closeClipboardModal();
 
-        let chunkSize = 200;
+        // 긴 클립보드는 200자 단위 입력을 유지하되, 줄바꿈(CR/LF)을
+        // 반드시 별도로 보존하여 메모장의 줄 구조가 합쳐지지 않게 한다.
+        const normalizedText = String(text == null ? '' : text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const textChars = Array.from(normalizedText);
+        const chunkSize = 200;
         let indexChar = 0;
+
+        function insertChunkToEditor(chunk) {
+            if (!chunk) return;
+
+            // 줄바꿈을 일반 문자와 섞어 한 번에 commit하지 않고
+            // 줄바꿈 자체를 독립적으로 commit하여 InputConnection/메모장
+            // 쪽에서 줄바꿈을 공백처럼 처리하는 경우를 막는다.
+            const parts = chunk.split('\n');
+
+            parts.forEach((part, partIndex) => {
+                if (part) {
+                    commitCurrent();
+                    lastSlideDir = '';
+                    let chars = Array.from(committedText);
+                    chars.splice(cursorPos, 0, part);
+                    committedText = chars.join('');
+                    cursorPos += getCharLen(part);
+                    updateScreen();
+                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                        window.AndroidBridge.commitText(part);
+                    }
+                }
+
+                if (partIndex < parts.length - 1) {
+                    commitCurrent();
+                    lastSlideDir = '';
+                    let chars = Array.from(committedText);
+                    chars.splice(cursorPos, 0, '\n');
+                    committedText = chars.join('');
+                    cursorPos += 1;
+                    updateScreen();
+                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                        window.AndroidBridge.commitText('\n');
+                    }
+                }
+            });
+        }
+
         function insertNextChunk() {
-            if (indexChar < text.length) {
-                let chunk = text.substring(indexChar, indexChar + chunkSize);
+            if (indexChar < textChars.length) {
+                const chunk = textChars.slice(indexChar, indexChar + chunkSize).join('');
                 indexChar += chunkSize;
 
-                commitCurrent();
-                lastSlideDir = '';
-                let chars = Array.from(committedText);
-                chars.splice(cursorPos, 0, chunk);
-                committedText = chars.join('');
-                cursorPos += getCharLen(chunk);
-                updateScreen();
-                if (window.AndroidBridge && window.AndroidBridge.commitText) {
-                    window.AndroidBridge.commitText(chunk);
-                }
+                insertChunkToEditor(chunk);
                 setTimeout(insertNextChunk, 2);
             }
         }
