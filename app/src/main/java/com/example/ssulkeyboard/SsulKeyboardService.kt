@@ -1,5 +1,7 @@
 package com.example.ssulkeyboard
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
@@ -213,6 +215,38 @@ class SsulKeyboardService : InputMethodService() {
                 pendingExternalCursorUtf16 = null
                 suppressSelectionSyncUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun pasteText(text: String) {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 500L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                if (externalComposingActive) {
+                    ic.finishComposingText()
+                    externalComposingActive = false
+                }
+
+                applyPendingExternalCursor(ic)
+
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("쓸기자판", text))
+
+                // 편집기 자신이 처리하는 실제 Paste를 사용한다.
+                // commitText/sendKeyEvent로 줄바꿈을 흉내내지 않으므로
+                // 메모장 등의 multiline 텍스트 구조가 그대로 유지된다.
+                ic.performContextMenuAction(android.R.id.paste)
+
+                pendingExternalCursorUtf16 = null
+                suppressSelectionSyncUntil =
+                    android.os.SystemClock.uptimeMillis() + 500L
                 rememberActualSelection()
             } catch (e: Exception) {
                 e.printStackTrace()
