@@ -1104,6 +1104,19 @@ window.syncNativeTextAfterDelete = function(before, after, mode) {
                 start: cursorPos - 1
             };
         }
+    } else if (mode === 'initial') {
+        // [핵심 해결]: 백스페이스 후 남은 초성('ㅇ', 'ㄱ' 등)을 웹 버퍼의 hangulBuffer.cho로 정확히 연동
+        const chars = Array.from(committedText);
+        if (chars.length > 0) {
+            const last = chars[chars.length - 1];
+            const choIdx = CHOSUNG.indexOf(last);
+            if (choIdx !== -1) {
+                chars.pop();
+                committedText = chars.join('');
+                cursorPos = Math.max(0, cursorPos - 1);
+                hangulBuffer = { cho: choIdx, jung: -1, jong: -1 };
+            }
+        }
     }
 
     renderRequested = false;
@@ -1452,18 +1465,6 @@ function getJongIndex(char) { return JONGSUNG.indexOf(char); }
 function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
-
-// [핵심 보완]: 초성만 남은 상태에서 모음이 들어올 때 초성과 결합 처리
-if (choIdx === -1 && jungIdx !== -1) {
-    let currentAssembled = assembleCurrent();
-    if (currentAssembled.length === 1 && CHOSUNG.indexOf(currentAssembled) !== -1) {
-        let existingChoIdx = CHOSUNG.indexOf(currentAssembled);
-        hangulBuffer = { cho: existingChoIdx, jung: jungIdx, jong: -1 };
-        lastSlideDir = '';
-        updateScreen();
-        return;
-    }
-}
 
 if (choIdx !== -1 && hangulBuffer.cho === -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
     commitCurrent();
