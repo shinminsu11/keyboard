@@ -1595,7 +1595,6 @@ if (combined) { hangulBuffer.jong = getJongIndex(combined); }
 else { commitCurrent(); hangulBuffer.cho = choIdx; }
 }
 } else if (jungIdx !== -1) {
-// [핵심 추가 보완]: 초성만 남아있는 상태('ㅇ' 등)에서 모음이 들어올 때 정상 결합 처리
 if (hangulBuffer.cho !== -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
     hangulBuffer.jung = jungIdx;
     lastSlideDir = '';
@@ -1747,9 +1746,18 @@ bsTimer = null;
 function appendSpecial(char) {
 if (!char) return;
 
-// [핵심 추가 보완]: 스페이스나 특수문자 입력 시 초성만 남아있던 버퍼를 먼저 완벽히 확정(commit)
 if (hangulBuffer.cho !== -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    commitCurrent();
+    let choChar = CHOSUNG[hangulBuffer.cho];
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    
+    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(choChar);
+    }
+    
+    let chars = Array.from(committedText);
+    chars.splice(cursorPos, 0, choChar);
+    committedText = chars.join('');
+    cursorPos += getCharLen(choChar);
 }
 
 if (char === '\n') {
