@@ -376,6 +376,22 @@ class SsulKeyboardService : InputMethodService() {
                         (syllableIndex % (21 * 28)) / 28
                     val jong = syllableIndex % 28
 
+                    val choseong =
+                        arrayOf(
+                            "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ",
+                            "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
+                            "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ",
+                            "ㅋ", "ㅌ", "ㅍ", "ㅎ"
+                        )[cho]
+
+                    val jungseong =
+                        arrayOf(
+                            "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ",
+                            "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
+                            "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ",
+                            "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅣ"
+                        )[jung]
+
                     if (jong != 0) {
 
                         val reducedJong =
@@ -435,13 +451,15 @@ class SsulKeyboardService : InputMethodService() {
                     }
 
                     ic.setSelection(start, cursor)
-                    ic.commitText("", 1)
+                    ic.setComposingText(choseong, 1)
+                    externalComposingActive = true
 
-                    lastKnownSelectionStart = start
-                    lastKnownSelectionEnd = start
+                    val newCursor = start + choseong.length
+
+                    lastKnownSelectionStart = newCursor
+                    lastKnownSelectionEnd = newCursor
 
                     pendingExternalCursorUtf16 = null
-                    externalComposingActive = false
 
                     cancelHtmlExternalCursorState()
                     rememberActualSelection()
