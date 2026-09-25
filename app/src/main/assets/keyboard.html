@@ -1081,64 +1081,31 @@ window.syncNativeText = function(before, after) {
 };
 
 /*
- * 삭제 직후에는 Android 쪽에서 방금 만든 한글 단계와
- * HTML 한글 조합 상태를 같은 단계로 맞춘다.
- * mode = initial  : 아 -> ㅇ
- * mode = syllable : 국 -> 구
+ * 삭제 직후 안드로이드와 웹 자판의 버퍼 상태를 완벽하게 동기화합니다.
  */
 window.syncNativeTextAfterDelete = function(before, after, mode) {
     renderVersion++;
     before = (before == null) ? '' : String(before);
     after = (after == null) ? '' : String(after);
 
+    committedText = before + after;
+    cursorPos = Array.from(before).length;
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     externalFinalCandidate = null;
     externalCursorInsertMode = false;
     lastSlideDir = '';
 
-    if (mode === 'initial') {
-        /*
-         * Android 쪽의 before에는 deleteText()가 만든
-         * 'ㅇ' composing 문자가 포함되어 있다.
-         *
-         * 이 'ㅇ'을 committedText에도 넣으면
-         * HTML은 'ㅇ'을 완성된 문자로 한 번 보관하고,
-         * hangulBuffer에도 다시 'ㅇ'을 보관하게 된다.
-         * 다음 모음 입력 때 이중 반영될 수 있다.
-         *
-         * 따라서 initial 단계에서는 마지막 초성을
-         * committedText에서 제외하고 hangulBuffer만 유지한다.
-         * 국 -> 구(syllable) 경로는 기존 동작을 그대로 둔다.
-         */
-        const beforeChars = Array.from(before);
-        const lastBefore = beforeChars[beforeChars.length - 1] || '';
-        const cho = CHOSUNG.indexOf(lastBefore);
+    if (mode === 'syllable') {
+        const chars = Array.from(committedText);
+        const last = chars[cursorPos - 1] || '';
 
-        if (cho !== -1) {
-            beforeChars.pop();
-            committedText = beforeChars.join('') + after;
-            cursorPos = beforeChars.length;
-            hangulBuffer = { cho: cho, jung: -1, jong: -1 };
-        } else {
-            committedText = before + after;
-            cursorPos = Array.from(before).length;
-        }
-    } else {
-        committedText = before + after;
-        cursorPos = Array.from(before).length;
-
-        if (mode === 'syllable') {
-            const chars = Array.from(committedText);
-            const last = chars[cursorPos - 1] || '';
-
-            if (last && last.length === 1 &&
-                last.charCodeAt(0) >= 0xAC00 && last.charCodeAt(0) <= 0xD7A3) {
-                externalFinalCandidate = {
-                    baseChar: last,
-                    originalChar: last,
-                    start: cursorPos - 1
-                };
-            }
+        if (last && last.length === 1 &&
+            last.charCodeAt(0) >= 0xAC00 && last.charCodeAt(0) <= 0xD7A3) {
+            externalFinalCandidate = {
+                baseChar: last,
+                originalChar: last,
+                start: cursorPos - 1
+            };
         }
     }
 
@@ -2183,8 +2150,6 @@ history.forEach((text, index) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
         closeClipboardModal();
 
-        // 긴 클립보드는 200자 단위 입력을 유지하되, 줄바꿈(CR/LF)을
-        // 반드시 별도로 보존하여 메모장의 줄 구조가 합쳐지지 않게 한다.
         const normalizedText = String(text == null ? '' : text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         const textChars = Array.from(normalizedText);
         const chunkSize = 200;
@@ -2193,9 +2158,6 @@ history.forEach((text, index) => {
         function insertChunkToEditor(chunk) {
             if (!chunk) return;
 
-            // 줄바꿈을 일반 문자와 섞어 한 번에 commit하지 않고
-            // 줄바꿈 자체를 독립적으로 commit하여 InputConnection/메모장
-            // 쪽에서 줄바꿈을 공백처럼 처리하는 경우를 막는다.
             const parts = chunk.split('\n');
 
             parts.forEach((part, partIndex) => {
