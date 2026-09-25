@@ -1744,43 +1744,43 @@ bsTimer = null;
 });
 
 function appendSpecial(char) {
-if (!char) return;
+    if (!char) return;
 
-if (hangulBuffer.cho !== -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
-    let choChar = CHOSUNG[hangulBuffer.cho];
-    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-    
-    if (window.AndroidBridge && window.AndroidBridge.commitText) {
-        window.AndroidBridge.commitText(choChar);
+    if (hangulBuffer.cho !== -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+        let choChar = CHOSUNG[hangulBuffer.cho];
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos, 0, choChar);
+        committedText = chars.join('');
+        cursorPos += getCharLen(choChar);
+
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(choChar);
+        }
     }
-    
+
+    if (char === '\n') {
+        if (externalComposeTimer) {
+            clearTimeout(externalComposeTimer);
+            externalComposeTimer = null;
+        }
+        externalCursorInsertMode = false;
+        externalFinalCandidate = null;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    }
+
+    commitCurrent();
+    lastSlideDir = '';
     let chars = Array.from(committedText);
-    chars.splice(cursorPos, 0, choChar);
+    chars.splice(cursorPos, 0, char);
     committedText = chars.join('');
-    cursorPos += getCharLen(choChar);
-}
+    cursorPos += getCharLen(char);
+    updateScreen();
 
-if (char === '\n') {
-    if (externalComposeTimer) {
-        clearTimeout(externalComposeTimer);
-        externalComposeTimer = null;
+    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(char);
     }
-    externalCursorInsertMode = false;
-    externalFinalCandidate = null;
-    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-}
-
-commitCurrent();
-lastSlideDir = '';
-let chars = Array.from(committedText);
-chars.splice(cursorPos, 0, char);
-committedText = chars.join('');
-cursorPos += getCharLen(char);
-updateScreen();
-
-if (window.AndroidBridge && window.AndroidBridge.commitText) {
-    window.AndroidBridge.commitText(char);
-}
 }
 
 document.querySelectorAll('.space-key-common, div.eng-key:not([data-char]), .sym-key').forEach(btn => {
