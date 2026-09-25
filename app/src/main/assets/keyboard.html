@@ -1453,6 +1453,18 @@ function appendHangul(inputChar) {
 let choIdx = CHOSUNG.indexOf(inputChar);
 let jungIdx = JUNGSUNG.indexOf(inputChar);
 
+// [핵심 보완]: 초성만 남은 상태에서 모음이 들어올 때 초성과 결합 처리
+if (choIdx === -1 && jungIdx !== -1) {
+    let currentAssembled = assembleCurrent();
+    if (currentAssembled.length === 1 && CHOSUNG.indexOf(currentAssembled) !== -1) {
+        let existingChoIdx = CHOSUNG.indexOf(currentAssembled);
+        hangulBuffer = { cho: existingChoIdx, jung: jungIdx, jong: -1 };
+        lastSlideDir = '';
+        updateScreen();
+        return;
+    }
+}
+
 if (choIdx !== -1 && hangulBuffer.cho === -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong === -1) {
     commitCurrent();
     hangulBuffer.cho = choIdx;
