@@ -1105,7 +1105,6 @@ window.syncNativeTextAfterDelete = function(before, after, mode) {
             };
         }
     } else if (mode === 'initial') {
-        // [핵심 해결]: 백스페이스 후 남은 초성('ㅇ', 'ㄱ' 등)을 웹 버퍼의 hangulBuffer.cho로 정확히 연동
         const chars = Array.from(committedText);
         if (chars.length > 0) {
             const last = chars[chars.length - 1];
@@ -1596,6 +1595,14 @@ if (combined) { hangulBuffer.jong = getJongIndex(combined); }
 else { commitCurrent(); hangulBuffer.cho = choIdx; }
 }
 } else if (jungIdx !== -1) {
+// [핵심 추가 보완]: 초성만 남아있는 상태('ㅇ' 등)에서 모음이 들어올 때 정상 결합 처리
+if (hangulBuffer.cho !== -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+    hangulBuffer.jung = jungIdx;
+    lastSlideDir = '';
+    updateScreen();
+    return;
+}
+
 if (hangulBuffer.cho !== -1 && hangulBuffer.jung !== -1 && hangulBuffer.jong !== -1) {
 let jongChar = JONGSUNG[hangulBuffer.jong];
 let splitCho = SINGLE_JONGSUNG[jongChar] || jongChar;
@@ -1739,6 +1746,11 @@ bsTimer = null;
 
 function appendSpecial(char) {
 if (!char) return;
+
+// [핵심 추가 보완]: 스페이스나 특수문자 입력 시 초성만 남아있던 버퍼를 먼저 완벽히 확정(commit)
+if (hangulBuffer.cho !== -1 && hangulBuffer.jung === -1 && hangulBuffer.jong === -1) {
+    commitCurrent();
+}
 
 if (char === '\n') {
     if (externalComposeTimer) {
