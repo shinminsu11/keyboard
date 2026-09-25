@@ -389,8 +389,7 @@ class SsulKeyboardService : InputMethodService() {
                             "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ",
                             "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
                             "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ",
-                            "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ",
-                            "ㅣ"
+                            "ㅞ", "ㅟ", "ㅠ", "ㅢ", "ㅣ"
                         )[jung]
 
                     if (jong != 0) {
@@ -429,10 +428,6 @@ class SsulKeyboardService : InputMethodService() {
 
                         ic.setSelection(start, cursor)
 
-                        /*
-                         * 삭제 후의 한글 단계를 composing 상태로 유지한다.
-                         * 다음 자음/모음이 이 글자를 이어서 조합할 수 있다.
-                         */
                         ic.setComposingText(replacement, 1)
                         externalComposingActive = true
 
@@ -447,26 +442,19 @@ class SsulKeyboardService : InputMethodService() {
                         cancelHtmlExternalCursorState()
                         rememberActualSelection()
 
-                        /*
-                         * 국 -> 구 상태를 HTML에도 그대로 알려준다.
-                         * 다음 ㄴ이 오면 구 + ㄴ -> 군으로 이어진다.
-                         */
                         syncHtmlAfterDelete("syllable")
                         return
                     }
 
-                    /*
-                     * 종성이 없는 완성형:
-                     * 아 -> ㅇ
-                     * 하 -> ㅎ
-                     *
-                     * 초성을 composing 상태로 유지하여
-                     * 다음 모음이 같은 글자로 조합되게 한다.
-                     */
                     ic.setSelection(start, cursor)
 
                     ic.setComposingText(choseong, 1)
-                    externalComposingActive = true
+
+                    // 중요:
+                    // 아 -> ㅇ처럼 초성만 남긴 상태는 HTML의 hangulBuffer가
+                    // 다음 모음을 계속 조합해야 하므로 Android composing 상태를
+                    // 별도로 유지하지 않는다.
+                    externalComposingActive = false
 
                     val newCursor =
                         start + choseong.length
