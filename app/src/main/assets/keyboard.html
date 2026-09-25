@@ -2195,7 +2195,9 @@ history.forEach((text, index) => {
                     committedText = chars.join('');
                     cursorPos += 1;
                     updateScreen();
-                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                    if (window.AndroidBridge && window.AndroidBridge.commitNewline) {
+                        window.AndroidBridge.commitNewline();
+                    } else if (window.AndroidBridge && window.AndroidBridge.commitText) {
                         window.AndroidBridge.commitText('\n');
                     }
                 }
