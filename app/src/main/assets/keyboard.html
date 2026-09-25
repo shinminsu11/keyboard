@@ -1080,6 +1080,47 @@ window.syncNativeText = function(before, after) {
     lastSlideDir = '';
 };
 
+/*
+ * 삭제 직후에는 Android 쪽에서 방금 만든 한글 단계와
+ * HTML 한글 조합 상태를 같은 단계로 맞춘다.
+ * mode = initial  : 아 -> ㅇ
+ * mode = syllable : 국 -> 구
+ */
+window.syncNativeTextAfterDelete = function(before, after, mode) {
+    renderVersion++;
+    before = (before == null) ? '' : String(before);
+    after = (after == null) ? '' : String(after);
+
+    committedText = before + after;
+    cursorPos = Array.from(before).length;
+    hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+    externalFinalCandidate = null;
+    externalCursorInsertMode = false;
+    lastSlideDir = '';
+
+    const chars = Array.from(committedText);
+    const last = chars[cursorPos - 1] || '';
+
+    if (mode === 'initial') {
+        const cho = CHOSUNG.indexOf(last);
+        if (cho !== -1) {
+            hangulBuffer = { cho: cho, jung: -1, jong: -1 };
+        }
+    } else if (mode === 'syllable') {
+        if (last && last.length === 1 &&
+            last.charCodeAt(0) >= 0xAC00 && last.charCodeAt(0) <= 0xD7A3) {
+            externalFinalCandidate = {
+                baseChar: last,
+                originalChar: last,
+                start: cursorPos - 1
+            };
+        }
+    }
+
+    renderRequested = false;
+    updateScreen();
+};
+
 function showCustomConfirm(message, onOk) {
 const modal = document.getElementById('customConfirmModal');
 const msgEl = document.getElementById('confirmMessage');
