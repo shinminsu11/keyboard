@@ -1091,29 +1091,54 @@ window.syncNativeTextAfterDelete = function(before, after, mode) {
     before = (before == null) ? '' : String(before);
     after = (after == null) ? '' : String(after);
 
-    committedText = before + after;
-    cursorPos = Array.from(before).length;
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     externalFinalCandidate = null;
     externalCursorInsertMode = false;
     lastSlideDir = '';
 
-    const chars = Array.from(committedText);
-    const last = chars[cursorPos - 1] || '';
-
     if (mode === 'initial') {
-        const cho = CHOSUNG.indexOf(last);
+        /*
+         * Android 쪽의 before에는 deleteText()가 만든
+         * 'ㅇ' composing 문자가 포함되어 있다.
+         *
+         * 이 'ㅇ'을 committedText에도 넣으면
+         * HTML은 'ㅇ'을 완성된 문자로 한 번 보관하고,
+         * hangulBuffer에도 다시 'ㅇ'을 보관하게 된다.
+         * 다음 모음 입력 때 이중 반영될 수 있다.
+         *
+         * 따라서 initial 단계에서는 마지막 초성을
+         * committedText에서 제외하고 hangulBuffer만 유지한다.
+         * 국 -> 구(syllable) 경로는 기존 동작을 그대로 둔다.
+         */
+        const beforeChars = Array.from(before);
+        const lastBefore = beforeChars[beforeChars.length - 1] || '';
+        const cho = CHOSUNG.indexOf(lastBefore);
+
         if (cho !== -1) {
+            beforeChars.pop();
+            committedText = beforeChars.join('') + after;
+            cursorPos = beforeChars.length;
             hangulBuffer = { cho: cho, jung: -1, jong: -1 };
+        } else {
+            committedText = before + after;
+            cursorPos = Array.from(before).length;
         }
-    } else if (mode === 'syllable') {
-        if (last && last.length === 1 &&
-            last.charCodeAt(0) >= 0xAC00 && last.charCodeAt(0) <= 0xD7A3) {
-            externalFinalCandidate = {
-                baseChar: last,
-                originalChar: last,
-                start: cursorPos - 1
-            };
+    } else {
+        committedText = before + after;
+        cursorPos = Array.from(before).length;
+
+        if (mode === 'syllable') {
+            const chars = Array.from(committedText);
+            const last = chars[cursorPos - 1] || '';
+
+            if (last && last.length === 1 &&
+                last.charCodeAt(0) >= 0xAC00 && last.charCodeAt(0) <= 0xD7A3) {
+                externalFinalCandidate = {
+                    baseChar: last,
+                    originalChar: last,
+                    start: cursorPos - 1
+                };
+            }
         }
     }
 
@@ -2195,9 +2220,7 @@ history.forEach((text, index) => {
                     committedText = chars.join('');
                     cursorPos += 1;
                     updateScreen();
-                    if (window.AndroidBridge && window.AndroidBridge.commitNewline) {
-                        window.AndroidBridge.commitNewline();
-                    } else if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
                         window.AndroidBridge.commitText('\n');
                     }
                 }
