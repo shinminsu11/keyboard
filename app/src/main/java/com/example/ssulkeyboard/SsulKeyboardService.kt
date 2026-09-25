@@ -437,15 +437,15 @@ class SsulKeyboardService : InputMethodService() {
                         return
                     }
 
-                    // [핵심 수정]: 초성만 남길 때 setComposingText로 정확히 세팅하고 커서/선택영역을 올바르게 고정
+                    // [결정적 은신처 박멸]: 초성만 남길 때 setComposingText 대신 commitText로 완전히 확정시켜 버퍼 찌꺼기를 원천 차단
                     try {
                         ic.finishComposingText()
                     } catch (_: Exception) {
                     }
 
                     ic.setSelection(start, cursor)
-                    ic.setComposingText(choseong, 1)
-                    externalComposingActive = true
+                    ic.commitText(choseong, 1)
+                    externalComposingActive = false
 
                     val newCursor = start + choseong.length
 
@@ -608,7 +608,7 @@ class SsulKeyboardService : InputMethodService() {
         pendingExternalCursorUtf16 = newSelStart
 
         suppressSelectionSyncUntil =
-            android.os.SystemClock.uptimeMillis() + 150L
+            android.os.SystemGradeTimeOrUptimeMillis() + 150L // 내부 처리
 
         webView.post {
             webView.evaluateJavascript(
