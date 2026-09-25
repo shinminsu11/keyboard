@@ -376,22 +376,6 @@ class SsulKeyboardService : InputMethodService() {
                         (syllableIndex % (21 * 28)) / 28
                     val jong = syllableIndex % 28
 
-                    val choseong =
-                        arrayOf(
-                            "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ",
-                            "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ",
-                            "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ",
-                            "ㅋ", "ㅌ", "ㅍ", "ㅎ"
-                        )[cho]
-
-                    val jungseong =
-                        arrayOf(
-                            "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ",
-                            "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
-                            "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ",
-                            "ㅞ", "ㅟ", "ㅠ", "ㅢ", "ㅣ"
-                        )[jung]
-
                     if (jong != 0) {
 
                         val reducedJong =
@@ -427,7 +411,6 @@ class SsulKeyboardService : InputMethodService() {
                         }
 
                         ic.setSelection(start, cursor)
-
                         ic.setComposingText(replacement, 1)
                         externalComposingActive = true
 
@@ -446,28 +429,29 @@ class SsulKeyboardService : InputMethodService() {
                         return
                     }
 
+                    try {
+                        ic.finishComposingText()
+                    } catch (_: Exception) {
+                    }
+
                     ic.setSelection(start, cursor)
+                    ic.commitText("", 1)
 
-                    ic.setComposingText(choseong, 1)
-
-                    // 중요:
-                    // 아 -> ㅇ처럼 초성만 남긴 상태는 HTML의 hangulBuffer가
-                    // 다음 모음을 계속 조합해야 하므로 Android composing 상태를
-                    // 별도로 유지하지 않는다.
-                    externalComposingActive = false
-
-                    val newCursor =
-                        start + choseong.length
-
-                    lastKnownSelectionStart = newCursor
-                    lastKnownSelectionEnd = newCursor
+                    lastKnownSelectionStart = start
+                    lastKnownSelectionEnd = start
 
                     pendingExternalCursorUtf16 = null
+                    externalComposingActive = false
 
                     cancelHtmlExternalCursorState()
                     rememberActualSelection()
                     syncHtmlAfterDelete("initial")
                     return
+                }
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
                 }
 
                 ic.setSelection(start, cursor)
