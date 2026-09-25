@@ -185,6 +185,41 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
+        fun commitNewline() {
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 250L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+                if (externalComposingActive) {
+                    ic.finishComposingText()
+                    externalComposingActive = false
+                }
+
+                applyPendingExternalCursor(ic)
+
+                // 클립보드의 줄바꿈은 commitText("\n") 대신 실제 Enter 키 이벤트로
+                // 전달하여 메모장/편집기에서 줄바꿈으로 확실히 처리되게 한다.
+                ic.sendKeyEvent(android.view.KeyEvent(
+                    android.view.KeyEvent.ACTION_DOWN,
+                    android.view.KeyEvent.KEYCODE_ENTER
+                ))
+                ic.sendKeyEvent(android.view.KeyEvent(
+                    android.view.KeyEvent.ACTION_UP,
+                    android.view.KeyEvent.KEYCODE_ENTER
+                ))
+
+                pendingExternalCursorUtf16 = null
+                suppressSelectionSyncUntil =
+                    android.os.SystemClock.uptimeMillis() + 250L
+                rememberActualSelection()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
         fun setComposing(text: String) {
             val ic = currentInputConnection ?: return
 
