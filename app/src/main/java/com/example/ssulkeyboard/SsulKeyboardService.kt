@@ -437,7 +437,7 @@ class SsulKeyboardService : InputMethodService() {
                         return
                     }
 
-                    // 받침 없는 글자 ('이' 등) 첫 번째 백스페이스: 초성(예: 'ㅇ')만 남기고 Composing 상태로 전환
+                    // 받침 없는 글자 ('아', '가' 등) 첫 번째 백스페이스: 초성 유지하며 Composing 상태로 전환
                     try {
                         ic.finishComposingText()
                     } catch (_: Exception) {
