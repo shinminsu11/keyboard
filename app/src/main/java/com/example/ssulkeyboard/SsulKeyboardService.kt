@@ -384,6 +384,15 @@ class SsulKeyboardService : InputMethodService() {
                             "ㅋ", "ㅌ", "ㅍ", "ㅎ"
                         )[cho]
 
+                    val jungseong =
+                        arrayOf(
+                            "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ",
+                            "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
+                            "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ",
+                            "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ",
+                            "ㅣ"
+                        )[jung]
+
                     if (jong != 0) {
 
                         val reducedJong =
@@ -437,6 +446,7 @@ class SsulKeyboardService : InputMethodService() {
                         return
                     }
 
+                    // [수정 완료]: 초성만 남을 때는 setComposingText 대신 commitText로 확정하여 중복 입력 버그 방지
                     try {
                         ic.finishComposingText()
                     } catch (_: Exception) {
