@@ -428,6 +428,11 @@ class SsulKeyboardService : InputMethodService() {
                         }
 
                         ic.setSelection(start, cursor)
+
+                        /*
+                         * 삭제 후의 한글 단계를 composing 상태로 유지한다.
+                         * 다음 자음/모음이 이 글자를 이어서 조합할 수 있다.
+                         */
                         ic.setComposingText(replacement, 1)
                         externalComposingActive = true
 
@@ -442,21 +447,29 @@ class SsulKeyboardService : InputMethodService() {
                         cancelHtmlExternalCursorState()
                         rememberActualSelection()
 
+                        /*
+                         * 국 -> 구 상태를 HTML에도 그대로 알려준다.
+                         * 다음 ㄴ이 오면 구 + ㄴ -> 군으로 이어진다.
+                         */
                         syncHtmlAfterDelete("syllable")
                         return
                     }
 
-                    // [수정 완료]: 초성만 남을 때는 setComposingText 대신 commitText로 확정하여 중복 입력 버그 방지
-                    try {
-                        ic.finishComposingText()
-                    } catch (_: Exception) {
-                    }
-
+                    /*
+                     * 종성이 없는 완성형:
+                     * 아 -> ㅇ
+                     * 하 -> ㅎ
+                     *
+                     * 초성을 composing 상태로 유지하여
+                     * 다음 모음이 같은 글자로 조합되게 한다.
+                     */
                     ic.setSelection(start, cursor)
-                    ic.commitText(choseong, 1)
-                    externalComposingActive = false
 
-                    val newCursor = start + choseong.length
+                    ic.setComposingText(choseong, 1)
+                    externalComposingActive = true
+
+                    val newCursor =
+                        start + choseong.length
 
                     lastKnownSelectionStart = newCursor
                     lastKnownSelectionEnd = newCursor
@@ -467,11 +480,6 @@ class SsulKeyboardService : InputMethodService() {
                     rememberActualSelection()
                     syncHtmlAfterDelete("initial")
                     return
-                }
-
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
                 }
 
                 ic.setSelection(start, cursor)
