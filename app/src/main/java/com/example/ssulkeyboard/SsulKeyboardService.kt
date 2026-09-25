@@ -56,14 +56,9 @@ class SsulKeyboardService : InputMethodService() {
 
     private fun rememberActualSelection() {
         val ic = currentInputConnection ?: return
-
         try {
-            val before =
-                ic.getTextBeforeCursor(10000, 0)?.length ?: 0
-
-            val after =
-                ic.getTextAfterCursor(10000, 0)?.length ?: 0
-
+            val before = ic.getTextBeforeCursor(10000, 0)?.length ?: 0
+            val after = ic.getTextAfterCursor(10000, 0)?.length ?: 0
             if (after >= 0) {
                 lastKnownSelectionStart = before
                 lastKnownSelectionEnd = before
@@ -74,21 +69,12 @@ class SsulKeyboardService : InputMethodService() {
 
     private fun syncHtmlWithNativeText() {
         if (!::webView.isInitialized) return
-
         val ic = currentInputConnection ?: return
-
         try {
-            val before =
-                ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-
-            val after =
-                ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
-
-            val beforeJs =
-                org.json.JSONObject.quote(before)
-
-            val afterJs =
-                org.json.JSONObject.quote(after)
+            val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+            val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+            val beforeJs = org.json.JSONObject.quote(before)
+            val afterJs = org.json.JSONObject.quote(after)
 
             webView.post {
                 webView.evaluateJavascript(
@@ -107,12 +93,44 @@ class SsulKeyboardService : InputMethodService() {
         }
     }
 
+    private fun syncHtmlAfterDelete(mode: String) {
+        if (!::webView.isInitialized) return
+        val ic = currentInputConnection ?: return
+
+        try {
+            val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+            val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+            val beforeJs = org.json.JSONObject.quote(before)
+            val afterJs = org.json.JSONObject.quote(after)
+            val modeJs = org.json.JSONObject.quote(mode)
+
+            webView.post {
+                webView.evaluateJavascript(
+                    """
+                    (function() {
+                        if (window.syncNativeTextAfterDelete) {
+                            window.syncNativeTextAfterDelete(
+                                $beforeJs,
+                                $afterJs,
+                                $modeJs
+                            );
+                        } else if (window.syncNativeText) {
+                            window.syncNativeText($beforeJs, $afterJs);
+                        }
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun applyPendingExternalCursor(
         ic: android.view.inputmethod.InputConnection
     ) {
-        val pos =
-            pendingExternalCursorUtf16 ?: return
-
+        val pos = pendingExternalCursorUtf16 ?: return
         try {
             ic.finishComposingText()
             ic.setSelection(pos, pos)
@@ -120,14 +138,12 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         pendingExternalCursorUtf16 = null
-
         lastKnownSelectionStart = pos
         lastKnownSelectionEnd = pos
     }
 
     private fun cancelHtmlExternalCursorState() {
         if (!::webView.isInitialized) return
-
         webView.post {
             webView.evaluateJavascript(
                 "javascript:if(window.cancelExternalCursorState) { window.cancelExternalCursorState(); }",
@@ -152,21 +168,17 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 applyPendingExternalCursor(ic)
-
                 ic.commitText(text, 1)
 
                 if (text.contains('\n') || text.contains('\r')) {
                     pendingExternalCursorUtf16 = null
                     externalComposingActive = false
-
                     suppressSelectionSyncUntil =
                         android.os.SystemClock.uptimeMillis() + 250L
-
                     rememberActualSelection()
                 } else {
                     rememberActualSelection()
                 }
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -196,8 +208,7 @@ class SsulKeyboardService : InputMethodService() {
                     return
                 }
 
-                val target =
-                    pendingExternalCursorUtf16
+                val target = pendingExternalCursorUtf16
 
                 if (target != null) {
                     ic.finishComposingText()
@@ -207,12 +218,9 @@ class SsulKeyboardService : InputMethodService() {
                     pendingExternalCursorUtf16 = null
                     externalComposingActive = true
 
-                    val newPos =
-                        target + text.length
-
+                    val newPos = target + text.length
                     lastKnownSelectionStart = newPos
                     lastKnownSelectionEnd = newPos
-
                     rememberActualSelection()
                     return
                 }
@@ -226,10 +234,7 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun setExternalComposing(
-            text: String,
-            target: Int
-        ) {
+        fun setExternalComposing(text: String, target: Int) {
             internalSelectionUntil =
                 android.os.SystemClock.uptimeMillis() + 300L
 
@@ -243,9 +248,7 @@ class SsulKeyboardService : InputMethodService() {
                 pendingExternalCursorUtf16 = null
                 externalComposingActive = true
 
-                val newPos =
-                    target + text.length
-
+                val newPos = target + text.length
                 lastKnownSelectionStart = newPos
                 lastKnownSelectionEnd = newPos
 
@@ -262,12 +265,19 @@ class SsulKeyboardService : InputMethodService() {
             val ic = currentInputConnection ?: return
 
             try {
-                ic.deleteSurroundingText(1, 0)
-                ic.commitText(text, 1)
+                pendingExternalCursorUtf16 = null
+
+                if (externalComposingActive) {
+                    ic.setComposingText(text, 1)
+                    ic.finishComposingText()
+                } else {
+                    ic.deleteSurroundingText(1, 0)
+                    ic.commitText(text, 1)
+                }
 
                 externalComposingActive = false
-
                 rememberActualSelection()
+                syncHtmlWithNativeText()
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -275,10 +285,7 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         @JavascriptInterface
-        fun setSelection(
-            start: Int,
-            end: Int
-        ) {
+        fun setSelection(start: Int, end: Int) {
             internalSelectionUntil =
                 android.os.SystemClock.uptimeMillis() + 120L
 
@@ -286,35 +293,13 @@ class SsulKeyboardService : InputMethodService() {
 
             try {
                 ic.setSelection(start, end)
-
                 lastKnownSelectionStart = start
                 lastKnownSelectionEnd = end
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
-        /*
-         * ============================================================
-         * 삭제
-         *
-         * 한글 삭제 순서:
-         *
-         * 한 = ㅎ + ㅏ + ㄴ
-         *
-         * 1회 삭제 : 한 → 하
-         *             ㄴ 삭제
-         *
-         * 2회 삭제 : 하 → ㅎ
-         *             ㅏ 삭제
-         *
-         * 3회 삭제 : ㅎ → 빈칸
-         *             ㅎ 삭제
-         *
-         * 겹받침도 가능한 범위에서 한 자모씩 뒤로 되돌린다.
-         * ============================================================
-         */
         @JavascriptInterface
         fun deleteText() {
             internalSelectionUntil =
@@ -323,17 +308,8 @@ class SsulKeyboardService : InputMethodService() {
             val ic = currentInputConnection ?: return
 
             try {
-
-                /*
-                 * ----------------------------------------------------
-                 * 1. 기존 선택 영역 삭제
-                 * ----------------------------------------------------
-                 */
-                val rememberedStart =
-                    lastKnownSelectionStart
-
-                val rememberedEnd =
-                    lastKnownSelectionEnd
+                val rememberedStart = lastKnownSelectionStart
+                val rememberedEnd = lastKnownSelectionEnd
 
                 if (
                     rememberedStart >= 0 &&
@@ -341,16 +317,9 @@ class SsulKeyboardService : InputMethodService() {
                     rememberedStart != rememberedEnd
                 ) {
                     val selectionStart =
-                        minOf(
-                            rememberedStart,
-                            rememberedEnd
-                        )
-
+                        minOf(rememberedStart, rememberedEnd)
                     val selectionEnd =
-                        maxOf(
-                            rememberedStart,
-                            rememberedEnd
-                        )
+                        maxOf(rememberedStart, rememberedEnd)
 
                     externalComposingActive = false
                     pendingExternalCursorUtf16 = null
@@ -360,108 +329,53 @@ class SsulKeyboardService : InputMethodService() {
                     } catch (_: Exception) {
                     }
 
-                    ic.setSelection(
-                        selectionStart,
-                        selectionEnd
-                    )
-
+                    ic.setSelection(selectionStart, selectionEnd)
                     ic.commitText("", 1)
 
-                    lastKnownSelectionStart =
-                        selectionStart
-
-                    lastKnownSelectionEnd =
-                        selectionStart
+                    lastKnownSelectionStart = selectionStart
+                    lastKnownSelectionEnd = selectionStart
 
                     cancelHtmlExternalCursorState()
                     rememberActualSelection()
                     syncHtmlWithNativeText()
-
                     return
                 }
 
-                /*
-                 * ----------------------------------------------------
-                 * 2. 실제 선택 영역 확인
-                 * ----------------------------------------------------
-                 */
                 externalComposingActive = false
 
-                val selectedText =
-                    ic.getSelectedText(0)
+                val selectedText = ic.getSelectedText(0)
 
                 if (!selectedText.isNullOrEmpty()) {
                     pendingExternalCursorUtf16 = null
-
                     ic.commitText("", 1)
 
                     cancelHtmlExternalCursorState()
                     rememberActualSelection()
                     syncHtmlWithNativeText()
-
                     return
                 }
 
-                /*
-                 * ----------------------------------------------------
-                 * 3. 커서 앞의 실제 텍스트
-                 * ----------------------------------------------------
-                 */
                 val beforeNow =
-                    ic.getTextBeforeCursor(
-                        10000,
-                        0
-                    )?.toString() ?: ""
+                    ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
 
-                val cursor =
-                    beforeNow.length
+                val cursor = beforeNow.length
 
                 if (cursor <= 0) {
                     return
                 }
 
-                /*
-                 * ----------------------------------------------------
-                 * 4. 커서 바로 앞 Unicode code point
-                 * ----------------------------------------------------
-                 */
-                val codePoint =
-                    beforeNow.codePointBefore(cursor)
+                val codePoint = beforeNow.codePointBefore(cursor)
+                val charLength = Character.charCount(codePoint)
+                val start = cursor - charLength
 
-                val charLength =
-                    Character.charCount(codePoint)
+                if (codePoint in 0xAC00..0xD7A3) {
 
-                val start =
-                    cursor - charLength
-
-                /*
-                 * ----------------------------------------------------
-                 * 5. 완성형 한글
-                 * ----------------------------------------------------
-                 */
-                if (
-                    codePoint in 0xAC00..0xD7A3
-                ) {
-
-                    val syllableIndex =
-                        codePoint - 0xAC00
-
-                    val cho =
-                        syllableIndex /
-                                (21 * 28)
-
+                    val syllableIndex = codePoint - 0xAC00
+                    val cho = syllableIndex / (21 * 28)
                     val jung =
-                        (syllableIndex %
-                                (21 * 28)) / 28
+                        (syllableIndex % (21 * 28)) / 28
+                    val jong = syllableIndex % 28
 
-                    val jong =
-                        syllableIndex % 28
-
-                    /*
-                     * ------------------------------------------------
-                     * 한글 자모 테이블
-                     * ------------------------------------------------
-                     */
                     val choseong =
                         arrayOf(
                             "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ",
@@ -479,33 +393,8 @@ class SsulKeyboardService : InputMethodService() {
                             "ㅣ"
                         )[jung]
 
-                    /*
-                     * ------------------------------------------------
-                     * 종성이 있는 경우
-                     *
-                     * 한 → 하
-                     *
-                     * ㄴ을 제거한다.
-                     * ------------------------------------------------
-                     */
                     if (jong != 0) {
 
-                        /*
-                         * 겹받침은 마지막 자음부터
-                         * 하나씩 제거한다.
-                         *
-                         * ㄳ → ㄱ
-                         * ㄵ → ㄴ
-                         * ㄶ → ㄴ
-                         * ㄺ → ㄹ
-                         * ㄻ → ㄹ
-                         * ㄼ → ㄹ
-                         * ㄽ → ㄹ
-                         * ㄾ → ㄹ
-                         * ㄿ → ㄹ
-                         * ㅀ → ㄹ
-                         * ㅄ → ㅂ
-                         */
                         val reducedJong =
                             when (jong) {
                                 3 -> 1
@@ -522,113 +411,82 @@ class SsulKeyboardService : InputMethodService() {
                                 else -> 0
                             }
 
-                        /*
-                         * 새로운 완성형 글자 생성
-                         */
                         val replacementCode =
                             0xAC00 +
-                                    (cho * 21 * 28) +
-                                    (jung * 28) +
-                                    reducedJong
+                            (cho * 21 * 28) +
+                            (jung * 28) +
+                            reducedJong
 
                         val replacement =
                             String(
-                                Character.toChars(
-                                    replacementCode
-                                )
+                                Character.toChars(replacementCode)
                             )
 
-                        /*
-                         * 현재 한 글자를 선택하고
-                         * 이전 단계 글자로 교체
-                         */
-                        ic.setSelection(
-                            start,
-                            cursor
-                        )
+                        try {
+                            ic.finishComposingText()
+                        } catch (_: Exception) {
+                        }
 
-                        ic.commitText(
-                            replacement,
-                            1
-                        )
+                        ic.setSelection(start, cursor)
+
+                        /*
+                         * 삭제 후의 한글 단계를 composing 상태로 유지한다.
+                         * 다음 자음/모음이 이 글자를 이어서 조합할 수 있다.
+                         */
+                        ic.setComposingText(replacement, 1)
+                        externalComposingActive = true
 
                         val newCursor =
                             start + replacement.length
 
-                        lastKnownSelectionStart =
-                            newCursor
-
-                        lastKnownSelectionEnd =
-                            newCursor
+                        lastKnownSelectionStart = newCursor
+                        lastKnownSelectionEnd = newCursor
 
                         pendingExternalCursorUtf16 = null
-                        externalComposingActive = false
 
                         cancelHtmlExternalCursorState()
                         rememberActualSelection()
-                        syncHtmlWithNativeText()
 
+                        /*
+                         * 국 -> 구 상태를 HTML에도 그대로 알려준다.
+                         * 다음 ㄴ이 오면 구 + ㄴ -> 군으로 이어진다.
+                         */
+                        syncHtmlAfterDelete("syllable")
                         return
                     }
 
                     /*
-                     * ------------------------------------------------
-                     * 종성 없음 (중성 'ㅏ'(인덱스 0) 포함 모든 모음 대상)
+                     * 종성이 없는 완성형:
+                     * 아 -> ㅇ
+                     * 하 -> ㅎ
                      *
-                     * 하 → ㅎ
-                     *
-                     * 중성을 제거하고 초성만 남긴다.
-                     * ------------------------------------------------
+                     * 초성을 composing 상태로 유지하여
+                     * 다음 모음이 같은 글자로 조합되게 한다.
                      */
-                    ic.setSelection(
-                        start,
-                        cursor
-                    )
+                    ic.setSelection(start, cursor)
 
-                    ic.commitText(
-                        choseong,
-                        1
-                    )
+                    ic.setComposingText(choseong, 1)
+                    externalComposingActive = true
 
                     val newCursor =
                         start + choseong.length
 
-                    lastKnownSelectionStart =
-                        newCursor
-
-                    lastKnownSelectionEnd =
-                        newCursor
+                    lastKnownSelectionStart = newCursor
+                    lastKnownSelectionEnd = newCursor
 
                     pendingExternalCursorUtf16 = null
-                    externalComposingActive = false
 
                     cancelHtmlExternalCursorState()
                     rememberActualSelection()
-                    syncHtmlWithNativeText()
-
+                    syncHtmlAfterDelete("initial")
                     return
                 }
 
-                /*
-                 * ----------------------------------------------------
-                 * 6. 일반 문자 / 이모지 / 숫자 / 기호
-                 * ----------------------------------------------------
-                 */
-                ic.setSelection(
-                    start,
-                    cursor
-                )
+                ic.setSelection(start, cursor)
+                ic.commitText("", 1)
 
-                ic.commitText(
-                    "",
-                    1
-                )
-
-                lastKnownSelectionStart =
-                    start
-
-                lastKnownSelectionEnd =
-                    start
+                lastKnownSelectionStart = start
+                lastKnownSelectionEnd = start
 
                 pendingExternalCursorUtf16 = null
                 externalComposingActive = false
@@ -654,11 +512,7 @@ class SsulKeyboardService : InputMethodService() {
                 pendingExternalCursorUtf16 = null
 
                 ic.finishComposingText()
-
-                ic.deleteSurroundingText(
-                    1,
-                    0
-                )
+                ic.deleteSurroundingText(1, 0)
 
                 rememberActualSelection()
                 syncHtmlWithNativeText()
@@ -670,25 +524,17 @@ class SsulKeyboardService : InputMethodService() {
 
         @JavascriptInterface
         fun isSearchField(): Boolean {
-            val info =
-                currentInputEditorInfo ?: return false
-
+            val info = currentInputEditorInfo ?: return false
             val action =
-                info.imeOptions and
-                        EditorInfo.IME_MASK_ACTION
+                info.imeOptions and EditorInfo.IME_MASK_ACTION
 
-            return action ==
-                    EditorInfo.IME_ACTION_SEARCH
+            return action == EditorInfo.IME_ACTION_SEARCH
         }
 
         @JavascriptInterface
         fun performSearch() {
-            val ic =
-                currentInputConnection ?: return
-
-            ic.performEditorAction(
-                EditorInfo.IME_ACTION_SEARCH
-            )
+            val ic = currentInputConnection ?: return
+            ic.performEditorAction(EditorInfo.IME_ACTION_SEARCH)
         }
 
         @JavascriptInterface
@@ -699,9 +545,7 @@ class SsulKeyboardService : InputMethodService() {
                         Intent.ACTION_VIEW,
                         Uri.parse(url)
                     ).apply {
-                        addFlags(
-                            Intent.FLAG_ACTIVITY_NEW_TASK
-                        )
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
 
                 startActivity(intent)
@@ -744,15 +588,9 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        /*
-         * 선택 영역
-         */
         if (newSelStart != newSelEnd) {
-            lastKnownSelectionStart =
-                newSelStart
-
-            lastKnownSelectionEnd =
-                newSelEnd
+            lastKnownSelectionStart = newSelStart
+            lastKnownSelectionEnd = newSelEnd
 
             pendingExternalCursorUtf16 = null
             externalComposingActive = false
@@ -763,45 +601,28 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        /*
-         * 우리가 방금 selection을 바꾼 직후라면
-         * 다시 HTML 커서를 덮어쓰지 않는다.
-         */
         if (
             android.os.SystemClock.uptimeMillis()
             < suppressSelectionSyncUntil
         ) {
-            lastKnownSelectionStart =
-                newSelStart
-
-            lastKnownSelectionEnd =
-                newSelEnd
-
+            lastKnownSelectionStart = newSelStart
+            lastKnownSelectionEnd = newSelEnd
             return
         }
 
-        /*
-         * 같은 위치면 불필요한 재동기화 방지
-         */
         if (
-            newSelStart ==
-            lastKnownSelectionStart &&
-            newSelEnd ==
-            lastKnownSelectionEnd
+            newSelStart == lastKnownSelectionStart &&
+            newSelEnd == lastKnownSelectionEnd
         ) {
             return
         }
 
         externalComposingActive = false
 
-        lastKnownSelectionStart =
-            newSelStart
+        lastKnownSelectionStart = newSelStart
+        lastKnownSelectionEnd = newSelEnd
 
-        lastKnownSelectionEnd =
-            newSelEnd
-
-        pendingExternalCursorUtf16 =
-            newSelStart
+        pendingExternalCursorUtf16 = newSelStart
 
         suppressSelectionSyncUntil =
             android.os.SystemClock.uptimeMillis() + 150L
@@ -827,10 +648,7 @@ class SsulKeyboardService : InputMethodService() {
         info: EditorInfo?,
         restarting: Boolean
     ) {
-        super.onStartInputView(
-            info,
-            restarting
-        )
+        super.onStartInputView(info, restarting)
 
         lastKnownSelectionStart = -1
         lastKnownSelectionEnd = -1
@@ -845,9 +663,6 @@ class SsulKeyboardService : InputMethodService() {
                 null
             )
 
-            /*
-             * 새 입력창은 메인판에서 시작
-             */
             webView.evaluateJavascript(
                 "javascript:if(window.resetToMainBoard) { window.resetToMainBoard(); }",
                 null
