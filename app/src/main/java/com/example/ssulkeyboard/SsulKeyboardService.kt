@@ -384,14 +384,6 @@ class SsulKeyboardService : InputMethodService() {
                             "ㅋ", "ㅌ", "ㅍ", "ㅎ"
                         )[cho]
 
-                    val jungseong =
-                        arrayOf(
-                            "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ",
-                            "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ",
-                            "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ",
-                            "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅣ"
-                        )[jung]
-
                     if (jong != 0) {
 
                         val reducedJong =
@@ -445,6 +437,7 @@ class SsulKeyboardService : InputMethodService() {
                         return
                     }
 
+                    // 받침 없는 글자 ('이' 등) 첫 번째 백스페이스: 초성(예: 'ㅇ')만 남기고 Composing 상태로 전환
                     try {
                         ic.finishComposingText()
                     } catch (_: Exception) {
