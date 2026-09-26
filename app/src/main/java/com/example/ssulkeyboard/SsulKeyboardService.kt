@@ -462,11 +462,18 @@ class SsulKeyboardService : InputMethodService() {
                      *
                      * 초성을 composing 상태로 유지하여
                      * 다음 모음이 같은 글자로 조합되게 한다.
+                     *
+                     * 주의: 여기서 externalComposingActive를 true로 두면 안 된다.
+                     * setComposing()의 "외부 커서 삽입" 분기가 완성된 음절이
+                     * 만들어지자마자 finishComposingText()로 즉시 확정해버려서,
+                     * 뒤이어 조합되는 모음/자음이 그 위에 또 커밋되어
+                     * 글자가 중복되는 원인이 된다 (예: 가->ㄱ->고 입력 시 "고교"/"고고"/
+                     * "ㄱㄱㄷ"처럼 중복됨). 이 초성은 일반 setComposingText 상태로만
+                     * 유지하면 충분하다.
                      */
                     ic.setSelection(start, cursor)
 
                     ic.setComposingText(choseong, 1)
-                    externalComposingActive = true
 
                     val newCursor =
                         start + choseong.length
