@@ -2125,14 +2125,17 @@ isCbLong = false;
 return;
 }
 try {
-if (navigator.clipboard && navigator.clipboard.readText) {
-let clipboardText = await navigator.clipboard.readText();
+let clipboardText = '';
+if (window.AndroidBridge && window.AndroidBridge.readClipboard) {
+clipboardText = window.AndroidBridge.readClipboard() || '';
+} else if (navigator.clipboard && navigator.clipboard.readText) {
+clipboardText = await navigator.clipboard.readText();
+}
 if (clipboardText && clipboardText.trim() !== "") {
 let history = getMergedClipHistory();
 history = history.filter(item => item !== clipboardText);
 history.unshift(clipboardText);
 saveClipHistory(history);
-}
 }
 } catch (err) {}
 renderClipHistory();
