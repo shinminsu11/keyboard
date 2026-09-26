@@ -596,6 +596,11 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         if (newSelStart != newSelEnd) {
+            try {
+                currentInputConnection?.finishComposingText()
+            } catch (_: Exception) {
+            }
+
             lastKnownSelectionStart = newSelStart
             lastKnownSelectionEnd = newSelEnd
 
@@ -622,6 +627,11 @@ class SsulKeyboardService : InputMethodService() {
             newSelEnd == lastKnownSelectionEnd
         ) {
             return
+        }
+
+        try {
+            currentInputConnection?.finishComposingText()
+        } catch (_: Exception) {
         }
 
         externalComposingActive = false
