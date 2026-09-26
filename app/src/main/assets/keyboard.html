@@ -436,20 +436,6 @@ background: #fff;
 background: #f0f0f0;
 color: #e63935;
 }
-.clipboard-add-row {
-padding: 12px;
-background: #f8f9fa;
-border-radius: 10px;
-font-size: 13px;
-color: #1a73e8;
-font-weight: bold;
-text-align: center;
-cursor: pointer;
-margin-top: 10px;
-}
-.clipboard-add-row:active {
-background: #e2e8f0;
-}
 
 .emoji-list {
 display: grid;
@@ -907,22 +893,6 @@ background: #e2e8f0;
 <span class="modal-close" onclick="closeClipboardModal()">×</span>
 </div>
 <div class="clipboard-list" id="clipboardListContainer"></div>
-<div class="clipboard-add-row" onclick="closeClipboardModal(); openAddClipboardModal();">＋ 자주 쓰는 문구 추가</div>
-</div>
-</div>
-
-<div id="addClipboardModal" class="modal-overlay">
-<div class="modal-box">
-<div class="modal-header">
-<span>사용자 클립보드(문구) 추가</span>
-<span class="modal-close" onclick="closeAddClipboardModal()">×</span>
-</div>
-<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 문장이나 메모를 입력해주세요.</div>
-<input type="text" id="customClipText" class="modal-input" placeholder="저장할 텍스트 입력...">
-<div style="display:flex; gap:6px; margin-top:4px;">
-<button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
-<button onclick="closeAddClipboardModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
-</div>
 </div>
 </div>
 
@@ -1033,7 +1003,6 @@ const topSymbolKey = document.getElementById('topSymbolKey');
 const shiftBtn = document.getElementById('shiftBtn');
 const clipboardKey = document.getElementById('clipboardKey');
 const clipboardModal = document.getElementById('clipboardModal');
-const addClipboardModal = document.getElementById('addClipboardModal');
 const emojiModal = document.getElementById('emojiModal');
 const addEmojiModal = document.getElementById('addEmojiModal');
 const emojiListContainer = document.getElementById('emojiListContainer');
@@ -2232,29 +2201,6 @@ renderClipHistory();
 showToast('삭제되었습니다');
 }
 
-function openAddClipboardModal() {
-document.getElementById('customClipText').value = '';
-addClipboardModal.style.display = 'flex';
-}
-function closeAddClipboardModal() { addClipboardModal.style.display = 'none'; }
-
-function saveCustomClip() {
-let val = document.getElementById('customClipText').value.trim();
-if (!val) { alert('저장할 텍스트를 입력해주세요.'); return; }
-let history = getMergedClipHistory();
-let normalizedVal = val.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-history = history.filter(item => {
-let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-return normalizedItem !== normalizedVal;
-});
-history.unshift(val);
-saveClipHistory(history);
-closeAddClipboardModal();
-showToast("문구가 추가되었습니다");
-renderClipHistory();
-openClipboardModal();
-}
-
 function openClipboardModal() { clipboardModal.style.display = 'flex'; }
 function closeClipboardModal() { clipboardModal.style.display = 'none'; }
 function openEmojiModal() { emojiModal.style.display = 'flex'; }
@@ -2567,7 +2513,7 @@ const DEFAULT_HANJA_DICT = {
 '은': [{c:'恩', m:'은혜 은'}, {c:'銀', m:'은 은'}],
 '을': [{c:'乙', m:'새 을'}],
 '음': [{c:'音', m:'소리 음'}, {c:'飮', m:'마실 음'}, {c:'陰', m:'그늘 음'}],
-'읍': [{c:'읍', m:'고을 읍'}],
+'읍': [{c:'邑', m:'고을 읍'}],
 '응': [{c:'應', m:'응할 응'}],
 '의': [{c:'意', m:'뜻 의'}, {c:'義', m:'옳을 의'}, {c:'醫', m:'의원 의'}, {c:'衣', m:'옷 의'}, {c:'議', m:'의논할 의'}],
 '이': [{c:'二', m:'두 이'}, {c:'以', m:'써 이'}, {c:'李', m:'성 이'}, {c:'耳', m:'귀 이'}, {c:'已', m:'이미 이'}],
@@ -2788,7 +2734,6 @@ function replaceLastCharWithHanja(hanjaChar) {
 }
 
 clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
-addClipboardModal.addEventListener('click', (e) => { if (e.target === addClipboardModal) closeAddClipboardModal(); });
 emojiModal.addEventListener('click', (e) => { if (e.target === emojiModal) closeEmojiModal(); });
 addEmojiModal.addEventListener('click', (e) => { if (e.target === addEmojiModal) closeAddEmojiModal(); });
 hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) closeHanjaModal(); });
