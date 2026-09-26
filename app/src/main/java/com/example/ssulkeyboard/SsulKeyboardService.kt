@@ -1,5 +1,6 @@
 package com.example.ssulkeyboard
 
+import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
@@ -559,6 +560,26 @@ class SsulKeyboardService : InputMethodService() {
 
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+
+        @JavascriptInterface
+        fun readClipboard(): String {
+            return try {
+                val cm =
+                    getSystemService(CLIPBOARD_SERVICE) as? ClipboardManager
+                val clip = cm?.primaryClip
+
+                if (clip != null && clip.itemCount > 0) {
+                    val item = clip.getItemAt(0)
+                    item.coerceToText(this@SsulKeyboardService)
+                        ?.toString() ?: ""
+                } else {
+                    ""
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ""
             }
         }
     }
