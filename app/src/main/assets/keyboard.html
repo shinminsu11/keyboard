@@ -380,37 +380,36 @@ margin-bottom: 8px;
 .clipboard-list {
 display: flex;
 flex-direction: column;
-gap: 8px;
-max-height: 50vh;
+gap: 10px;
+max-height: 72vh;
 overflow-y: auto;
 -webkit-overflow-scrolling: touch;
-padding-top: 10px;
-padding-bottom: 10px;
+padding-top: 12px;
+padding-bottom: 12px;
 border-top: 1px solid #eee;
 border-bottom: 1px solid #eee;
 }
 
 .clipboard-item {
 position: relative;
-padding: 10px 38px 10px 12px;
+padding: 14px 42px 14px 14px;
 background: #ffffff;
-border: 1px solid #eaeaea;
-border-radius: 10px;
-font-size: 13px;
+border: 1px solid #e2e8f0;
+border-radius: 12px;
+font-size: 15px;
 cursor: pointer;
 box-sizing: border-box;
 word-break: break-all;
-color: #333;
+color: #222;
 user-select: none;
-box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 display: -webkit-box;
 -webkit-box-orient: vertical;
--webkit-line-clamp: 2;
+-webkit-line-clamp: 3;
 overflow: hidden;
 text-overflow: ellipsis;
 line-height: 1.5;
-min-height: 44px;
-max-height: 4.8em;
+min-height: 52px;
 white-space: pre-wrap;
 }
 .clipboard-item:active {
@@ -421,16 +420,16 @@ position: absolute;
 right: 10px;
 top: 50%;
 transform: translateY(-50%);
-font-size: 16px;
+font-size: 18px;
 color: #888;
 cursor: pointer;
-width: 24px;
-height: 24px;
+width: 28px;
+height: 28px;
 display: flex;
 align-items: center;
 justify-content: center;
 border-radius: 50%;
-background: #fff;
+background: #f8f9fa;
 }
 .clipboard-item .clip-delete-btn:hover {
 background: #f0f0f0;
@@ -2525,38 +2524,6 @@ const DEFAULT_HANJA_DICT = {
 '자': [{c:'子', m:'아들 자'}, {c:'字', m:'글자 자'}, {c:'自', m:'스스로 자'}, {c:'者', m:'놈 자'}, {c:'姉', m:'손윗누이 자'}],
 '작': [{c:'作', m:'지을 작'}],
 '잔': [{c:'殘', m:'남을 잔'}],
-'장': [{c:'長', m:'길 장'}, {c:'場', m:'마당 장'}, {c:'章', m:'글 장'}, {c:'將', m:'장차 장'}, {c:'張', m:'베풀 장'}],
-'재': [{c:'才', m:'재주 재'}, {c:'在', m:'있을 재'}, {c:'材', m:'재목 재'}, {c:'財', m:'재물 재'}, {c:'再', m:'다시 재'}],
-'쟁': [{c:'爭', m:'다툴 쟁'}],
-'저': [{c:'低', m:'낮을 저'}, {c:'著', m:'나타날 저'}],
-'적': [{c:'的', m:'과녁 적'}, {c:'赤', m:'붉을 적'}, {c:'適', m:'맞을 적'}, {c:'敵', m:'대적할 적'}, {c:'積', m:'쌓을 적'}],
-'전': [{c:'全', m:'온전할 전'}, {c:'電', m:'번개 전'}, {c:'前', m:'앞 전'}, {c:'田', m:'밭 전'}, {c:'傳', m:'전할 전'}, {c:'展', m:'펼 전'}, {c:'戰', m:'싸울 전'}],
-'절': [{c:'節', m:'마디 절'}, {c:'切', m:'끊을 절'}],
-'점': [{c:'店', m:'가게 점'}, {c:'點', m:'점 점'}],
-'접': [{c:'接', m:'이을 접'}],
-'정': [{c:'正', m:'바를 정'}, {c:'定', m:'정할 정'}, {c:'情', m:'뜻 정'}, {c:'政', m:'정사 정'}, {c:'精', m:'정할 정'}, {c:'靜', m:'고요할 정'}, {c:'停', m:'머무를 정'}],
-'제': [{c:'弟', m:'아우 제'}, {c:'第', m:'차례 제'}, {c:'題', m:'제목 제'}, {c:'制', m:'절제할 제'}, {c:'製', m:'지을 제'}, {c:'濟', m:'건널 제'}],
-'조': [{c:'祖', m:'할아비 조'}, {c:'造', m:'지을 조'}, {c:'助', m:'도울 조'}, {c:'朝', m:'아침 조'}, {c:'調', m:'고를 조'}, {c:'早', m:'이를 조'}],
-'족': [{c:'族', m:'겨레 족'}, {c:'足', m:'발 족'}],
-'존': [{c:'存', m:'있을 존'}, {c:'尊', m:'높을 존'}],
-'졸': [{c:'卒', m:'마칠 졸'}],
-'종': [{c:'種', m:'씨 종'}, {c:'終', m:'마칠 종'}, {c:'從', m:'좇을 종'}],
-'좌': [{c:'左', m:'왼 좌'}, {c:'坐', m:'앉을 좌'}],
-'죄': [{c:'罪', m:'허물 죄'}],
-'주': [{c:'主', m:'주인 주'}, {c:'住', m:'살 주'}, {c:'注', m:'부을 주'}, {c:'州', m:'고을 주'}, {c:'週', m:'돌 주'}, {c:'晝', m:'낮 주'}],
-'죽': [{c:'竹', m:'대 죽'}],
-'준': [{c:'準', m:'준할 준'}],
-'중': [{c:'中', m:'가운데 중'}, {c:'重', m:'무거울 중'}, {c:'衆', m:'무리 중'}],
-'즉': [{c:'卽', m:'곧 즉'}],
-'증': [{c:'增', m:'더할 증'}, {c:'證', m:'증거 증'}],
-'지': [{c:'地', m:'땅 지'}, {c:'知', m:'알 지'}, {c:'紙', m:'종이 지'}, {c:'志', m:'뜻 지'}, {c:'指', m:'가리킬 지'}, {c:'支', m:'지탱할 지'}],
-'직': [{c:'直', m:'곧을 직'}, {c:'職', m:'직분 직'}],
-'진': [{c:'眞', m:'참 진'}, {c:'進', m:'나아갈 진'}, {c:'盡', m:'다할 진'}],
-'질': [{c:'質', m:'바탕 질'}],
-'집': [{c:'集', m:'모을 집'}],
-'차': [{c:'車', m:'수레 차'}, {c:'次', m:'버금 차'}, {c:'差', m:'다를 차'}, {c:'茶', m:'차 차'}],
-'착': [{c:'着', m:'붙을 착'}],
-'찬': [{c:'讚', m:'기릴 찬'}],
 '참': [{c:'參', m:'참여할 참'}],
 '창': [{c:'窓', m:'창 창'}, {c:'唱', m:'부를 창'}],
 '채': [{c:'採', m:'캘 채'}, {c:'菜', m:'나물 채'}],
