@@ -2123,8 +2123,11 @@ clipboardText = await navigator.clipboard.readText();
 }
 if (clipboardText && clipboardText.trim() !== "") {
 let history = getMergedClipHistory();
-let normalizedNewText = clipboardText.trim();
-history = history.filter(item => item.trim() !== normalizedNewText);
+let normalizedNewText = clipboardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+history = history.filter(item => {
+let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+return normalizedItem !== normalizedNewText;
+});
 history.unshift(clipboardText);
 saveClipHistory(history);
 }
@@ -2239,8 +2242,11 @@ function saveCustomClip() {
 let val = document.getElementById('customClipText').value.trim();
 if (!val) { alert('저장할 텍스트를 입력해주세요.'); return; }
 let history = getMergedClipHistory();
-let normalizedVal = val.trim();
-history = history.filter(item => item.trim() !== normalizedVal);
+let normalizedVal = val.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+history = history.filter(item => {
+let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+return normalizedItem !== normalizedVal;
+});
 history.unshift(val);
 saveClipHistory(history);
 closeAddClipboardModal();
@@ -2561,7 +2567,7 @@ const DEFAULT_HANJA_DICT = {
 '은': [{c:'恩', m:'은혜 은'}, {c:'銀', m:'은 은'}],
 '을': [{c:'乙', m:'새 을'}],
 '음': [{c:'音', m:'소리 음'}, {c:'飮', m:'마실 음'}, {c:'陰', m:'그늘 음'}],
-'읍': [{c:'邑', m:'고을 읍'}],
+'읍': [{c:'읍', m:'고을 읍'}],
 '응': [{c:'應', m:'응할 응'}],
 '의': [{c:'意', m:'뜻 의'}, {c:'義', m:'옳을 의'}, {c:'醫', m:'의원 의'}, {c:'衣', m:'옷 의'}, {c:'議', m:'의논할 의'}],
 '이': [{c:'二', m:'두 이'}, {c:'以', m:'써 이'}, {c:'李', m:'성 이'}, {c:'耳', m:'귀 이'}, {c:'已', m:'이미 이'}],
