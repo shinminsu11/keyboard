@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 1.0 최종수정본</title>
+<title>쓸기자판 1.0 최종완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1080,12 +1080,6 @@ window.syncNativeText = function(before, after) {
     lastSlideDir = '';
 };
 
-/*
- * 삭제 직후에는 Android 쪽에서 방금 만든 한글 단계와
- * HTML 한글 조합 상태를 같은 단계로 맞춘다.
- * mode = initial  : 아 -> ㅇ
- * mode = syllable : 국 -> 구
- */
 window.syncNativeTextAfterDelete = function(before, after, mode) {
     renderVersion++;
     before = (before == null) ? '' : String(before);
@@ -1104,8 +1098,6 @@ window.syncNativeTextAfterDelete = function(before, after, mode) {
     if (mode === 'initial') {
         const cho = CHOSUNG.indexOf(last);
         if (cho !== -1) {
-            // 이 자음은 committedText가 아니라 hangulBuffer(조합 대기 상태)로만 표현한다.
-            // 두 곳에 동시에 남으면 다음 입력 시 commitCurrent()가 이 글자를 중복 삽입한다.
             chars.splice(cursorPos - 1, 1);
             committedText = chars.join('');
             cursorPos = cursorPos - 1;
@@ -1646,7 +1638,6 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
-    // 안드로이드 앱 환경에서는 코틀린의 완벽한 deleteText() 로직이 글자 분해 및 삭제를 담당하도록 위임합니다.
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
@@ -1654,7 +1645,6 @@ function backspaceHangul() {
         return;
     }
 
-    // 웹 브라우저 테스트 환경용 백스페이스 처리
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
@@ -2056,8 +2046,6 @@ let cbStartX = 0, cbStartY = 0;
 let cbTimer = null;
 let isCbLong = false;
 let isSwiping = false;
-let clipboardReadInFlight = false;
-let lastClipboardActionTime = 0;
 
 const DEFAULT_CLIP_HISTORY = [
 "집필 중 참고할 첫 번째 문단 예시입니다.",
@@ -2126,12 +2114,6 @@ isSwiping = false;
 isCbLong = false;
 return;
 }
-const now = Date.now();
-if (clipboardReadInFlight || (now - lastClipboardActionTime) < 500) {
-return;
-}
-clipboardReadInFlight = true;
-lastClipboardActionTime = now;
 try {
 let clipboardText = '';
 if (window.AndroidBridge && window.AndroidBridge.readClipboard) {
@@ -2141,14 +2123,12 @@ clipboardText = await navigator.clipboard.readText();
 }
 if (clipboardText && clipboardText.trim() !== "") {
 let history = getMergedClipHistory();
-history = history.filter(item => item !== clipboardText);
+let normalizedNewText = clipboardText.trim();
+history = history.filter(item => item.trim() !== normalizedNewText);
 history.unshift(clipboardText);
 saveClipHistory(history);
 }
-} catch (err) {
-} finally {
-clipboardReadInFlight = false;
-}
+} catch (err) {}
 renderClipHistory();
 openClipboardModal();
 });
@@ -2177,23 +2157,51 @@ history.forEach((text, index) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
         closeClipboardModal();
 
-        let chunkSize = 200;
+        const normalizedText = String(text == null ? '' : text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const textChars = Array.from(normalizedText);
+        const chunkSize = 200;
         let indexChar = 0;
+
+        function insertChunkToEditor(chunk) {
+            if (!chunk) return;
+
+            const parts = chunk.split('\n');
+
+            parts.forEach((part, partIndex) => {
+                if (part) {
+                    commitCurrent();
+                    lastSlideDir = '';
+                    let chars = Array.from(committedText);
+                    chars.splice(cursorPos, 0, part);
+                    committedText = chars.join('');
+                    cursorPos += getCharLen(part);
+                    updateScreen();
+                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                        window.AndroidBridge.commitText(part);
+                    }
+                }
+
+                if (partIndex < parts.length - 1) {
+                    commitCurrent();
+                    lastSlideDir = '';
+                    let chars = Array.from(committedText);
+                    chars.splice(cursorPos, 0, '\n');
+                    committedText = chars.join('');
+                    cursorPos += 1;
+                    updateScreen();
+                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                        window.AndroidBridge.commitText('\n');
+                    }
+                }
+            });
+        }
+
         function insertNextChunk() {
-            if (indexChar < text.length) {
-                let chunk = text.substring(indexChar, indexChar + chunkSize);
+            if (indexChar < textChars.length) {
+                const chunk = textChars.slice(indexChar, indexChar + chunkSize).join('');
                 indexChar += chunkSize;
 
-                commitCurrent();
-                lastSlideDir = '';
-                let chars = Array.from(committedText);
-                chars.splice(cursorPos, 0, chunk);
-                committedText = chars.join('');
-                cursorPos += getCharLen(chunk);
-                updateScreen();
-                if (window.AndroidBridge && window.AndroidBridge.commitText) {
-                    window.AndroidBridge.commitText(chunk);
-                }
+                insertChunkToEditor(chunk);
                 setTimeout(insertNextChunk, 2);
             }
         }
@@ -2231,7 +2239,8 @@ function saveCustomClip() {
 let val = document.getElementById('customClipText').value.trim();
 if (!val) { alert('저장할 텍스트를 입력해주세요.'); return; }
 let history = getMergedClipHistory();
-history = history.filter(item => item !== val);
+let normalizedVal = val.trim();
+history = history.filter(item => item.trim() !== normalizedVal);
 history.unshift(val);
 saveClipHistory(history);
 closeAddClipboardModal();
@@ -2619,4 +2628,421 @@ const DEFAULT_HANJA_DICT = {
 '측': [{c:'側', m:'곁 측'}],
 '치': [{c:'治', m:'다스릴 치'}, {c:'致', m:'이를 치'}, {c:'齒', m:'이 치'}],
 '칙': [{c:'則', m:'법칙 칙'}],
-'친': [{c:'親', m
+'친': [{c:'親', m:'친할 친'}],
+'칠': [{c:'七', m:'일곱 칠'}],
+'침': [{c:'侵', m:'침노할 침'}, {c:'沈', m:'성 심'}],
+'쾌': [{c:'快', m:'쾌할 쾌'}],
+'타': [{c:'他', m:'다를 타'}, {c:'打', m:'칠 타'}],
+'탄': [{c:'炭', m:'숯 탄'}],
+'탈': [{c:'脫', m:'벗을 탈'}],
+'탐': [{c:'探', m:'찾을 탐'}],
+'태': [{c:'太', m:'클 태'}, {c:'態', m:'모습 태'}],
+'택': [{c:'宅', m:'집 택'}, {c:'擇', m:'가릴 택'}],
+'토': [{c:'土', m:'흙 토'}],
+'통': [{c:'通', m:'통할 통'}, {c:'統', m:'거느릴 통'}, {c:'痛', m:'아플 통'}],
+'퇴': [{c:'退', m:'물러날 퇴'}],
+'투': [{c:'投', m:'던질 투'}],
+'특': [{c:'特', m:'특별할 특'}],
+'파': [{c:'波', m:'물결 파'}, {c:'破', m:'깨뜨릴 파'}],
+'판': [{c:'判', m:'판단할 판'}, {c:'板', m:'널 판'}],
+'팔': [{c:'八', m:'여덟 팔'}],
+'패': [{c:'敗', m:'패할 패'}],
+'편': [{c:'便', m:'편할 편'}, {c:'片', m:'조각 편'}, {c:'篇', m:'책 편'}],
+'평': [{c:'平', m:'평평할 평'}],
+'폐': [{c:'閉', m:'닫을 폐'}, {c:'廢', m:'폐할 폐'}],
+'포': [{c:'布', m:'베 포'}, {c:'抱', m:'안을 포'}, {c:'包', m:'쌀 포'}],
+'표': [{c:'表', m:'겉 표'}, {c:'票', m:'표 표'}],
+'품': [{c:'品', m:'물건 품'}],
+'풍': [{c:'風', m:'바람 풍'}, {c:'豊', m:'풍년 풍'}],
+'피': [{c:'皮', m:'가죽 피'}, {c:'避', m:'피할 피'}],
+'필': [{c:'必', m:'반드시 필'}, {c:'筆', m:'붓 필'}],
+'하': [{c:'下', m:'아래 하'}, {c:'河', m:'물 하'}, {c:'夏', m:'여름 하'}, {c:'何', m:'어찌 하'}, {c:'賀', m:'하례 하'}],
+'학': [{c:'學', m:'배울 학'}],
+'한': [{c:'韓', m:'나라 한'}, {c:'漢', m:'한나라 한'}, {c:'寒', m:'찰 한'}, {c:'限', m:'한할 한'}],
+'할': [{c:'割', m:'벨 할'}],
+'함': [{c:'咸', m:'다 함'}],
+'합': [{c:'合', m:'합할 합'}],
+'항': [{c:'港', m:'항구 항'}, {c:'抗', m:'막을 항'}],
+'해': [{c:'海', m:'바다 해'}, {c:'害', m:'해할 해'}, {c:'解', m:'풀 해'}],
+'행': [{c:'行', m:'다닐 행'}, {c:'幸', m:'다행 행'}],
+'향': [{c:'向', m:'향할 향'}, {c:'鄕', m:'시골 향'}, {c:'香', m:'향기 향'}],
+'허': [{c:'虛', m:'빌 허'}, {c:'許', m:'허락할 허'}],
+'헌': [{c:'憲', m:'법 헌'}],
+'험': [{c:'驗', m:'시험 험'}, {c:'險', m:'험할 험'}],
+'혁': [{c:'革', m:'가죽 혁'}],
+'현': [{c:'現', m:'나타날 현'}, {c:'賢', m:'어질 현'}, {c:'玄', m:'검을 현'}],
+'혈': [{c:'血', m:'피 혈'}],
+'협': [{c:'協', m:'화합할 협'}],
+'형': [{c:'兄', m:'맏 형'}, {c:'形', m:'모양 형'}, {c:'刑', m:'형벌 형'}],
+'혜': [{c:'惠', m:'은혜 혜'}, {c:'慧', m:'슬기로울 혜'}],
+'호': [{c:'好', m:'좋을 호'}, {c:'戶', m:'집 호'}, {c:'呼', m:'부를 호'}, {c:'湖', m:'호수 호'}, {c:'號', m:'이름 호'}],
+'혹': [{c:'或', m:'혹 혹'}],
+'혼': [{c:'婚', m:'혼인할 혼'}, {c:'混', m:'섞을 혼'}],
+'홍': [{c:'紅', m:'붉을 홍'}, {c:'洪', m:'성 홍'}],
+'화': [{c:'火', m:'불 화'}, {c:'花', m:'꽃 화'}, {c:'話', m:'말씀 화'}, {c:'化', m:'될 화'}, {c:'和', m:'화할 화'}, {c:'畫', m:'그림 화'}],
+'확': [{c:'確', m:'굳을 확'}],
+'환': [{c:'患', m:'근심 환'}, {c:'歡', m:'기쁠 환'}, {c:'換', m:'바꿀 환'}],
+'활': [{c:'活', m:'살 활'}],
+'황': [{c:'黃', m:'누를 황'}],
+'회': [{c:'會', m:'모일 회'}, {c:'回', m:'돌아올 회'}],
+'효': [{c:'孝', m:'효도 효'}, {c:'效', m:'본받을 효'}],
+'후': [{c:'後', m:'뒤 후'}, {c:'厚', m:'두터울 후'}],
+'훈': [{c:'訓', m:'가르칠 훈'}],
+'휴': [{c:'休', m:'쉴 휴'}],
+'흑': [{c:'黑', m:'검을 흑'}],
+'흡': [{c:'吸', m:'마실 흡'}],
+'흥': [{c:'興', m:'일 흥'}],
+'희': [{c:'喜', m:'기쁠 희'}, {c:'希', m:'바랄 희'}]
+};
+
+function getMergedHanjaDict() {
+let custom = JSON.parse(localStorage.getItem('user_custom_hanja_v1')) || {};
+let merged = JSON.parse(JSON.stringify(DEFAULT_HANJA_DICT));
+for (let key in custom) {
+if (!merged[key]) merged[key] = [];
+custom[key].forEach(newItem => {
+if (!merged[key].some(existing => existing.c === newItem.c)) merged[key].push(newItem);
+});
+}
+return merged;
+}
+
+let targetHanjaCharForAdd = '';
+function openHanjaModal() {
+commitCurrent();
+let chars = Array.from(committedText);
+let lastChar = chars[cursorPos - 1] || chars[chars.length - 1] || '';
+targetHanjaCharForAdd = lastChar;
+hanjaGridContainer.innerHTML = "";
+let dict = getMergedHanjaDict();
+let list = dict[lastChar];
+
+if (!list || list.length === 0) {
+hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
+let emptyDiv = document.createElement('div');
+emptyDiv.style.gridColumn = "span 2";
+emptyDiv.style.padding = "15px";
+emptyDiv.style.textAlign = "center";
+emptyDiv.style.color = "#777";
+emptyDiv.innerHTML = `등록된 한문이 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한문 추가하기</button>`;
+hanjaGridContainer.appendChild(emptyDiv);
+document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
+} else {
+hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
+list.forEach(item => {
+let div = document.createElement('div');
+div.className = 'hanja-item';
+div.innerHTML = `<span class="hanja-char">${item.c}</span> <span>${item.m}</span>`;
+div.onclick = () => { replaceLastCharWithHanja(item.c); closeHanjaModal(); };
+hanjaGridContainer.appendChild(div);
+});
+}
+hanjaModal.style.display = 'flex';
+}
+function closeHanjaModal() { hanjaModal.style.display = 'none'; }
+function openAddHanjaModal(char) {
+addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한문과 뜻을 입력해주세요.`;
+addHanjaModal.style.display = 'flex';
+}
+function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
+function saveCustomHanja() {
+let cInput = document.getElementById('customHanjaChar').value.trim();
+let mInput = document.getElementById('customHanjaMeaning').value.trim();
+if (!cInput || !mInput) return;
+let custom = JSON.parse(localStorage.getItem('user_custom_hanja_v1')) || {};
+if (!custom[targetHanjaCharForAdd]) custom[targetHanjaCharForAdd] = [];
+custom[targetHanjaCharForAdd].push({ c: cInput, m: mInput });
+localStorage.setItem('user_custom_hanja_v1', JSON.stringify(custom));
+closeAddHanjaModal();
+showToast("추가되었습니다");
+openHanjaModal();
+}
+
+function replaceLastCharWithHanja(hanjaChar) {
+    if (cursorPos > 0) {
+        let subStr = committedText.substring(0, cursorPos);
+        let codePoints = Array.from(subStr);
+        let lastChar = codePoints[codePoints.length - 1];
+        let lastCharLen = lastChar.length;
+
+        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
+            window.AndroidBridge.deleteOneCharForHanja();
+        }
+
+        let chars = Array.from(committedText);
+        chars.splice(cursorPos - lastCharLen, lastCharLen, hanjaChar);
+        committedText = chars.join('');
+        cursorPos = cursorPos - lastCharLen + hanjaChar.length;
+        updateScreen();
+
+        if (window.AndroidBridge && window.AndroidBridge.commitText) {
+            window.AndroidBridge.commitText(hanjaChar);
+        }
+    }
+}
+
+clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
+addClipboardModal.addEventListener('click', (e) => { if (e.target === addClipboardModal) closeAddClipboardModal(); });
+emojiModal.addEventListener('click', (e) => { if (e.target === emojiModal) closeEmojiModal(); });
+addEmojiModal.addEventListener('click', (e) => { if (e.target === addEmojiModal) closeAddEmojiModal(); });
+hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) closeHanjaModal(); });
+addHanjaModal.addEventListener('click', (e) => { if (e.target === addHanjaModal) closeAddHanjaModal(); });
+
+let topX = 0, topY = 0, topTimer = null, topLong = false;
+topSymbolKey.addEventListener('touchstart', (e) => {
+topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
+topTimer = setTimeout(() => { topLong = true; appendSpecial('•'); }, 500);
+}, { passive: true });
+topSymbolKey.addEventListener('touchend', (e) => {
+if (topTimer) { clearTimeout(topTimer); topTimer = null; }
+if (topLong) return;
+let t = e.changedTouches[0], dx = t.clientX - topX, dy = t.clientY - topY;
+if (Math.hypot(dx, dy) < 15) { appendSpecial('.'); return; }
+let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+if (angle >= -22.5 && angle < 22.5) appendSpecial(',');
+else if (angle >= 22.5 && angle < 67.5) appendSpecial('!');
+else if (angle >= 67.5 && angle < 112.5) appendSpecial('?');
+else if (angle >= 112.5 && angle < 157.5) appendSpecial('/');
+else if (angle >= 157.5 || angle < -157.5) appendSpecial(':');
+else if (angle >= -157.5 && angle < -112.5) appendSpecial('~');
+else if (angle >= -112.5 && angle < -67.5) appendSpecial('^');
+else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
+});
+
+let symX = 0, symY = 0, symTimer = null, symLong = false;
+symbolKey.addEventListener('touchstart', (e) => {
+symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
+symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); }, 500);
+}, { passive: true });
+symbolKey.addEventListener('touchend', (e) => {
+if (symTimer) { clearTimeout(symTimer); symTimer = null; }
+if (symLong) return;
+let t = e.changedTouches[0], dx = t.clientX - symX, dy = t.clientY - symY;
+if (Math.abs(dx) > 15 && Math.abs(dx) > Math.abs(dy)) appendSpecial(dx > 0 ? ')' : '(');
+else if (Math.abs(dy) > 15 && Math.abs(dy) > Math.abs(dx)) appendSpecial(dy < 0 ? '♡' : '→');
+else switchToBoard('symbolBoard1');
+});
+
+let sX = 0, sY = 0;
+settingBtn.addEventListener('touchstart', (e) => { 
+    sX = e.touches[0].clientX; 
+    sY = e.touches[0].clientY; 
+}, { passive: true });
+
+settingBtn.addEventListener('touchend', (e) => {
+    let t = e.changedTouches[0];
+    let dx = t.clientX - sX;
+    let dy = t.clientY - sY;
+
+    if (dx < -15 && Math.abs(dx) > Math.abs(dy)) {
+        commitCurrent(); 
+        if (cursorPos > 0) cursorPos--; 
+        updateScreen(); 
+        
+        let chars = Array.from(committedText);
+        let utf16Idx = getUtf16Index(chars, cursorPos);
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+        }
+        return;
+    }
+    if (dx > 15 && Math.abs(dx) > Math.abs(dy)) {
+        commitCurrent(); 
+        let charsList = Array.from(committedText);
+        if (cursorPos < charsList.length) cursorPos++; 
+        updateScreen(); 
+        
+        let utf16Idx = getUtf16Index(charsList, cursorPos);
+        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+            window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
+        }
+        return;
+    }
+    if (dy > 20 && Math.abs(dy) > Math.abs(dx)) {
+        mainBoard.classList.remove('active'); 
+        twinBoard.classList.add('active');
+        return;
+    }
+    if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+        appendSpecial(' ');
+    }
+});
+
+let twinStartX = 0, twinStartY = 0;
+twinBoard.addEventListener('touchstart', (e) => { twinStartX = e.touches[0].clientX; twinStartY = e.touches[0].clientY; }, { passive: true });
+twinBoard.addEventListener('touchend', (e) => {
+let t = e.changedTouches[0], dx = t.clientX - twinStartX, dy = t.clientY - twinStartY;
+if (dy > 25 && Math.abs(dy) > Math.abs(dx)) { twinBoard.classList.remove('active'); mainBoard.classList.add('active'); }
+});
+
+let currentSlot = null, currentType = 'url';
+function getDB() { 
+    let data = localStorage.getItem('fresh_design_db_v1'); 
+    let db = data ? JSON.parse(data) : {};
+    if (!db['snippet_15']) {
+        db['snippet_15'] = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+    }
+    return db;
+}
+function saveDB(db) { localStorage.setItem('fresh_design_db_v1', JSON.stringify(db)); }
+function renderSlots() {
+let db = getDB();
+document.querySelectorAll('.slot-key').forEach(el => {
+let slotKey = el.getAttribute('data-slot');
+let defaultHtml = el.getAttribute('data-default');
+let val = db[slotKey];
+if (slotKey === 'snippet_15' && !val) {
+    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+}
+if (val) {
+let temp = document.createElement('div'); temp.innerHTML = defaultHtml;
+let staticHtml = '';
+let lbl = temp.querySelector('.label'), ico = temp.querySelector('.icon');
+if (lbl) staticHtml += lbl.outerHTML;
+if (ico) staticHtml += ico.outerHTML;
+let labelText = (typeof val === 'object' && val.title) ? val.title : val;
+el.innerHTML = staticHtml + `<span class="content-text">${labelText}</span>`;
+} else { el.innerHTML = defaultHtml; }
+});
+}
+
+document.querySelectorAll('.slot-key').forEach(el => {
+let slotKey = el.getAttribute('data-slot'), type = el.getAttribute('data-type');
+let pressTimer = null, isLongPress = false;
+el.addEventListener('touchstart', (e) => {
+isLongPress = false;
+if (pressTimer) clearTimeout(pressTimer);
+pressTimer = setTimeout(() => { isLongPress = true; openModal(slotKey, type); }, 550);
+}, { passive: true });
+el.addEventListener('touchend', (e) => {
+if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+if (isLongPress) { isLongPress = false; return; }
+let db = getDB(), val = db[slotKey];
+if (slotKey === 'snippet_15' && !val) {
+    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+}
+if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
+if (type === 'url' || slotKey === 'snippet_15') {
+let targetUrl = '';
+if (typeof val === 'object' && val !== null) {
+targetUrl = val.url || val.title || '';
+} else if (typeof val === 'string') {
+targetUrl = val;
+}
+if (targetUrl) {
+let finalUrl = targetUrl.startsWith('http') ? targetUrl : 'https://' + targetUrl;
+if (window.AndroidBridge && window.AndroidBridge.openUrl) {
+    window.AndroidBridge.openUrl(finalUrl);
+} else {
+    window.open(finalUrl, '_blank');
+}
+return;
+}
+}
+if (type === 'snippet' && val) { 
+    commitCurrent();
+    let textVal = (typeof val === 'object' && val.title) ? val.title : val;
+    let chars = Array.from(committedText);
+    chars.splice(cursorPos, 0, textVal);
+    committedText = chars.join('');
+    cursorPos += getCharLen(textVal);
+    updateScreen();
+    
+    if (window.AndroidBridge && window.AndroidBridge.commitText) {
+        window.AndroidBridge.commitText(textVal);
+    }
+    
+    switchToBoard('mainBoard');
+    return; 
+}
+});
+});
+
+document.getElementById('calcBtn').addEventListener('click', () => {
+document.getElementById('calcScreen').value = '';
+document.getElementById('calcModal').style.display = 'flex';
+});
+function closeCalcModal() { document.getElementById('calcModal').style.display = 'none'; }
+function calcInput(val) { document.getElementById('calcScreen').value += val; }
+function calcClear() { document.getElementById('calcScreen').value = ''; }
+function calcResult() {
+try {
+let res = eval(document.getElementById('calcScreen').value);
+document.getElementById('calcScreen').value = res;
+commitCurrent();
+let resStr = String(res);
+let chars = Array.from(committedText);
+chars.splice(cursorPos, 0, resStr);
+committedText = chars.join('');
+cursorPos += getCharLen(resStr);
+updateScreen();
+
+if (window.AndroidBridge && window.AndroidBridge.commitText) {
+    window.AndroidBridge.commitText(resStr);
+}
+} catch(e) { document.getElementById('calcScreen').value = '오류'; }
+}
+document.getElementById('weatherBtn').addEventListener('click', () => {
+let weatherUrl = 'https://search.naver.com/search.naver?query=날씨';
+if (window.AndroidBridge && window.AndroidBridge.openUrl) {
+    window.AndroidBridge.openUrl(weatherUrl);
+} else {
+    window.open(weatherUrl, '_blank');
+}
+});
+
+function openModal(slotKey, type) {
+currentSlot = slotKey; 
+currentType = (slotKey === 'snippet_15') ? 'url' : type;
+let db = getDB(), val = db[slotKey] || {};
+if (slotKey === 'snippet_15' && !db['snippet_15']) {
+    val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
+}
+let sInput = document.getElementById('snippetInput'), uFields = document.getElementById('urlFields');
+if (currentType === 'url') {
+sInput.style.display = 'none'; uFields.style.display = 'block';
+document.getElementById('urlTitle').value = (typeof val === 'object' && val !== null) ? (val.title || '') : '';
+document.getElementById('urlAddr').value = (typeof val === 'object' && val !== null) ? (val.url || '') : (typeof val === 'string' ? val : '');
+document.getElementById('modalTitle').textContent = 'URL 설정';
+} else {
+sInput.style.display = 'block'; uFields.style.display = 'none';
+sInput.value = (typeof val === 'string') ? val : ((typeof val === 'object' && val !== null) ? (val.title || '') : '');
+document.getElementById('modalTitle').textContent = '상용구 설정';
+}
+document.getElementById('slotModal').style.display = 'flex';
+
+setTimeout(() => {
+    if (currentType === 'url') {
+        document.getElementById('urlTitle').focus();
+    } else {
+        sInput.focus();
+    }
+}, 50);
+}
+function closeModal() { document.getElementById('slotModal').style.display = 'none'; currentSlot = null; }
+function saveData() {
+if (!currentSlot) return;
+let db = getDB();
+if (currentType === 'url' || currentSlot === 'snippet_15') {
+let title = document.getElementById('urlTitle').value.trim();
+let url = document.getElementById('urlAddr').value.trim();
+if (title && url) db[currentSlot] = { title: title, url: url };
+else delete db[currentSlot];
+} else {
+let text = document.getElementById('snippetInput').value.trim();
+if (text) db[currentSlot] = text;
+else delete db[currentSlot];
+}
+saveDB(db); renderSlots(); closeModal();
+}
+function deleteData() {
+if (!currentSlot) return;
+let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal();
+}
+
+renderSlots();
+updateScreen();
+switchToBoard('mainBoard');
+</script>
+</body>
+</html>
