@@ -1993,7 +1993,7 @@ let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY 
 if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
 let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
 let now = Date.now();
-let isDouble = (lastSlideDir === dir && now - lastSlideTime < 600);
+let isDouble = (lastSlideDir === dir && now - lastSlideTime < 900);
 let target = '';
 if (!isDouble) {
 if (dir === 'right') target = 'ㅏ';
