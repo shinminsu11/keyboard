@@ -2024,14 +2024,14 @@ const DEFAULT_CLIP_HISTORY = [
 function getMergedClipHistory() {
 let saved = localStorage.getItem('my_clip_history_v3');
 let history = saved ? JSON.parse(saved) : DEFAULT_CLIP_HISTORY;
-if (history.length > 10) {
-history = history.slice(0, 10);
+if (history.length > 20) {
+history = history.slice(0, 20);
 saveClipHistory(history);
 }
 return history;
 }
 function saveClipHistory(arr) {
-if (arr.length > 10) { arr = arr.slice(0, 10); }
+if (arr.length > 20) { arr = arr.slice(0, 20); }
 localStorage.setItem('my_clip_history_v3', JSON.stringify(arr));
 }
 
