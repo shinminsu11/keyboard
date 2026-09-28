@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 1.0 최종완성본</title>
+<title>쓸기자판 1.0 최종수정본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -349,7 +349,7 @@ box-sizing: border-box;
 }
 .modal-header {
 font-weight: bold;
-font-size: 15px;
+font-size: 18px;
 margin-bottom: 4px;
 display: flex;
 justify-content: space-between;
@@ -380,36 +380,37 @@ margin-bottom: 8px;
 .clipboard-list {
 display: flex;
 flex-direction: column;
-gap: 10px;
-max-height: 72vh;
+gap: 8px;
+max-height: 50vh;
 overflow-y: auto;
 -webkit-overflow-scrolling: touch;
-padding-top: 12px;
-padding-bottom: 12px;
+padding-top: 10px;
+padding-bottom: 10px;
 border-top: 1px solid #eee;
 border-bottom: 1px solid #eee;
 }
 
 .clipboard-item {
 position: relative;
-padding: 14px 42px 14px 14px;
+padding: 10px 38px 10px 12px;
 background: #ffffff;
-border: 1px solid #e2e8f0;
-border-radius: 12px;
-font-size: 15px;
+border: 1px solid #eaeaea;
+border-radius: 10px;
+font-size: 13px;
 cursor: pointer;
 box-sizing: border-box;
 word-break: break-all;
-color: #222;
+color: #333;
 user-select: none;
-box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 display: -webkit-box;
 -webkit-box-orient: vertical;
--webkit-line-clamp: 3;
+-webkit-line-clamp: 2;
 overflow: hidden;
 text-overflow: ellipsis;
 line-height: 1.5;
-min-height: 52px;
+min-height: 44px;
+max-height: 4.8em;
 white-space: pre-wrap;
 }
 .clipboard-item:active {
@@ -420,20 +421,34 @@ position: absolute;
 right: 10px;
 top: 50%;
 transform: translateY(-50%);
-font-size: 18px;
+font-size: 16px;
 color: #888;
 cursor: pointer;
-width: 28px;
-height: 28px;
+width: 24px;
+height: 24px;
 display: flex;
 align-items: center;
 justify-content: center;
 border-radius: 50%;
-background: #f8f9fa;
+background: #fff;
 }
 .clipboard-item .clip-delete-btn:hover {
 background: #f0f0f0;
 color: #e63935;
+}
+.clipboard-add-row {
+padding: 12px;
+background: #f8f9fa;
+border-radius: 10px;
+font-size: 13px;
+color: #1a73e8;
+font-weight: bold;
+text-align: center;
+cursor: pointer;
+margin-top: 10px;
+}
+.clipboard-add-row:active {
+background: #e2e8f0;
 }
 
 .emoji-list {
@@ -888,10 +903,26 @@ background: #e2e8f0;
 <div id="clipboardModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>복사후 클립보드 열어야 저장됨  </span>
+<span>클립보드</span>
 <span class="modal-close" onclick="closeClipboardModal()">×</span>
 </div>
 <div class="clipboard-list" id="clipboardListContainer"></div>
+<div class="clipboard-add-row" onclick="closeClipboardModal(); openAddClipboardModal();">＋ 자주 쓰는 문구 추가</div>
+</div>
+</div>
+
+<div id="addClipboardModal" class="modal-overlay">
+<div class="modal-box">
+<div class="modal-header">
+<span>사용자 클립보드(문구) 추가</span>
+<span class="modal-close" onclick="closeAddClipboardModal()">×</span>
+</div>
+<div style="font-size:12px; color:#666; margin-bottom:8px;">자주 쓰는 문장이나 메모를 입력해주세요.</div>
+<input type="text" id="customClipText" class="modal-input" placeholder="저장할 텍스트 입력...">
+<div style="display:flex; gap:6px; margin-top:4px;">
+<button onclick="saveCustomClip()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">추가하기</button>
+<button onclick="closeAddClipboardModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">취소</button>
+</div>
 </div>
 </div>
 
@@ -1002,6 +1033,7 @@ const topSymbolKey = document.getElementById('topSymbolKey');
 const shiftBtn = document.getElementById('shiftBtn');
 const clipboardKey = document.getElementById('clipboardKey');
 const clipboardModal = document.getElementById('clipboardModal');
+const addClipboardModal = document.getElementById('addClipboardModal');
 const emojiModal = document.getElementById('emojiModal');
 const addEmojiModal = document.getElementById('addEmojiModal');
 const emojiListContainer = document.getElementById('emojiListContainer');
@@ -1048,6 +1080,12 @@ window.syncNativeText = function(before, after) {
     lastSlideDir = '';
 };
 
+/*
+ * 삭제 직후에는 Android 쪽에서 방금 만든 한글 단계와
+ * HTML 한글 조합 상태를 같은 단계로 맞춘다.
+ * mode = initial  : 아 -> ㅇ
+ * mode = syllable : 국 -> 구
+ */
 window.syncNativeTextAfterDelete = function(before, after, mode) {
     renderVersion++;
     before = (before == null) ? '' : String(before);
@@ -1066,6 +1104,8 @@ window.syncNativeTextAfterDelete = function(before, after, mode) {
     if (mode === 'initial') {
         const cho = CHOSUNG.indexOf(last);
         if (cho !== -1) {
+            // 이 자음은 committedText가 아니라 hangulBuffer(조합 대기 상태)로만 표현한다.
+            // 두 곳에 동시에 남으면 다음 입력 시 commitCurrent()가 이 글자를 중복 삽입한다.
             chars.splice(cursorPos - 1, 1);
             committedText = chars.join('');
             cursorPos = cursorPos - 1;
@@ -1375,7 +1415,7 @@ function updateScreen() {
                             externalComposeTimer = null;
                             window.AndroidBridge.setComposing(currentAssembled);
                             finalizeExternalComposedSyllable(currentAssembled);
-                        }, 1300);
+                        }, 0);
                     } else {
                         if (externalComposeTimer) {
                             clearTimeout(externalComposeTimer);
@@ -1459,44 +1499,6 @@ if (
 }
 
 if (externalFinalCandidate) {
-    if (jungIdx !== -1 && choIdx === -1 && !externalFinalCandidate.pendingConsonant) {
-        const base = externalFinalCandidate.baseChar || '';
-        const code = base.charCodeAt(0);
-
-        if (code >= 0xAC00 && code <= 0xD7A3) {
-            const offset = code - 0xAC00;
-            const cho = Math.floor(offset / (21 * 28));
-            const jung = Math.floor((offset % (21 * 28)) / 28);
-            const jong = offset % 28;
-            const currentVowel = JUNGSUNG[jung];
-            const combinedVowel = VOWEL_COMBINE[currentVowel + '+' + inputChar];
-
-            if (jong === 0 && combinedVowel) {
-                const newJungIdx = JUNGSUNG.indexOf(combinedVowel);
-                const newOffset = cho * 21 * 28 + newJungIdx * 28;
-                const extended = String.fromCharCode(0xAC00 + newOffset);
-                const chars = Array.from(committedText);
-                const at = externalFinalCandidate.start;
-
-                if (at >= 0 && at < chars.length) {
-                    chars[at] = extended;
-                    committedText = chars.join('');
-                    if (window.AndroidBridge && window.AndroidBridge.extendExternalSyllable) {
-                        window.AndroidBridge.extendExternalSyllable(extended);
-                    }
-                    externalFinalCandidate = {
-                        baseChar: extended,
-                        originalChar: extended,
-                        start: at
-                    };
-                    renderVersion++;
-                    updateScreen();
-                    return;
-                }
-            }
-        }
-    }
-
     if (choIdx !== -1 && jungIdx === -1 && !externalFinalCandidate.pendingConsonant) {
         const jongTry = getJongIndex(inputChar);
         const base = externalFinalCandidate.baseChar || '';
@@ -1644,6 +1646,7 @@ appendHangul(newVowel);
 }
 
 function backspaceHangul() {
+    // 안드로이드 앱 환경에서는 코틀린의 완벽한 deleteText() 로직이 글자 분해 및 삭제를 담당하도록 위임합니다.
     if (window.AndroidBridge && window.AndroidBridge.deleteText) {
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
@@ -1651,6 +1654,7 @@ function backspaceHangul() {
         return;
     }
 
+    // 웹 브라우저 테스트 환경용 백스페이스 처리
     if (hangulBuffer.jong !== -1) {
         hangulBuffer.jong = -1;
         updateScreen();
@@ -2031,7 +2035,7 @@ let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY 
 if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
 let dir = Math.abs(diffX) > Math.abs(diffY) ? (diffX > 0 ? 'right' : 'left') : (diffY > 0 ? 'down' : 'up');
 let now = Date.now();
-let isDouble = (lastSlideDir === dir && now - lastSlideTime < 1300);
+let isDouble = (lastSlideDir === dir && now - lastSlideTime < 600);
 let target = '';
 if (!isDouble) {
 if (dir === 'right') target = 'ㅏ';
@@ -2062,14 +2066,14 @@ const DEFAULT_CLIP_HISTORY = [
 function getMergedClipHistory() {
 let saved = localStorage.getItem('my_clip_history_v3');
 let history = saved ? JSON.parse(saved) : DEFAULT_CLIP_HISTORY;
-if (history.length > 20) {
-history = history.slice(0, 20);
+if (history.length > 50) {
+history = history.slice(0, 50);
 saveClipHistory(history);
 }
 return history;
 }
 function saveClipHistory(arr) {
-if (arr.length > 20) { arr = arr.slice(0, 20); }
+if (arr.length > 50) { arr = arr.slice(0, 50); }
 localStorage.setItem('my_clip_history_v3', JSON.stringify(arr));
 }
 
@@ -2121,21 +2125,14 @@ isCbLong = false;
 return;
 }
 try {
-let clipboardText = '';
-if (window.AndroidBridge && window.AndroidBridge.readClipboard) {
-clipboardText = window.AndroidBridge.readClipboard() || '';
-} else if (navigator.clipboard && navigator.clipboard.readText) {
-clipboardText = await navigator.clipboard.readText();
-}
+if (navigator.clipboard && navigator.clipboard.readText) {
+let clipboardText = await navigator.clipboard.readText();
 if (clipboardText && clipboardText.trim() !== "") {
 let history = getMergedClipHistory();
-let normalizedNewText = clipboardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-history = history.filter(item => {
-let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-return normalizedItem !== normalizedNewText;
-});
+history = history.filter(item => item !== clipboardText);
 history.unshift(clipboardText);
 saveClipHistory(history);
+}
 }
 } catch (err) {}
 renderClipHistory();
@@ -2166,51 +2163,23 @@ history.forEach((text, index) => {
         if (e.target.classList.contains('clip-delete-btn')) return;
         closeClipboardModal();
 
-        const normalizedText = String(text == null ? '' : text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const textChars = Array.from(normalizedText);
-        const chunkSize = 200;
+        let chunkSize = 200;
         let indexChar = 0;
-
-        function insertChunkToEditor(chunk) {
-            if (!chunk) return;
-
-            const parts = chunk.split('\n');
-
-            parts.forEach((part, partIndex) => {
-                if (part) {
-                    commitCurrent();
-                    lastSlideDir = '';
-                    let chars = Array.from(committedText);
-                    chars.splice(cursorPos, 0, part);
-                    committedText = chars.join('');
-                    cursorPos += getCharLen(part);
-                    updateScreen();
-                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
-                        window.AndroidBridge.commitText(part);
-                    }
-                }
-
-                if (partIndex < parts.length - 1) {
-                    commitCurrent();
-                    lastSlideDir = '';
-                    let chars = Array.from(committedText);
-                    chars.splice(cursorPos, 0, '\n');
-                    committedText = chars.join('');
-                    cursorPos += 1;
-                    updateScreen();
-                    if (window.AndroidBridge && window.AndroidBridge.commitText) {
-                        window.AndroidBridge.commitText('\n');
-                    }
-                }
-            });
-        }
-
         function insertNextChunk() {
-            if (indexChar < textChars.length) {
-                const chunk = textChars.slice(indexChar, indexChar + chunkSize).join('');
+            if (indexChar < text.length) {
+                let chunk = text.substring(indexChar, indexChar + chunkSize);
                 indexChar += chunkSize;
 
-                insertChunkToEditor(chunk);
+                commitCurrent();
+                lastSlideDir = '';
+                let chars = Array.from(committedText);
+                chars.splice(cursorPos, 0, chunk);
+                committedText = chars.join('');
+                cursorPos += getCharLen(chunk);
+                updateScreen();
+                if (window.AndroidBridge && window.AndroidBridge.commitText) {
+                    window.AndroidBridge.commitText(chunk);
+                }
                 setTimeout(insertNextChunk, 2);
             }
         }
@@ -2238,12 +2207,31 @@ renderClipHistory();
 showToast('삭제되었습니다');
 }
 
+function openAddClipboardModal() {
+document.getElementById('customClipText').value = '';
+addClipboardModal.style.display = 'flex';
+}
+function closeAddClipboardModal() { addClipboardModal.style.display = 'none'; }
+
+function saveCustomClip() {
+let val = document.getElementById('customClipText').value.trim();
+if (!val) { alert('저장할 텍스트를 입력해주세요.'); return; }
+let history = getMergedClipHistory();
+history = history.filter(item => item !== val);
+history.unshift(val);
+saveClipHistory(history);
+closeAddClipboardModal();
+showToast("문구가 추가되었습니다");
+renderClipHistory();
+openClipboardModal();
+}
+
 function openClipboardModal() { clipboardModal.style.display = 'flex'; }
 function closeClipboardModal() { clipboardModal.style.display = 'none'; }
 function openEmojiModal() { emojiModal.style.display = 'flex'; }
 function closeEmojiModal() { emojiModal.style.display = 'none'; }
 
-const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😩', '😠', '😡', '😇', '🥰', '😍', '😵‍💫', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🛌🏻', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '💕', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
+const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😡', '🫣', '🥱', '😏', '😒', '🙄', '😬', '🤥', '😌', '😱', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '😭', '🥳', '😎', '👊', '👍', '👋', '🤚', '🖐️', '✋', '🫶', '👌', '🤏', '✌️', '👏', '🤝', '❤️', '💔', '💛', '💋', '🫂', '🖤', '🛌🏻', '👅', '🔪', '🎧', '🚫', '🌐', '🌍', '🎵', '💕', '⭐', '🍉', '🔥', '💥', '🎉', '🎊', '💯', '🐶', '🐱', '🍇', '🍌', '🍎', '☕', '🚀', '🦴', '🚑', '🇰🇷', '🧊', '☂️'];
 
 function getMergedEmojis() {
 let custom = JSON.parse(localStorage.getItem('user_custom_emojis_v1')) || [];
@@ -2562,6 +2550,38 @@ const DEFAULT_HANJA_DICT = {
 '자': [{c:'子', m:'아들 자'}, {c:'字', m:'글자 자'}, {c:'自', m:'스스로 자'}, {c:'者', m:'놈 자'}, {c:'姉', m:'손윗누이 자'}],
 '작': [{c:'作', m:'지을 작'}],
 '잔': [{c:'殘', m:'남을 잔'}],
+'장': [{c:'長', m:'길 장'}, {c:'場', m:'마당 장'}, {c:'章', m:'글 장'}, {c:'將', m:'장차 장'}, {c:'張', m:'베풀 장'}],
+'재': [{c:'才', m:'재주 재'}, {c:'在', m:'있을 재'}, {c:'材', m:'재목 재'}, {c:'財', m:'재물 재'}, {c:'再', m:'다시 재'}],
+'쟁': [{c:'爭', m:'다툴 쟁'}],
+'저': [{c:'低', m:'낮을 저'}, {c:'著', m:'나타날 저'}],
+'적': [{c:'的', m:'과녁 적'}, {c:'赤', m:'붉을 적'}, {c:'適', m:'맞을 적'}, {c:'敵', m:'대적할 적'}, {c:'積', m:'쌓을 적'}],
+'전': [{c:'全', m:'온전할 전'}, {c:'電', m:'번개 전'}, {c:'前', m:'앞 전'}, {c:'田', m:'밭 전'}, {c:'傳', m:'전할 전'}, {c:'展', m:'펼 전'}, {c:'戰', m:'싸울 전'}],
+'절': [{c:'節', m:'마디 절'}, {c:'切', m:'끊을 절'}],
+'점': [{c:'店', m:'가게 점'}, {c:'點', m:'점 점'}],
+'접': [{c:'接', m:'이을 접'}],
+'정': [{c:'正', m:'바를 정'}, {c:'定', m:'정할 정'}, {c:'情', m:'뜻 정'}, {c:'政', m:'정사 정'}, {c:'精', m:'정할 정'}, {c:'靜', m:'고요할 정'}, {c:'停', m:'머무를 정'}],
+'제': [{c:'弟', m:'아우 제'}, {c:'第', m:'차례 제'}, {c:'題', m:'제목 제'}, {c:'制', m:'절제할 제'}, {c:'製', m:'지을 제'}, {c:'濟', m:'건널 제'}],
+'조': [{c:'祖', m:'할아비 조'}, {c:'造', m:'지을 조'}, {c:'助', m:'도울 조'}, {c:'朝', m:'아침 조'}, {c:'調', m:'고를 조'}, {c:'早', m:'이를 조'}],
+'족': [{c:'族', m:'겨레 족'}, {c:'足', m:'발 족'}],
+'존': [{c:'存', m:'있을 존'}, {c:'尊', m:'높을 존'}],
+'졸': [{c:'卒', m:'마칠 졸'}],
+'종': [{c:'種', m:'씨 종'}, {c:'終', m:'마칠 종'}, {c:'從', m:'좇을 종'}],
+'좌': [{c:'左', m:'왼 좌'}, {c:'坐', m:'앉을 좌'}],
+'죄': [{c:'罪', m:'허물 죄'}],
+'주': [{c:'主', m:'주인 주'}, {c:'住', m:'살 주'}, {c:'注', m:'부을 주'}, {c:'州', m:'고을 주'}, {c:'週', m:'돌 주'}, {c:'晝', m:'낮 주'}],
+'죽': [{c:'竹', m:'대 죽'}],
+'준': [{c:'準', m:'준할 준'}],
+'중': [{c:'中', m:'가운데 중'}, {c:'重', m:'무거울 중'}, {c:'衆', m:'무리 중'}],
+'즉': [{c:'卽', m:'곧 즉'}],
+'증': [{c:'增', m:'더할 증'}, {c:'證', m:'증거 증'}],
+'지': [{c:'地', m:'땅 지'}, {c:'知', m:'알 지'}, {c:'紙', m:'종이 지'}, {c:'志', m:'뜻 지'}, {c:'指', m:'가리킬 지'}, {c:'支', m:'지탱할 지'}],
+'직': [{c:'直', m:'곧을 직'}, {c:'職', m:'직분 직'}],
+'진': [{c:'眞', m:'참 진'}, {c:'進', m:'나아갈 진'}, {c:'盡', m:'다할 진'}],
+'질': [{c:'質', m:'바탕 질'}],
+'집': [{c:'集', m:'모을 집'}],
+'차': [{c:'車', m:'수레 차'}, {c:'次', m:'버금 차'}, {c:'差', m:'다를 차'}, {c:'茶', m:'차 차'}],
+'착': [{c:'着', m:'붙을 착'}],
+'찬': [{c:'讚', m:'기릴 찬'}],
 '참': [{c:'參', m:'참여할 참'}],
 '창': [{c:'窓', m:'창 창'}, {c:'唱', m:'부를 창'}],
 '채': [{c:'採', m:'캘 채'}, {c:'菜', m:'나물 채'}],
@@ -2739,6 +2759,7 @@ function replaceLastCharWithHanja(hanjaChar) {
 }
 
 clipboardModal.addEventListener('click', (e) => { if (e.target === clipboardModal) closeClipboardModal(); });
+addClipboardModal.addEventListener('click', (e) => { if (e.target === addClipboardModal) closeAddClipboardModal(); });
 emojiModal.addEventListener('click', (e) => { if (e.target === emojiModal) closeEmojiModal(); });
 addEmojiModal.addEventListener('click', (e) => { if (e.target === addEmojiModal) closeAddEmojiModal(); });
 hanjaModal.addEventListener('click', (e) => { if (e.target === hanjaModal) closeHanjaModal(); });
