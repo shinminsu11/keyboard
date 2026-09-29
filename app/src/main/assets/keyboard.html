@@ -2171,14 +2171,23 @@ clipboardText = window.AndroidBridge.readClipboard() || '';
 clipboardText = await navigator.clipboard.readText();
 }
 if (clipboardText && clipboardText.trim() !== "") {
-let history = getMergedClipHistory();
-let normalizedNewText = clipboardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-history = history.filter(item => {
-let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-return normalizedItem !== normalizedNewText;
-});
-history.unshift(clipboardText);
-saveClipHistory(history);
+// Android에서 실제로 최근 복사된 클립보드인지 확인한다.
+// 오래된 현재 클립보드는 자동으로 저장하지 않는다.
+let canAutoSave = false;
+if (window.AndroidBridge && window.AndroidBridge.isRecentClipboard) {
+    canAutoSave = window.AndroidBridge.isRecentClipboard(clipboardText);
+}
+
+if (canAutoSave) {
+    let history = getMergedClipHistory();
+    let normalizedNewText = clipboardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    history = history.filter(item => {
+        let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        return normalizedItem !== normalizedNewText;
+    });
+    history.unshift(clipboardText);
+    saveClipHistory(history);
+}
 }
 } catch (err) {}
 renderClipHistory();
