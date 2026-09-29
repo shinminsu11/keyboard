@@ -2157,6 +2157,29 @@ return;
 }
 }, { passive: true });
 
+function addClipboardTextToHistory(clipboardText) {
+if (!clipboardText || clipboardText.trim() === "") return;
+
+let history = getMergedClipHistory();
+let normalizedNewText = clipboardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+history = history.filter(item => {
+    let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+    return normalizedItem !== normalizedNewText;
+});
+history.unshift(clipboardText);
+saveClipHistory(history);
+}
+
+// 클립보드 창이 이미 열려 있을 때 다른 앱에서 복사하면
+// Android가 이 함수를 호출하여 목록을 즉시 갱신한다.
+window.addClipboardFromAndroid = function(clipboardText) {
+if (!clipboardModal || clipboardModal.style.display !== 'flex') return;
+if (!clipboardText || clipboardText.trim() === "") return;
+
+addClipboardTextToHistory(clipboardText);
+renderClipHistory();
+};
+
 clipboardKey.addEventListener('click', async function() {
 if (isSwiping || isCbLong) {
 isSwiping = false;
@@ -2179,14 +2202,7 @@ if (window.AndroidBridge && window.AndroidBridge.isRecentClipboard) {
 }
 
 if (canAutoSave) {
-    let history = getMergedClipHistory();
-    let normalizedNewText = clipboardText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-    history = history.filter(item => {
-        let normalizedItem = String(item == null ? '' : item).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-        return normalizedItem !== normalizedNewText;
-    });
-    history.unshift(clipboardText);
-    saveClipHistory(history);
+    addClipboardTextToHistory(clipboardText);
 }
 }
 } catch (err) {}
