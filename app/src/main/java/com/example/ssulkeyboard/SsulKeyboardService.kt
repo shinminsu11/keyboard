@@ -26,6 +26,85 @@ class SsulKeyboardService : InputMethodService() {
     private var internalSelectionUntil = 0L
     private var externalComposingActive = false
 
+    // 클립보드 자동 저장용 상태
+    private var clipboardManager: ClipboardManager? = null
+    private var lastObservedClipboardText = ""
+    private var lastObservedClipboardTime = 0L
+
+    // "복사 -> 클립보드 열기"를 최근 동작으로 인정하는 시간
+    private companion object {
+        const val CLIPBOARD_RECENT_WINDOW_MS = 10_000L
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        clipboardManager =
+            getSystemService(CLIPBOARD_SERVICE) as? ClipboardManager
+
+        clipboardManager?.addPrimaryClipChangedListener(
+            clipboardChangedListener
+        )
+    }
+
+    private val clipboardChangedListener =
+        ClipboardManager.OnPrimaryClipChangedListener {
+            try {
+                val cm = clipboardManager ?: return@OnPrimaryClipChangedListener
+                val clip = cm.primaryClip
+
+                if (clip != null && clip.itemCount > 0) {
+                    val text =
+                        clip.getItemAt(0)
+                            .coerceToText(this@SsulKeyboardService)
+                            ?.toString()
+                            ?: ""
+
+                    if (text.trim().isNotEmpty()) {
+                        lastObservedClipboardText = text
+                        lastObservedClipboardTime =
+                            android.os.SystemClock.elapsedRealtime()
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+
+    private fun normalizeClipboardText(text: String): String {
+        return text
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .trim()
+    }
+
+    private fun isRecentClipboardText(text: String): Boolean {
+        if (text.trim().isEmpty()) return false
+
+        val now = android.os.SystemClock.elapsedRealtime()
+        val elapsed = now - lastObservedClipboardTime
+
+        if (lastObservedClipboardTime <= 0L) return false
+        if (elapsed < 0L || elapsed > CLIPBOARD_RECENT_WINDOW_MS) return false
+
+        return normalizeClipboardText(text) ==
+            normalizeClipboardText(lastObservedClipboardText)
+    }
+
+    override fun onDestroy() {
+        try {
+            clipboardManager?.removePrimaryClipChangedListener(
+                clipboardChangedListener
+            )
+        } catch (_: Exception) {
+        }
+
+        clipboardManager = null
+        lastObservedClipboardText = ""
+        lastObservedClipboardTime = 0L
+
+        super.onDestroy()
+    }
+
     override fun onCreateInputView(): View {
         val container = LinearLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -789,9 +868,10 @@ class SsulKeyboardService : InputMethodService() {
             return try {
 
                 val cm =
-                    getSystemService(
-                        CLIPBOARD_SERVICE
-                    ) as? ClipboardManager
+                    clipboardManager
+                        ?: (getSystemService(
+                            CLIPBOARD_SERVICE
+                        ) as? ClipboardManager)
 
                 val clip =
                     cm?.primaryClip
@@ -817,6 +897,15 @@ class SsulKeyboardService : InputMethodService() {
                 e.printStackTrace()
 
                 ""
+            }
+        }
+
+        @JavascriptInterface
+        fun isRecentClipboard(text: String): Boolean {
+            return try {
+                isRecentClipboardText(text)
+            } catch (_: Exception) {
+                false
             }
         }
     }
