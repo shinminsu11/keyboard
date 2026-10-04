@@ -73,17 +73,20 @@
             border-radius: 8px;
             display: block;
         }
-        /* 가사 영역 스타일 */
+        /* 가사 영역 스타일 (크기 축소 및 스크롤 적용) */
         .lyrics-box {
             background-color: #1a1a1a;
+            border: 1px solid #333;
             border-radius: 8px;
             padding: 20px;
             max-width: 400px;
             width: 100%;
+            height: 250px;            /* 가사창 높이 고정 (원하는 크기로 조절 가능) */
+            overflow-y: auto;         /* 위아래로 내리고 올릴 수 있도록 스크롤 생성 */
             text-align: center;
             line-height: 1.6;
             color: #cccccc;
-            white-space: pre-line; /* 줄바꿈 유지 */
+            white-space: pre-line;    /* 줄바꿈 유지 */
             box-sizing: border-box;
         }
         .lyrics-title {
@@ -106,7 +109,7 @@
     <button class="play-btn" id="playBtn">쓸기자판 재생</button>
     <div class="status" id="statusText">버튼을 눌러주세요</div>
 
-    <!-- 오디오 재생 바 영역 (controls 추가됨) -->
+    <!-- 오디오 재생 바 영역 -->
     <div class="audio-container">
         <p>현재 재생 중 : <b>쓸기자판</b></p>
         <audio id="audioPlayer" controls loop>
@@ -115,10 +118,8 @@
         </audio>
     </div>
 
-    <!-- 가사 삽입 영역 -->
+    <!-- 가사 삽입 영역 (스크롤 적용) -->
     <div class="lyrics-box">
-        <div class="lyrics-title">[1절]</div>
-       
 아하가카 나라다타 사자차 마바파
 [1절]
 쓱쓱 쓸어서 입력하는 쓸기자판
