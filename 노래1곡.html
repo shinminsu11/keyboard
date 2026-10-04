@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 음악 Player</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        /* 파란색 버튼 스타일 */
+        .play-btn {
+            background-color: #2979ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: background-color 0.2s;
+        }
+        .play-btn:hover {
+            background-color: #1565c0;
+        }
+        .status {
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-bottom: 20px;
+        }
+        /* 이미지 스타일 */
+        .image-container {
+            border: 2px solid #2979ff;
+            border-radius: 12px;
+            padding: 10px;
+            background-color: #1e1e1e;
+            margin-bottom: 20px;
+            max-width: 300px;
+            text-align: center;
+        }
+        .image-container img {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+        /* 가사 영역 스타일 */
+        .lyrics-box {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            line-height: 1.6;
+            color: #cccccc;
+            white-space: pre-line; /* 줄바꿈 유지 */
+        }
+        .lyrics-title {
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 파란 버튼 -->
+    <button class="play-btn" id="playBtn">쓸기자판 재생</button>
+    <div class="status" id="statusText">버튼을 눌러주세요</div>
+
+    <!-- 이미지 삽입 영역 (your-image.png 파일명을 원하시는 이미지로 변경하세요) -->
+    <div class="image-container">
+        <div class="lyrics-title">쓸기자판 요정</div>
+        <img src="your-image.png" alt="쓸기자판 요정 이미지">
+    </div>
+
+    <!-- 가사 삽입 영역 -->
+    <div class="lyrics-box">
+        <div class="lyrics-title">[1절]</div>
+        쏙쏙 쓸어서 입력하는 쓸기자판
+        글을 쓰듯 쓸어서 입력하는 자판
+        자음모음은 점에서 아 어 오 무 아 여 요 유 쏙쏙 쏙쏙 쓸어라
+        이와 오도 점 위와 아래에서 밀어서 입력하네 쏙쏙 쏙쏙 쓸어라
+
+        [후렴]
+        아하가카 나라디타 사자차 마바파
+    </div>
+
+    <!-- HTML5 audio 태그 (loop 속성으로 자동 반복) -->
+    <audio id="audioPlayer" loop>
+        <source src="your-song.mp3" type="audio/mp3">
+        브라우저가 오디오 태그를 지원하지 않습니다.
+    </audio>
+
+    <script>
+        const playBtn = document.getElementById('playBtn');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const statusText = document.getElementById('statusText');
+
+        playBtn.addEventListener('click', () => {
+            if (audioPlayer.paused) {
+                audioPlayer.play().then(() => {
+                    statusText.textContent = "현재 재생 중 (자동 반복)";
+                    playBtn.textContent = "일시정지";
+                }).catch(error => {
+                    console.error("재생 실패:", error);
+                    statusText.textContent = "오디오 파일을 확인해주세요.";
+                });
+            } else {
+                audioPlayer.pause();
+                statusText.textContent = "일시정지됨";
+                playBtn.textContent = "쓸기자판 재생";
+            }
+        });
+    </script>
+
+</body>
+</html>
