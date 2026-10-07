@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -34,6 +35,10 @@ class SsulKeyboardService : InputMethodService() {
     // "복사 -> 클립보드 열기"를 최근 동작으로 인정하는 시간
     private companion object {
         const val CLIPBOARD_RECENT_WINDOW_MS = 10_000L
+
+        // 커서 이동(setSelection)이 안 먹히는 화면(예: 네이버 카페 글쓰기)에서는
+        // 방향키 이벤트를 대신 보낸다. 다른 앱은 전혀 건드리지 않는다.
+        const val ARROW_KEY_FALLBACK_PACKAGE = "com.nhn.android.navercafe"
     }
 
     override fun onCreate() {
@@ -684,6 +689,66 @@ class SsulKeyboardService : InputMethodService() {
                     ?: return
 
             try {
+
+                // ----------------------------------------------------
+                // 네이버 카페 글쓰기 화면처럼 setSelection을 받아들이지
+                // 않는 화면에서만, 커서 1칸 이동 요청을 방향키 입력으로
+                // 바꿔 보낸다. 다른 앱은 이 분기를 타지 않고 기존과
+                // 완전히 동일하게 동작한다.
+                // ----------------------------------------------------
+                val targetPackage =
+                    currentInputEditorInfo?.packageName
+
+                val isCollapsedSingleStepMove =
+                    start == end &&
+                        lastKnownSelectionStart >= 0 &&
+                        kotlin.math.abs(
+                            start - lastKnownSelectionStart
+                        ) == 1
+
+                if (
+                    targetPackage == ARROW_KEY_FALLBACK_PACKAGE &&
+                    isCollapsedSingleStepMove
+                ) {
+
+                    val keyCode =
+                        if (start > lastKnownSelectionStart) {
+                            KeyEvent.KEYCODE_DPAD_RIGHT
+                        } else {
+                            KeyEvent.KEYCODE_DPAD_LEFT
+                        }
+
+                    val now =
+                        android.os.SystemClock.uptimeMillis()
+
+                    ic.sendKeyEvent(
+                        KeyEvent(
+                            now,
+                            now,
+                            KeyEvent.ACTION_DOWN,
+                            keyCode,
+                            0
+                        )
+                    )
+
+                    ic.sendKeyEvent(
+                        KeyEvent(
+                            now,
+                            now,
+                            KeyEvent.ACTION_UP,
+                            keyCode,
+                            0
+                        )
+                    )
+
+                    lastKnownSelectionStart =
+                        start
+
+                    lastKnownSelectionEnd =
+                        end
+
+                    return
+                }
 
                 ic.setSelection(
                     start,
