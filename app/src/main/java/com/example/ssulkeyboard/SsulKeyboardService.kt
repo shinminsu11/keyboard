@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -684,6 +685,61 @@ class SsulKeyboardService : InputMethodService() {
                     ?: return
 
             try {
+
+                // ----------------------------------------------------
+                // 설정 아이콘 좌우 슬라이드로 커서를 한 칸 옮기는
+                // 이 한 가지 동작에서만, setSelection 대신 방향키
+                // 입력을 보낸다. 이 조건에 안 걸리는 다른 모든
+                // setSelection 호출(예: 백스페이스 스와이프 전체삭제의
+                // 범위 선택)은 기존과 완전히 동일하게 동작한다.
+                // ----------------------------------------------------
+                val isCollapsedSingleStepMove =
+                    start == end &&
+                        lastKnownSelectionStart >= 0 &&
+                        kotlin.math.abs(
+                            start - lastKnownSelectionStart
+                        ) == 1
+
+                if (isCollapsedSingleStepMove) {
+
+                    val keyCode =
+                        if (start > lastKnownSelectionStart) {
+                            KeyEvent.KEYCODE_DPAD_RIGHT
+                        } else {
+                            KeyEvent.KEYCODE_DPAD_LEFT
+                        }
+
+                    val now =
+                        android.os.SystemClock.uptimeMillis()
+
+                    ic.sendKeyEvent(
+                        KeyEvent(
+                            now,
+                            now,
+                            KeyEvent.ACTION_DOWN,
+                            keyCode,
+                            0
+                        )
+                    )
+
+                    ic.sendKeyEvent(
+                        KeyEvent(
+                            now,
+                            now,
+                            KeyEvent.ACTION_UP,
+                            keyCode,
+                            0
+                        )
+                    )
+
+                    lastKnownSelectionStart =
+                        start
+
+                    lastKnownSelectionEnd =
+                        end
+
+                    return
+                }
 
                 ic.setSelection(
                     start,
