@@ -2865,7 +2865,9 @@ settingBtn.addEventListener('touchend', (e) => {
         
         let chars = Array.from(committedText);
         let utf16Idx = getUtf16Index(chars, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+        if (window.AndroidBridge && window.AndroidBridge.moveCursorStep) {
+            window.AndroidBridge.moveCursorStep(-1);
+        } else if (window.AndroidBridge && window.AndroidBridge.setSelection) {
             window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
         }
         return;
@@ -2877,7 +2879,9 @@ settingBtn.addEventListener('touchend', (e) => {
         updateScreen(); 
         
         let utf16Idx = getUtf16Index(charsList, cursorPos);
-        if (window.AndroidBridge && window.AndroidBridge.setSelection) {
+        if (window.AndroidBridge && window.AndroidBridge.moveCursorStep) {
+            window.AndroidBridge.moveCursorStep(1);
+        } else if (window.AndroidBridge && window.AndroidBridge.setSelection) {
             window.AndroidBridge.setSelection(utf16Idx, utf16Idx);
         }
         return;
