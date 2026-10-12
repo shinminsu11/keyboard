@@ -686,61 +686,6 @@ class SsulKeyboardService : InputMethodService() {
 
             try {
 
-                // ----------------------------------------------------
-                // 설정 아이콘 좌우 슬라이드로 커서를 한 칸 옮기는
-                // 이 한 가지 동작에서만, setSelection 대신 방향키
-                // 입력을 보낸다. 이 조건에 안 걸리는 다른 모든
-                // setSelection 호출(예: 백스페이스 스와이프 전체삭제의
-                // 범위 선택)은 기존과 완전히 동일하게 동작한다.
-                // ----------------------------------------------------
-                val isCollapsedSingleStepMove =
-                    start == end &&
-                        lastKnownSelectionStart >= 0 &&
-                        kotlin.math.abs(
-                            start - lastKnownSelectionStart
-                        ) == 1
-
-                if (isCollapsedSingleStepMove) {
-
-                    val keyCode =
-                        if (start > lastKnownSelectionStart) {
-                            KeyEvent.KEYCODE_DPAD_RIGHT
-                        } else {
-                            KeyEvent.KEYCODE_DPAD_LEFT
-                        }
-
-                    val now =
-                        android.os.SystemClock.uptimeMillis()
-
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            now,
-                            now,
-                            KeyEvent.ACTION_DOWN,
-                            keyCode,
-                            0
-                        )
-                    )
-
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            now,
-                            now,
-                            KeyEvent.ACTION_UP,
-                            keyCode,
-                            0
-                        )
-                    )
-
-                    lastKnownSelectionStart =
-                        start
-
-                    lastKnownSelectionEnd =
-                        end
-
-                    return
-                }
-
                 ic.setSelection(
                     start,
                     end
@@ -751,6 +696,63 @@ class SsulKeyboardService : InputMethodService() {
 
                 lastKnownSelectionEnd =
                     end
+
+            } catch (e: Exception) {
+
+                e.printStackTrace()
+            }
+        }
+
+        // ----------------------------------------------------
+        // 설정 아이콘 좌우 슬라이드로 커서를 한 칸 옮기는 전용 함수.
+        // 방향을 JS가 직접 알려주므로(−1=왼쪽, +1=오른쪽) 위치를
+        // 비교해서 방향을 추론할 필요가 없다. setSelection이 잘 안
+        // 먹히는 화면에서도 방향키 입력은 비교적 잘 먹힌다.
+        // ----------------------------------------------------
+        @JavascriptInterface
+        fun moveCursorStep(direction: Int) {
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+
+                val keyCode =
+                    if (direction > 0) {
+                        KeyEvent.KEYCODE_DPAD_RIGHT
+                    } else {
+                        KeyEvent.KEYCODE_DPAD_LEFT
+                    }
+
+                val now =
+                    android.os.SystemClock.uptimeMillis()
+
+                ic.sendKeyEvent(
+                    KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        keyCode,
+                        0
+                    )
+                )
+
+                ic.sendKeyEvent(
+                    KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_UP,
+                        keyCode,
+                        0
+                    )
+                )
+
+                if (lastKnownSelectionStart >= 0) {
+                    lastKnownSelectionStart += direction
+                    lastKnownSelectionEnd = lastKnownSelectionStart
+                }
 
             } catch (e: Exception) {
 
