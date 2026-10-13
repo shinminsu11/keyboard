@@ -2754,14 +2754,7 @@ list.forEach(item => {
 let div = document.createElement('div');
 div.className = 'hanja-item';
 div.innerHTML = `<span class="hanja-char">${item.c}</span> <span>${item.m}</span>`;
-
-// [안전장치 적용 구간] 모달을 먼저 닫고 포커스가 안정된 후 50ms 뒤에 한자 변환 실행
-div.onclick = () => { 
-    closeHanjaModal(); 
-    setTimeout(() => {
-        replaceLastCharWithHanja(item.c); 
-    }, 50);
-};
+div.onclick = () => { replaceLastCharWithHanja(item.c); closeHanjaModal(); };
 hanjaGridContainer.appendChild(div);
 });
 }
@@ -2786,6 +2779,7 @@ showToast("추가되었습니다");
 openHanjaModal();
 }
 
+// [핵심 수정 구간] 첫 글자 소실(빈 노드 파괴) 문제를 막기 위해 삭제 후 삽입 방식 대신 커서 기반 대체 전용 브릿지 호출을 사용합니다.
 function replaceLastCharWithHanja(hanjaChar) {
     if (cursorPos > 0) {
         let subStr = committedText.substring(0, cursorPos);
@@ -2793,8 +2787,23 @@ function replaceLastCharWithHanja(hanjaChar) {
         let lastChar = codePoints[codePoints.length - 1];
         let lastCharLen = lastChar.length;
 
-        if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
+        // 제미나이 앱 대화창이 빈 상태로 착각해 텍스트 노드를 파괴하는 현상을 막기 위해,
+        // 별도의 삭제 신호 대신 전용 교체 브릿지가 있다면 우선 호출하거나, 
+        // 전체 텍스트 내에서 직전 글자 위치를 지정해 덮어쓰도록 유도합니다.
+        if (window.AndroidBridge && window.AndroidBridge.replaceLastChar) {
+            window.AndroidBridge.replaceLastChar(hanjaChar);
+        } else if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.commitText) {
+            // 커서를 직전 글자 앞으로 이동 후 선택하고 새 한자를 커밋하여 빈 노드 상황을 원천 차단
+            let totalChars = Array.from(committedText);
+            let targetUtf16Start = getUtf16Index(totalChars, cursorPos - lastCharLen);
+            let targetUtf16End = getUtf16Index(totalChars, cursorPos);
+            window.AndroidBridge.setSelection(targetUtf16Start, targetUtf16End);
+            window.AndroidBridge.commitText(hanjaChar);
+        } else if (window.AndroidBridge && window.AndroidBridge.deleteOneCharForHanja) {
             window.AndroidBridge.deleteOneCharForHanja();
+            if (window.AndroidBridge.commitText) {
+                window.AndroidBridge.commitText(hanjaChar);
+            }
         }
 
         let chars = Array.from(committedText);
@@ -2802,10 +2811,6 @@ function replaceLastCharWithHanja(hanjaChar) {
         committedText = chars.join('');
         cursorPos = cursorPos - lastCharLen + hanjaChar.length;
         updateScreen();
-
-        if (window.AndroidBridge && window.AndroidBridge.commitText) {
-            window.AndroidBridge.commitText(hanjaChar);
-        }
     }
 }
 
