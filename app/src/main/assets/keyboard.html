@@ -690,7 +690,7 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('9')">9</div>
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
-<div class="sym-key" <div class="sym-key" onclick="appendSpecial('\'')">'</div>
+<div class="sym-key" onclick="appendSpecial('\'')">'</div>
 
 <div class="sym-key" onclick='appendSpecial("\"")'>"</div>
 <div class="sym-key" onclick="appendSpecial('.')">.</div>
@@ -786,11 +786,11 @@ background: #e2e8f0;
 
 <div id="twinBoard" class="keyboard-frame">
 <div class="grid-container">
-<div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span  class="plus">+</span>'>
-<span class="label">URL</span><span  class="plus">+</>
+<div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="plus">+</span>'>
+<span class="label">URL</span><span class="plus">+</span>
 </div>
-<div class="key slot-key" data-slot="url_1" data-type="url" data-default='<span  class="plus">+</span>'>
-<span class="label">URL</span><span  class="plus">+</>
+<div class="key slot-key" data-slot="url_1" data-type="url" data-default='<span class="plus">+</span>'>
+<span class="label">URL</span><span class="plus">+</span>
 </div>
 <div class="key" id="calcBtn" style="cursor:pointer;">
 <span class="label">계산기</span><span class="icon">🧮</span>
@@ -2781,7 +2781,6 @@ showToast("추가되었습니다");
 openHanjaModal();
 }
 
-// [핵심 수정 구간] 첫 글자 소실(빈 노드 파괴) 문제를 막기 위해 삭제 후 삽입 방식 대신 커서 기반 대체 전용 브릿지 호출을 사용합니다.
 function replaceLastCharWithHanja(hanjaChar) {
     if (cursorPos > 0) {
         let subStr = committedText.substring(0, cursorPos);
@@ -2789,13 +2788,9 @@ function replaceLastCharWithHanja(hanjaChar) {
         let lastChar = codePoints[codePoints.length - 1];
         let lastCharLen = lastChar.length;
 
-        // 제미나이 앱 대화창이 빈 상태로 착각해 텍스트 노드를 파괴하는 현상을 막기 위해,
-        // 별도의 삭제 신호 대신 전용 교체 브릿지가 있다면 우선 호출하거나, 
-        // 전체 텍스트 내에서 직전 글자 위치를 지정해 덮어쓰도록 유도합니다.
         if (window.AndroidBridge && window.AndroidBridge.replaceLastChar) {
             window.AndroidBridge.replaceLastChar(hanjaChar);
         } else if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.commitText) {
-            // 커서를 직전 글자 앞으로 이동 후 선택하고 새 한자를 커밋하여 빈 노드 상황을 원천 차단
             let totalChars = Array.from(committedText);
             let targetUtf16Start = getUtf16Index(totalChars, cursorPos - lastCharLen);
             let targetUtf16End = getUtf16Index(totalChars, cursorPos);
