@@ -105,7 +105,7 @@
     </div>
 
     <!-- 파란 버튼 -->
-   <button class="play-btn" id="playBtn">🎵 쓸기자판 음악</button>
+   <button class="play-btn" id="playBtn">🎵 쓸기자판</button>
    <div class="status" id="statusText">버튼을 눌러주세요</div>
 
     <!-- 오디오 재생 바 영역 -->
@@ -163,7 +163,7 @@
             if (audioPlayer.paused) {
                 audioPlayer.play().then(() => {
                     statusText.textContent = "현재 재생 중";
-                    playBtn.textContent = "쓸기자판";
+                    playBtn.textContent = "🎵 쓸기자판";
                 }).catch(error => {
                     console.error("재생 실패:", error);
                     statusText.textContent = "오디오 파일을 확인해주세요.";
@@ -178,7 +178,7 @@
         // 오디오 자체 재생 바를 통해 재생 상태가 바뀔 때 버튼 텍스트 동기화
         audioPlayer.addEventListener('play', () => {
             statusText.textContent = "현재 재생 중 (자동 반복)";
-            playBtn.textContent = "쓸기자판";
+            playBtn.textContent = "🎵 쓸기자판";
         });
 
         audioPlayer.addEventListener('pause', () => {
