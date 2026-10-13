@@ -690,7 +690,8 @@ background: #e2e8f0;
 <div class="sym-key" onclick="appendSpecial('9')">9</div>
 <div class="sym-key" onclick="appendSpecial('0')">0</div>
 <div class="sym-key" onclick="appendSpecial('~')">~</div>
-<div class="sym-key" onclick="appendSpecial('`')">`</div>
+<div class="sym-key" <div class="sym-key" onclick="appendSpecial('\'')">'</div>
+
 <div class="sym-key" onclick="appendSpecial('.')">.</div>
 <div class="sym-key" onclick="appendSpecial('•')">•</div>
 <div class="sym-key" onclick="appendSpecial(':')">:</div>
@@ -3071,7 +3072,6 @@ if (text) db[currentSlot] = text;
 else delete db[currentSlot];
 }
 saveDB(db); renderSlots(); closeModal();
-}
 function deleteData() {
 if (!currentSlot) return;
 let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal();
