@@ -654,7 +654,7 @@ background: #e2e8f0;
 <div class="eng-key eng-long" data-char="h" data-long="♡"><span class="eng-sub">♡</span><span class="key-text">h</span></div>
 <div class="eng-key eng-long" data-char="j" data-long="/"><span class="eng-sub">/</span><span class="key-text">j</span></div>
 <div class="eng-key eng-long" data-char="k" data-long="("><span class="eng-sub">(</span><span class="key-text">k</span></div>
-<div class="eng-key eng-long" data-char="l" data-long=")"><span class="eng-sub">)</span><span class="key-text">l</span></div>
+<div class="eng-key eng-long" data-char="l" data-long)"><span class="eng-sub">)</span><span class="key-text">l</span></div>
 <div class="eng-key" style="visibility:hidden; background:transparent; box-shadow:none;"></div>
 <div class="eng-key func" id="shiftBtn" style="grid-column: span 1; font-size:20px;">⇧</div>
 <div class="eng-key eng-long" data-char="z" data-long="'"><span class="eng-sub">'</span><span class="key-text">z</span></div>
@@ -2170,8 +2170,6 @@ history.unshift(clipboardText);
 saveClipHistory(history);
 }
 
-// 클립보드 창이 이미 열려 있을 때 다른 앱에서 복사하면
-// Android가 이 함수를 호출하여 목록을 즉시 갱신한다.
 window.addClipboardFromAndroid = function(clipboardText) {
 if (!clipboardModal || clipboardModal.style.display !== 'flex') return;
 if (!clipboardText || clipboardText.trim() === "") return;
@@ -2194,8 +2192,6 @@ clipboardText = window.AndroidBridge.readClipboard() || '';
 clipboardText = await navigator.clipboard.readText();
 }
 if (clipboardText && clipboardText.trim() !== "") {
-// Android에서 실제로 최근 복사된 클립보드인지 확인한다.
-// 오래된 현재 클립보드는 자동으로 저장하지 않는다.
 let canAutoSave = false;
 if (window.AndroidBridge && window.AndroidBridge.isRecentClipboard) {
     canAutoSave = window.AndroidBridge.isRecentClipboard(clipboardText);
@@ -2758,7 +2754,14 @@ list.forEach(item => {
 let div = document.createElement('div');
 div.className = 'hanja-item';
 div.innerHTML = `<span class="hanja-char">${item.c}</span> <span>${item.m}</span>`;
-div.onclick = () => { replaceLastCharWithHanja(item.c); closeHanjaModal(); };
+
+// [안전장치 적용 구간] 모달을 먼저 닫고 포커스가 안정된 후 50ms 뒤에 한자 변환 실행
+div.onclick = () => { 
+    closeHanjaModal(); 
+    setTimeout(() => {
+        replaceLastCharWithHanja(item.c); 
+    }, 50);
+};
 hanjaGridContainer.appendChild(div);
 });
 }
