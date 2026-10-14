@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,8 +7,7 @@
 <style>
 * {
 box-sizing: border-box;
--webkit-tap-highlight-color: 
-    transparent;
+-webkit-tap-highlight-color: transparent;
 touch-action: manipulation;
 }
 html, body {
@@ -628,7 +626,7 @@ background: #e2e8f0;
 
 <div id="alphaBoard" class="keyboard-frame">
 <div class="grid-eng-container">
-
+<div class="eng-key" onclick="appendSpecial('1')">1</div>
 <div class="eng-key" onclick="appendSpecial('2')">2</div>
 <div class="eng-key" onclick="appendSpecial('3')">3</div>
 <div class="eng-key" onclick="appendSpecial('4')">4</div>
@@ -679,6 +677,7 @@ background: #e2e8f0;
 </div>
 </div>
 
+  
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -732,6 +731,7 @@ background: #e2e8f0;
 </div>
 </div>
 </div>
+
 
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
@@ -2630,7 +2630,7 @@ const DEFAULT_HANJA_DICT = {
 '작': [{c:'作', m:'지을 작'}],
 '잔': [{c:'殘', m:'남을 잔'}],
 '족': [{c:'足', m:'발 족'}],
-'참': [{c:'參', m:'참여할 참'}],
+  '참': [{c:'參', m:'참여할 참'}],
 '창': [{c:'窓', m:'창 창'}, {c:'唱', m:'부를 창'}],
 '채': [{c:'採', m:'캘 채'}, {c:'菜', m:'나물 채'}],
 '책': [{c:'冊', m:'책 책'}, {c:'責', m:'꾸짖을 책'}],
@@ -3081,4 +3081,3 @@ switchToBoard('mainBoard');
 </script>
 </body>
 </html>
-
