@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,7 +8,8 @@
 <style>
 * {
 box-sizing: border-box;
--webkit-tap-highlight-color: transparent;
+-webkit-tap-highlight-color: 
+    transparent;
 touch-action: manipulation;
 }
 html, body {
@@ -626,7 +628,7 @@ background: #e2e8f0;
 
 <div id="alphaBoard" class="keyboard-frame">
 <div class="grid-eng-container">
-<div class="eng-key" onclick="appendSpecial('1')">1</div>
+
 <div class="eng-key" onclick="appendSpecial('2')">2</div>
 <div class="eng-key" onclick="appendSpecial('3')">3</div>
 <div class="eng-key" onclick="appendSpecial('4')">4</div>
@@ -733,16 +735,16 @@ background: #e2e8f0;
 
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
 <div class="sym-key custom-key" data-index="0" style="color:#1a73e8; font-weight:bold;">+</div>
 <div class="sym-key custom-key" data-index="1" style="color:#1a73e8; font-weight:bold;">+</div>
 <div class="sym-key custom-key" data-index="2" style="color:#1a73e8; font-weight:bold;">+</div>
 <div class="sym-key custom-key" data-index="3" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key custom-key" data-index="4" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key custom-key" data-index="5" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key custom-key" data-index="6" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key custom-key" data-index="7" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key custom-key" data-index="8" style="color:#1a73e8; font-weight:bold;">+</div>
-<div class="sym-key custom-key" data-index="9" style="color:#1a73e8; font-weight:bold;">+</div>
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
+<div class="sym-key" onclick="appendSpecial('1')">1</div>
 <div class="sym-key" onclick="appendSpecial('☎')">☎</div>
 <div class="sym-key" onclick="appendSpecial('♫')">♫</div>
 <div class="sym-key" onclick="appendSpecial('♨')">♨</div>
@@ -1746,17 +1748,12 @@ if (endX - bsStartX < -30) {
         commitCurrent();
 
         const totalUtf16 = committedText.length;
-        const totalChars = Array.from(committedText).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        if (totalChars > 0 &&
-            window.AndroidBridge &&
-            window.AndroidBridge.deleteAllByKeyEvents) {
-            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
-        } else if (totalUtf16 > 0 &&
+        if (totalUtf16 > 0 &&
             window.AndroidBridge &&
             window.AndroidBridge.setSelection &&
             window.AndroidBridge.deleteText) {
@@ -2633,7 +2630,7 @@ const DEFAULT_HANJA_DICT = {
 '작': [{c:'作', m:'지을 작'}],
 '잔': [{c:'殘', m:'남을 잔'}],
 '족': [{c:'足', m:'발 족'}],
-  '참': [{c:'參', m:'참여할 참'}],
+'참': [{c:'參', m:'참여할 참'}],
 '창': [{c:'窓', m:'창 창'}, {c:'唱', m:'부를 창'}],
 '채': [{c:'採', m:'캘 채'}, {c:'菜', m:'나물 채'}],
 '책': [{c:'冊', m:'책 책'}, {c:'責', m:'꾸짖을 책'}],
@@ -3084,3 +3081,4 @@ switchToBoard('mainBoard');
 </script>
 </body>
 </html>
+
