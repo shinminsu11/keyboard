@@ -1746,12 +1746,17 @@ if (endX - bsStartX < -30) {
         commitCurrent();
 
         const totalUtf16 = committedText.length;
+        const totalChars = Array.from(committedText).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        if (totalUtf16 > 0 &&
+        if (totalChars > 0 &&
+            window.AndroidBridge &&
+            window.AndroidBridge.deleteAllByKeyEvents) {
+            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
+        } else if (totalUtf16 > 0 &&
             window.AndroidBridge &&
             window.AndroidBridge.setSelection &&
             window.AndroidBridge.deleteText) {
