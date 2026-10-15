@@ -760,6 +760,73 @@ class SsulKeyboardService : InputMethodService() {
             }
         }
 
+        // ----------------------------------------------------
+        // 백스페이스 왼쪽 스와이프(전체삭제)에서 setSelection+deleteText가
+        // 안 먹히는 화면을 위한 전용 함수. 방향키(화살표)가 통했던 것처럼
+        // 진짜 지우기 키(백스페이스) 신호를 글자 수만큼 반복해서 보낸다.
+        // ----------------------------------------------------
+        @JavascriptInterface
+        fun deleteAllByKeyEvents(count: Int) {
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() +
+                    (count * 15L) + 200L
+
+            val ic = currentInputConnection ?: return
+
+            try {
+
+                externalComposingActive = false
+                pendingExternalCursorUtf16 = null
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
+
+                val now = android.os.SystemClock.uptimeMillis()
+
+                var i = 0
+                while (i < count) {
+
+                    ic.sendKeyEvent(
+                        KeyEvent(
+                            now,
+                            now,
+                            KeyEvent.ACTION_DOWN,
+                            KeyEvent.KEYCODE_DEL,
+                            0
+                        )
+                    )
+
+                    ic.sendKeyEvent(
+                        KeyEvent(
+                            now,
+                            now,
+                            KeyEvent.ACTION_UP,
+                            KeyEvent.KEYCODE_DEL,
+                            0
+                        )
+                    )
+
+                    i++
+                }
+
+                lastKnownSelectionStart = 0
+                lastKnownSelectionEnd = 0
+
+                cancelHtmlExternalCursorState()
+
+                rememberActualSelection()
+
+                syncHtmlWithNativeText()
+
+            } catch (e: Exception) {
+
+                e.printStackTrace()
+            }
+        }
+
         @JavascriptInterface
         fun deleteText() {
 
