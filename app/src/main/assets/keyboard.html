@@ -677,7 +677,6 @@ background: #e2e8f0;
 </div>
 </div>
 
-  
 <div id="symbolBoard1" class="keyboard-frame">
 <div class="grid-symbol-container">
 <div class="sym-key" onclick="appendSpecial('1')">1</div>
@@ -731,7 +730,6 @@ background: #e2e8f0;
 </div>
 </div>
 </div>
-
 
 <div id="symbolBoard2" class="keyboard-frame">
 <div class="grid-symbol-container">
@@ -1748,12 +1746,17 @@ if (endX - bsStartX < -30) {
         commitCurrent();
 
         const totalUtf16 = committedText.length;
+        const totalChars = Array.from(committedText).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        if (totalUtf16 > 0 &&
+        if (totalChars > 0 &&
+            window.AndroidBridge &&
+            window.AndroidBridge.deleteAllByKeyEvents) {
+            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
+        } else if (totalUtf16 > 0 &&
             window.AndroidBridge &&
             window.AndroidBridge.setSelection &&
             window.AndroidBridge.deleteText) {
