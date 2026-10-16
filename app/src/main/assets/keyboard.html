@@ -855,7 +855,7 @@ background: #e2e8f0;
 <div class="modal-box" style="max-width:94%; max-height:80vh; display:flex; flex-direction:column;">
 <div class="modal-header"><span>설치된 앱 선택</span><span class="modal-close" onclick="closeInstalledApps()">×</span></div>
 <div id="installedAppsStatus" style="font-size:13px; color:#666; padding:8px 2px;">앱 목록을 불러오는 중...</div>
-<div id="installedAppsList" style="overflow-y:auto; max-height:70vh; flex:1;"></div>
+<div id="installedAppsList" style="overflow-y:auto; max-height:70vh; flex:1;-webkit-overflow-scrolling:touch;"></div>
 </div></div>
 
 <!-- URL/상용구 설정 모달 (삭제 버튼 포함) -->
@@ -2563,6 +2563,7 @@ const DEFAULT_HANJA_DICT = {
 '불': [{c:'不', m:'아닐 불'}, {c:'佛', m:'부처 불'}],
 '비': [{c:'飛', m:'날 비'}, {c:'非', m:'아닐 비'}, {c:'悲', m:'슬플 비'}, {c:'費', m:'쓸 비'}],
 '빈': [{c:'貧', m:'가난할 빈'}],
+  '벽': [{c:'壁', m:'벽 벽'}],
 '사': [{c:'事', m:'일 사'}, {c:'四', m:'넉 사'}, {c:'死', m:'죽을 사'}, {c:'使', m:'하여금 사'}, {c:'社', m:'모일 사'}, {c:'士', m:'선비 사'}, {c:'史', m:'사기 사'}, {c:'思', m:'생각 사'}, {c:'私', m:'사사 사'}],
 '산': [{c:'山', m:'뫼 산'}, {c:'産', m:'낳을 산'}, {c:'算', m:'셈 산'}, {c:'散', m:'흩을 산'}],
 '살': [{c:'殺', m:'죽일 살'}],
@@ -2663,7 +2664,7 @@ const DEFAULT_HANJA_DICT = {
 '책': [{c:'冊', m:'책 책'}, {c:'責', m:'꾸짖을 책'}],
 '처': [{c:'處', m:'곳 처'}, {c:'妻', m:'아내 처'}],
 '척': [{c:'尺', m:'자 척'}],
-'천': [{c:'天', m:'하늘 천'}, {c:'千', m:'일천 천'}, {c:'川', m:'내 천'}, {c:'泉', m:'샘 천'}, {c:'遷', m:'옮길 천'}],
+'천': [{c:'天', m:'하늘 천'}, {c:'千', m:'일천 천'}, {c:'川', m:'내 천'}, {c:'泉', m:'샘 천'}],
 '철': [{c:'鐵', m:'쇠 철'}, {c:'哲', m:'밝을 철'}],
 '청': [{c:'靑', m:'푸를 청'}, {c:'淸', m:'맑을 청'}, {c:'廳', m:'관청 청'}, {c:'聽', m:'들을 청'}, {c:'請', m:'청할 청'}],
 '체': [{c:'體', m:'몸 체'}],
@@ -3102,9 +3103,30 @@ function chooseSlotApp() {
             label.style.cssText = 'overflow-wrap:anywhere;font-weight:500;';
             button.appendChild(label);
             
+            let startX = 0, startY = 0, hasMoved = false;
+
+            button.addEventListener('touchstart', (e) => {
+                hasMoved = false;
+                if (e.touches && e.touches.length > 0) {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            button.addEventListener('touchmove', (e) => {
+                if (e.touches && e.touches.length > 0) {
+                    let dx = e.touches[0].clientX - startX;
+                    let dy = e.touches[0].clientY - startY;
+                    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                        hasMoved = true;
+                    }
+                }
+            }, { passive: true });
+
             const handleAppSelect = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (hasMoved) return;
                 let db = getDB();
                 db[pendingAppSlot] = { type: 'app', title: app.label || app.packageName, packageName: app.packageName };
                 saveDB(db); 
@@ -3115,7 +3137,11 @@ function chooseSlotApp() {
             };
 
             button.addEventListener('click', handleAppSelect);
-            button.addEventListener('touchend', handleAppSelect);
+            button.addEventListener('touchend', (e) => {
+                if (!hasMoved) {
+                    handleAppSelect(e);
+                }
+            });
 
             list.appendChild(button);
         });
