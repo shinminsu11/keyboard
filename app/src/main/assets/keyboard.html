@@ -854,6 +854,8 @@ background: #e2e8f0;
 <div id="installedAppsList" style="overflow-y:auto;max-height:55vh;"></div>
 <button onclick="closeInstalledApps()" style="padding:10px;margin-top:8px;border:0;border-radius:7px;background:#888;color:white;">취소</button>
 </div></div>
+
+<!-- URL/상용구 설정 모달 (삭제 버튼 포함) -->
 <div id="slotModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -3153,9 +3155,15 @@ else delete db[currentSlot];
 }
 saveDB(db); renderSlots(); closeModal();
 }
+
 function deleteData() {
 if (!currentSlot) return;
-let db = getDB(); delete db[currentSlot]; saveDB(db); renderSlots(); closeModal();
+let db = getDB(); 
+delete db[currentSlot]; 
+saveDB(db); 
+renderSlots(); 
+closeModal();
+showToast("삭제되었습니다");
 }
 
 renderSlots();
