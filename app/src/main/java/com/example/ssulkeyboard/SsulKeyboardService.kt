@@ -705,9 +705,6 @@ class SsulKeyboardService : InputMethodService() {
 
         // ----------------------------------------------------
         // 설정 아이콘 좌우 슬라이드로 커서를 한 칸 옮기는 전용 함수.
-        // 방향을 JS가 직접 알려주므로(−1=왼쪽, +1=오른쪽) 위치를
-        // 비교해서 방향을 추론할 필요가 없다. setSelection이 잘 안
-        // 먹히는 화면에서도 방향키 입력은 비교적 잘 먹힌다.
         // ----------------------------------------------------
         @JavascriptInterface
         fun moveCursorStep(direction: Int) {
@@ -761,19 +758,8 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ----------------------------------------------------
-        // 백스페이스 왼쪽 스와이프(전체삭제)에서 setSelection+deleteText가
-        // 안 먹히는 화면을 위한 전용 함수. 방향키(화살표)가 통했던 것처럼
-        // 진짜 지우기 키(백스페이스) 신호를 글자 수만큼 반복해서 보낸다.
-        // ----------------------------------------------------
-        // ----------------------------------------------------
-        // 백스페이스 왼쪽 스와이프(전체삭제) 전용 함수.
-        // - 네이버 카페가 아닌 모든 앱: 원래 빠르던 "전체선택 후 삭제"
-        //   방식을 그대로 쓴다 (안드로이드가 실제로 보고 있는 글자 수
-        //   기준이라 자판이 추적 못 한 기존 글도 포함됨).
-        // - 네이버 카페 본문일 때만: setSelection이 안 먹히므로, 진짜
-        //   지우기 키(백스페이스) 신호를 글자 수만큼 반복해서 보낸다.
-        //   (간단한 방식 유지 — 대기시간이나 재시도를 추가하면 오히려
-        //   더 안 되거나 느려지는 것을 확인함)
+        // 백스페이스 왼쪽 스와이프(좌측 전체 삭제) 전용 함수
+        // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
@@ -790,64 +776,31 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
-                val packageName = currentInputEditorInfo?.packageName
-                val isNaverCafe = packageName == "com.nhn.android.navercafe"
-
-                if (!isNaverCafe) {
-
-                    internalSelectionUntil =
-                        android.os.SystemClock.uptimeMillis() + 250L
-
-                    val before =
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-
-                    val after =
-                        ic.getTextAfterCursor(50000, 0)?.length ?: 0
-
-                    val total = before + after
-
-                    if (total > 0) {
-
-                        ic.setSelection(0, total)
-
-                        ic.commitText("", 1)
-                    }
-
-                    lastKnownSelectionStart = 0
-                    lastKnownSelectionEnd = 0
-
-                    cancelHtmlExternalCursorState()
-
-                    rememberActualSelection()
-
-                    syncHtmlWithNativeText()
-
-                    return
-                }
-
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // 네이버 카페 전용 세 번째 시도: 범위선택도, 키 신호도
-                // 아닌 deleteSurroundingText 전용 API로 커서 기준
-                // 앞쪽 글자를 한 번에 지워달라고 직접 요청한다.
-                val realCount =
+                // 오직 커서 기준 '좌측(Before)'에 있는 실제 글자 수만 가져옵니다. (우측 글은 0으로 고정하여 보호)
+                val beforeLength =
                     try {
-                        val before = ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                        val after = ic.getTextAfterCursor(50000, 0)?.length ?: 0
-                        before + after
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
                     } catch (_: Exception) {
                         count
                     }
 
-                val target = if (realCount > 0) realCount else count
-
-                ic.beginBatchEdit()
-
-                try {
-                    ic.deleteSurroundingText(target, target)
-                } finally {
-                    ic.endBatchEdit()
+                if (beforeLength > 0) {
+                    ic.beginBatchEdit()
+                    try {
+                        // 첫 번째 인자: 좌측에서 지울 글자 수, 두 번째 인자: 우측에서 지울 글자 수(0으로 설정해 우측 글 보존)
+                        ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
+                    } finally {
+                        ic.endBatchEdit()
+                    }
                 }
 
                 lastKnownSelectionStart = 0
