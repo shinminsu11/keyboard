@@ -779,7 +779,6 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // 오직 커서 기준 '좌측(Before)'에 있는 실제 글자 수만 가져옵니다. (우측 글은 0으로 고정하여 보호)
                 val beforeLength =
                     try {
                         ic.getTextBeforeCursor(50000, 0)?.length ?: count
@@ -790,7 +789,6 @@ class SsulKeyboardService : InputMethodService() {
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        // 첫 번째 인자: 좌측에서 지울 글자 수, 두 번째 인자: 우측에서 지울 글자 수(0으로 설정해 우측 글 보존)
                         ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -1154,6 +1152,92 @@ class SsulKeyboardService : InputMethodService() {
             } catch (e: Exception) {
 
                 e.printStackTrace()
+            }
+        }
+
+        // 설치된 앱 목록 조회
+        @JavascriptInterface
+        fun getInstalledApps(): String {
+            return try {
+                val pm =
+                    this@SsulKeyboardService.packageManager
+
+                val intent =
+                    Intent(Intent.ACTION_MAIN, null).apply {
+                        addCategory(Intent.CATEGORY_LAUNCHER)
+                    }
+
+                val apps =
+                    org.json.JSONArray()
+
+                val resolved =
+                    pm.queryIntentActivities(intent, 0)
+                        .sortedBy {
+                            it.loadLabel(pm)
+                                .toString()
+                                .lowercase()
+                        }
+
+                val seenPackages =
+                    mutableSetOf<String>()
+
+                for (info in resolved) {
+                    val packageName =
+                        info.activityInfo?.packageName
+                            ?: continue
+
+                    if (!seenPackages.add(packageName)) {
+                        continue
+                    }
+
+                    val label =
+                        info.loadLabel(pm)
+                            ?.toString()
+                            ?.takeIf { it.isNotBlank() }
+                            ?: packageName
+
+                    apps.put(
+                        org.json.JSONObject()
+                            .put("label", label)
+                            .put("packageName", packageName)
+                    )
+                }
+
+                apps.toString()
+
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "SsulKeyboard",
+                    "설치된 앱 목록 조회 실패",
+                    e
+                )
+                "[]"
+            }
+        }
+
+        // 선택한 앱 실행
+        @JavascriptInterface
+        fun launchApp(packageName: String) {
+            try {
+                val launchIntent =
+                    this@SsulKeyboardService
+                        .packageManager
+                        .getLaunchIntentForPackage(packageName)
+                        ?: return
+
+                launchIntent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+                )
+
+                this@SsulKeyboardService
+                    .startActivity(launchIntent)
+
+            } catch (e: Exception) {
+                android.util.Log.e(
+                    "SsulKeyboard",
+                    "앱 실행 실패: $packageName",
+                    e
+                )
             }
         }
 
