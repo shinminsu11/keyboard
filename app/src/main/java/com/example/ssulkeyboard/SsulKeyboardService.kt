@@ -826,42 +826,28 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() +
-                        (count * 15L) + 200L
+                    android.os.SystemClock.uptimeMillis() + 250L
 
-                // 네이버 카페 전용: 각 신호마다 서로 다른 시각을 찍는다
-                // (실제로 기다리지는 않음 — 시간만 1ms씩 증가시켜
-                // 웹뷰가 "같은 신호 중복"으로 걸러내지 않게 한다).
-                var t = android.os.SystemClock.uptimeMillis()
+                // 네이버 카페 전용 세 번째 시도: 범위선택도, 키 신호도
+                // 아닌 deleteSurroundingText 전용 API로 커서 기준
+                // 앞쪽 글자를 한 번에 지워달라고 직접 요청한다.
+                val realCount =
+                    try {
+                        val before = ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                        val after = ic.getTextAfterCursor(50000, 0)?.length ?: 0
+                        before + after
+                    } catch (_: Exception) {
+                        count
+                    }
 
-                var i = 0
-                while (i < count) {
+                val target = if (realCount > 0) realCount else count
 
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            t,
-                            t,
-                            KeyEvent.ACTION_DOWN,
-                            KeyEvent.KEYCODE_DEL,
-                            0
-                        )
-                    )
+                ic.beginBatchEdit()
 
-                    t += 1
-
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            t,
-                            t,
-                            KeyEvent.ACTION_UP,
-                            KeyEvent.KEYCODE_DEL,
-                            0
-                        )
-                    )
-
-                    t += 1
-
-                    i++
+                try {
+                    ic.deleteSurroundingText(target, target)
+                } finally {
+                    ic.endBatchEdit()
                 }
 
                 lastKnownSelectionStart = 0
