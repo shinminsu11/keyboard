@@ -2657,16 +2657,13 @@ const DEFAULT_HANJA_DICT = {
   '중': [{c:'中', m:'가운데 중'}],
   '지': [{c:'之', m:'갈 지'}, {c:'枝', m:'가지 지'}],
   '진': [{c:'進', m:'나아갈 진'}, {c:'眞', m:'참 진'}],
-  '재': [{c:'才', m:'재주 재'}, {c:'在', m:'있을 재 '}, {c:'宰', m:'재상 재 '}, {c:'災', m:'재앙 재 '}],
-
-'제': [{c:'祭', m:'제사 제'}, {c:'除', m:'덜 제'}],
   '참': [{c:'參', m:'참여할 참'}],
 '창': [{c:'窓', m:'창 창'}, {c:'唱', m:'부를 창'}],
 '채': [{c:'採', m:'캘 채'}, {c:'菜', m:'나물 채'}],
 '책': [{c:'冊', m:'책 책'}, {c:'責', m:'꾸짖을 책'}],
 '처': [{c:'處', m:'곳 처'}, {c:'妻', m:'아내 처'}],
 '척': [{c:'尺', m:'자 척'}],
-'천': [{c:'天', m:'하늘 천'}, {c:'千', m:'일천 천'}, {c:'川', m:'내 천'}, {c:'泉', m:'샘 천'}],
+'천': [{c:'天', m:'하늘 천'}, {c:'千', m:'일천 천'}, {c:'川', m:'내 천'}, {c:'泉', m:'샘 천'}, {c:'遷', m:'옮길 천'}],
 '철': [{c:'鐵', m:'쇠 철'}, {c:'哲', m:'밝을 철'}],
 '청': [{c:'靑', m:'푸를 청'}, {c:'淸', m:'맑을 청'}, {c:'廳', m:'관청 청'}, {c:'聽', m:'들을 청'}, {c:'請', m:'청할 청'}],
 '체': [{c:'體', m:'몸 체'}],
@@ -3104,11 +3101,22 @@ function chooseSlotApp() {
             label.textContent = app.label || app.packageName || '앱';
             label.style.cssText = 'overflow-wrap:anywhere;font-weight:500;';
             button.appendChild(label);
-            button.addEventListener('click', () => {
+            
+            const handleAppSelect = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                let db = getDB();
                 db[pendingAppSlot] = { type: 'app', title: app.label || app.packageName, packageName: app.packageName };
-                saveDB(db); renderSlots(); closeInstalledApps(); pendingAppSlot = null;
+                saveDB(db); 
+                renderSlots(); 
+                closeInstalledApps(); 
+                pendingAppSlot = null;
                 showToast("저장되었습니다");
-            });
+            };
+
+            button.addEventListener('click', handleAppSelect);
+            button.addEventListener('touchend', handleAppSelect);
+
             list.appendChild(button);
         });
     } catch (e) { status.textContent = '앱 목록을 불러오지 못했습니다.'; }
