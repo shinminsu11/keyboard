@@ -765,12 +765,18 @@ class SsulKeyboardService : InputMethodService() {
         // 안 먹히는 화면을 위한 전용 함수. 방향키(화살표)가 통했던 것처럼
         // 진짜 지우기 키(백스페이스) 신호를 글자 수만큼 반복해서 보낸다.
         // ----------------------------------------------------
+        // ----------------------------------------------------
+        // 백스페이스 왼쪽 스와이프(전체삭제) 전용 함수.
+        // - 네이버 카페가 아닌 모든 앱: 원래 빠르던 "전체선택 후 삭제"
+        //   방식을 그대로 쓴다 (안드로이드가 실제로 보고 있는 글자 수
+        //   기준이라 자판이 추적 못 한 기존 글도 포함됨).
+        // - 네이버 카페 본문일 때만: setSelection이 안 먹히므로, 진짜
+        //   지우기 키(백스페이스) 신호를 글자 수만큼 반복해서 보낸다.
+        //   (간단한 방식 유지 — 대기시간이나 재시도를 추가하면 오히려
+        //   더 안 되거나 느려지는 것을 확인함)
+        // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
-            internalSelectionUntil =
-                android.os.SystemClock.uptimeMillis() +
-                    (count * 15L) + 200L
 
             val ic = currentInputConnection ?: return
 
@@ -784,30 +790,76 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
-                val now = android.os.SystemClock.uptimeMillis()
+                val packageName = currentInputEditorInfo?.packageName
+                val isNaverCafe = packageName == "com.nhn.android.navercafe"
+
+                if (!isNaverCafe) {
+
+                    internalSelectionUntil =
+                        android.os.SystemClock.uptimeMillis() + 250L
+
+                    val before =
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+
+                    val after =
+                        ic.getTextAfterCursor(50000, 0)?.length ?: 0
+
+                    val total = before + after
+
+                    if (total > 0) {
+
+                        ic.setSelection(0, total)
+
+                        ic.commitText("", 1)
+                    }
+
+                    lastKnownSelectionStart = 0
+                    lastKnownSelectionEnd = 0
+
+                    cancelHtmlExternalCursorState()
+
+                    rememberActualSelection()
+
+                    syncHtmlWithNativeText()
+
+                    return
+                }
+
+                internalSelectionUntil =
+                    android.os.SystemClock.uptimeMillis() +
+                        (count * 15L) + 200L
+
+                // 네이버 카페 전용: 각 신호마다 서로 다른 시각을 찍는다
+                // (실제로 기다리지는 않음 — 시간만 1ms씩 증가시켜
+                // 웹뷰가 "같은 신호 중복"으로 걸러내지 않게 한다).
+                var t = android.os.SystemClock.uptimeMillis()
 
                 var i = 0
                 while (i < count) {
 
                     ic.sendKeyEvent(
                         KeyEvent(
-                            now,
-                            now,
+                            t,
+                            t,
                             KeyEvent.ACTION_DOWN,
                             KeyEvent.KEYCODE_DEL,
                             0
                         )
                     )
 
+                    t += 1
+
                     ic.sendKeyEvent(
                         KeyEvent(
-                            now,
-                            now,
+                            t,
+                            t,
                             KeyEvent.ACTION_UP,
                             KeyEvent.KEYCODE_DEL,
                             0
                         )
                     )
+
+                    t += 1
 
                     i++
                 }
