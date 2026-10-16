@@ -786,11 +786,11 @@ background: #e2e8f0;
 
 <div id="twinBoard" class="keyboard-frame">
 <div class="grid-container">
-<div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="plus">+</span>'>
-<span class="plus">+</span>
+<div class="key slot-key" data-slot="url_0" data-type="url" data-default='<span class="label">URL</span><span class="plus">+</span>'>
+<span class="label">URL</span><span class="plus">+</span>
 </div>
 <div class="key slot-key" data-slot="url_1" data-type="url" data-default='<span class="plus">+</span>'>
-<span class="plus">+</span>
+<span class="label">URL</span><span class="plus">+</span>
 </div>
 <div class="key" id="calcBtn" style="cursor:pointer;">
 <span class="label">계산기</span><span class="icon">🧮</span>
@@ -836,17 +836,6 @@ background: #e2e8f0;
 <button onclick="saveCustomSymbolFromModal()" style="flex:1; padding:9px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">저장</button>
 <button onclick="deleteCustomSymbolFromModal()" style="padding:9px 12px; background:#e63935; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">삭제</button>
 <button onclick="closeCustomSymbolModal()" style="padding:9px 12px; background:#888; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">닫기</button>
-</div>
-</div>
-</div>
-
-<div id="addChoiceModal" class="modal-overlay" style="z-index:1500;">
-<div class="modal-box" style="max-width:300px; text-align:center;">
-<div class="modal-header" style="justify-content:center;">추가할 항목 선택</div>
-<div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
-<button onclick="chooseAddUrl()" style="padding:12px; background:#4285f4; color:#fff; border:none; border-radius:8px; font-weight:bold; font-size:15px;">🌐 URL 추가</button>
-<button onclick="chooseAddApp()" style="padding:12px; background:#eaf2ff; color:#1a73e8; border:none; border-radius:8px; font-weight:bold; font-size:15px;">📱 설치된 앱 추가</button>
-<button onclick="closeAddChoiceModal()" style="padding:9px; background:#888; color:#fff; border:none; border-radius:8px; font-weight:bold;">취소</button>
 </div>
 </div>
 </div>
@@ -2961,18 +2950,7 @@ let pressTimer = null, isLongPress = false;
 el.addEventListener('touchstart', (e) => {
 isLongPress = false;
 if (pressTimer) clearTimeout(pressTimer);
-pressTimer = setTimeout(() => {
-    isLongPress = true;
-    const currentVal = getDB()[slotKey];
-    // A named 상용구 slot keeps its existing text-edit behavior.
-    if (slotKey === 'snippet_3') {
-        openModal(slotKey, type);
-    } else if (!currentVal) {
-        openAddChoiceModal(slotKey, type);
-    } else {
-        openModal(slotKey, type);
-    }
-}, 550);
+pressTimer = setTimeout(() => { isLongPress = true; openModal(slotKey, type); }, 550);
 }, { passive: true });
 el.addEventListener('touchend', (e) => {
 if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
@@ -2982,7 +2960,7 @@ if (slotKey === 'snippet_15' && !val) {
     val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
 }
 if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
-if (type === 'url' || slotKey === 'snippet_15' || (typeof val === 'object' && val !== null && val.url)) {
+if (type === 'url' || slotKey === 'snippet_15') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
 targetUrl = val.url || val.title || '';
@@ -3051,36 +3029,10 @@ if (window.AndroidBridge && window.AndroidBridge.openUrl) {
 }
 });
 
-let pendingAddSlot = null;
-let pendingAddType = null;
-function openAddChoiceModal(slotKey, type) {
-    pendingAddSlot = slotKey;
-    pendingAddType = type;
-    document.getElementById('addChoiceModal').style.display = 'flex';
-}
-function closeAddChoiceModal() {
-    document.getElementById('addChoiceModal').style.display = 'none';
-    pendingAddSlot = null;
-    pendingAddType = null;
-}
-function chooseAddUrl() {
-    const slotKey = pendingAddSlot;
-    if (!slotKey) return;
-    document.getElementById('addChoiceModal').style.display = 'none';
-    // Open the existing URL editor for the selected empty slot.
-    openModal(slotKey, 'url');
-    pendingAddSlot = null;
-    pendingAddType = null;
-}
-function chooseAddApp() {
-    closeAddChoiceModal();
-    showToast('앱 추가 기능은 2단계에서 구현합니다');
-}
-
 function openModal(slotKey, type) {
 currentSlot = slotKey; 
+currentType = (slotKey === 'snippet_15') ? 'url' : type;
 let db = getDB(), val = db[slotKey] || {};
-currentType = (slotKey === 'snippet_15' || type === 'url' || (typeof val === 'object' && val !== null && val.url)) ? 'url' : type;
 if (slotKey === 'snippet_15' && !db['snippet_15']) {
     val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
 }
