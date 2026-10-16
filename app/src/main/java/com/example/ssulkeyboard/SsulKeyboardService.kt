@@ -765,18 +765,12 @@ class SsulKeyboardService : InputMethodService() {
         // 안 먹히는 화면을 위한 전용 함수. 방향키(화살표)가 통했던 것처럼
         // 진짜 지우기 키(백스페이스) 신호를 글자 수만큼 반복해서 보낸다.
         // ----------------------------------------------------
-        // ----------------------------------------------------
-        // 백스페이스 왼쪽 스와이프(전체삭제)에서 setSelection+deleteText가
-        // 안 먹히는 화면을 위한 전용 함수.
-        // - JS가 세고 있는 글자 수를 믿지 않고, 안드로이드가 실제로 보고
-        //   있는 글자 수를 직접 물어본다 (자판이 추적 못 한, 원래부터
-        //   있던 글도 포함됨).
-        // - 커서를 맨 끝으로 보낸 뒤 그 실제 글자 수만큼 지운다.
-        // - 신호를 한꺼번에 몰아 쏘지 않고, 하나씩 사이에 짧은 간격을
-        //   두고 보내서 중간에 놓치는 것을 줄인다.
-        // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() +
+                    (count * 15L) + 200L
 
             val ic = currentInputConnection ?: return
 
@@ -790,52 +784,10 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
-                // 커서를 맨 끝으로 이동시켜, 커서 뒤에 남아있는 글자도
-                // 전부 백스페이스로 지울 수 있는 위치를 확보한다.
-                run {
-                    val moveNow = android.os.SystemClock.uptimeMillis()
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            moveNow,
-                            moveNow,
-                            KeyEvent.ACTION_DOWN,
-                            KeyEvent.KEYCODE_MOVE_END,
-                            0
-                        )
-                    )
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            moveNow,
-                            moveNow,
-                            KeyEvent.ACTION_UP,
-                            KeyEvent.KEYCODE_MOVE_END,
-                            0
-                        )
-                    )
-                }
-
-                Thread.sleep(30)
-
-                // 안드로이드가 실제로 보고 있는 글자 수를 직접 확인한다.
-                // JS가 넘겨준 count는 더 이상 쓰지 않는다 (undercount 방지).
-                val realLength =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                    } catch (_: Exception) {
-                        count
-                    }
-
-                val target =
-                    if (realLength > 0) realLength else count
-
-                internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() +
-                        (target * 20L) + 400L
+                val now = android.os.SystemClock.uptimeMillis()
 
                 var i = 0
-                while (i < target) {
-
-                    val now = android.os.SystemClock.uptimeMillis()
+                while (i < count) {
 
                     ic.sendKeyEvent(
                         KeyEvent(
@@ -857,59 +809,7 @@ class SsulKeyboardService : InputMethodService() {
                         )
                     )
 
-                    Thread.sleep(8)
-
                     i++
-                }
-
-                // 혹시 안드로이드가 본 실제 길이가 예상보다 짧았거나,
-                // 처리 중 일부 신호가 밀려서 아직 글자가 남아있다면
-                // 한 번 더 확인해서 마저 지운다 (최대 재시도 포함).
-                var retries = 0
-                while (retries < 5) {
-
-                    val remaining =
-                        try {
-                            ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-                        } catch (_: Exception) {
-                            0
-                        }
-
-                    if (remaining <= 0) break
-
-                    val now2 = android.os.SystemClock.uptimeMillis()
-
-                    var j = 0
-                    while (j < remaining) {
-
-                        val now3 = android.os.SystemClock.uptimeMillis()
-
-                        ic.sendKeyEvent(
-                            KeyEvent(
-                                now3,
-                                now3,
-                                KeyEvent.ACTION_DOWN,
-                                KeyEvent.KEYCODE_DEL,
-                                0
-                            )
-                        )
-
-                        ic.sendKeyEvent(
-                            KeyEvent(
-                                now3,
-                                now3,
-                                KeyEvent.ACTION_UP,
-                                KeyEvent.KEYCODE_DEL,
-                                0
-                            )
-                        )
-
-                        Thread.sleep(8)
-
-                        j++
-                    }
-
-                    retries++
                 }
 
                 lastKnownSelectionStart = 0
