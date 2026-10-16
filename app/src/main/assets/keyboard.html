@@ -337,8 +337,8 @@ z-index: 100;
 
 .modal-box {
 background: #fff;
-width: 92%;
-max-width: 380px;
+width: 96%;
+max-width: 510px;
 border-radius: 20px;
 padding: 20px 16px 16px 16px;
 box-shadow: 0 10px 30px rgba(0,0,0,0.3);
@@ -841,18 +841,25 @@ background: #e2e8f0;
 </div>
 
 <div id="slotChoiceModal" class="modal-overlay" style="z-index:2100;">
-<div class="modal-box" style="max-width:300px;">
+<div class="modal-box" style="max-width:420px;">
 <div class="modal-header"><span>빈칸 설정</span><span class="modal-close" onclick="closeSlotChoice()">×</span></div>
-<button onclick="chooseSlotUrl()" style="width:100%;padding:12px;margin:4px 0;border:0;border-radius:7px;background:#4285f4;color:white;font-weight:bold;">URL 추가</button>
-<button onclick="chooseSlotApp()" style="width:100%;padding:12px;margin:4px 0;border:0;border-radius:7px;background:#34a853;color:white;font-weight:bold;">설치된 앱 추가</button>
-<button onclick="closeSlotChoice()" style="width:100%;padding:10px;margin-top:4px;border:0;border-radius:7px;background:#888;color:white;">취소</button>
+<button onclick="chooseSlotUrl()" style="width:100%;padding:12px;margin:4px 0;border:0;border-radius:7px;background:#4285f4;color:white;font-weight:bold;font-size:15px;">URL 추가</button>
+<button onclick="chooseSlotApp()" style="width:100%;padding:12px;margin:4px 0;border:0;border-radius:7px;background:#34a853;color:white;font-weight:bold;font-size:15px;">설치된 앱 추가</button>
+<div id="slotChoiceDeleteRow" style="display:none; margin-top:4px;">
+<button onclick="deleteSlotFromChoice()" style="width:100%;padding:12px;border:0;border-radius:7px;background:#e63935;color:white;font-weight:bold;font-size:15px;">이 슬롯 내용 삭제하기</button>
+</div>
+<button onclick="closeSlotChoice()" style="width:100%;padding:10px;margin-top:6px;border:0;border-radius:7px;background:#888;color:white;font-size:14px;">취소</button>
 </div></div>
+
 <div id="installedAppsModal" class="modal-overlay" style="z-index:2200;">
-<div class="modal-box" style="max-width:340px;max-height:75vh;display:flex;flex-direction:column;">
+<div class="modal-box" style="max-width:94%; max-height:80vh; display:flex; flex-direction:column;">
 <div class="modal-header"><span>설치된 앱 선택</span><span class="modal-close" onclick="closeInstalledApps()">×</span></div>
-<div id="installedAppsStatus" style="font-size:13px;color:#666;padding:8px 2px;">앱 목록을 불러오는 중...</div>
-<div id="installedAppsList" style="overflow-y:auto;max-height:55vh;"></div>
-<button onclick="closeInstalledApps()" style="padding:10px;margin-top:8px;border:0;border-radius:7px;background:#888;color:white;">취소</button>
+<div id="installedAppsStatus" style="font-size:13px; color:#666; padding:8px 2px;">앱 목록을 불러오는 중...</div>
+<div id="installedAppsList" style="overflow-y:auto; max-height:62vh; flex:1;"></div>
+<div style="display:flex; gap:6px; margin-top:8px;">
+<button onclick="deleteAppFromInstalledModal()" id="installedModalDeleteBtn" style="display:none; flex:1; padding:10px; border:0; border-radius:7px; background:#e63935; color:white; font-weight:bold;">등록된 앱 삭제</button>
+<button onclick="closeInstalledApps()" style="flex:1; padding:10px; border:0; border-radius:7px; background:#888; color:white;">취소</button>
+</div>
 </div></div>
 
 <!-- URL/상용구 설정 모달 (삭제 버튼 포함) -->
@@ -2457,7 +2464,7 @@ const DEFAULT_HANJA_DICT = {
 '거': [{c:'去', m:'갈 거'}, {c:'巨', m:'클 거'}, {c:'車', m:'수레 거'}],
 '건': [{c:'建', m:'세울 건'}, {c:'件', m:'물건 건'}, {c:'健', m:'굳셀 건'}],
 '결': [{c:'決', m:'결정할 결'}, {c:'結', m:'맺을 결'}, {c:'潔', m:'깨끗할 결'}],
-'경': [{c:'京', m:'서울 경'}, {c:'景', m:'볕 경'}, {c:'輕', m:'가벼울 경'}, {c:'敬', m:'공경 경'}],
+'경': [{c:'京', m:'서울 경'}, {c:'景', m:'볕 경'}, {c:'輕', m:'가벼울 경'}, {c:'敬', m:'공경 경'}, {c:'經', m:'경서 경'}],
 '계': [{c:'界', m:'지경 계'}, {c:'計', m:'셀 계'}, {c:'季', m:'계절 계'}],
 '고': [{c:'高', m:'높을 고'}, {c:'古', m:'옛 고'}, {c:'苦', m:'쓸 고'}, {c:'告', m:'고할 고'}],
 '곡': [{c:'曲', m:'굽을 곡'}, {c:'谷', m:'골 곡'}, {c:'穀', m:'곡식 곡'}],
@@ -2560,7 +2567,7 @@ const DEFAULT_HANJA_DICT = {
 '복': [{c:'福', m:'복 복'},{c:'復', m:'회복할 복'},{c:'卜', m:'점칠 복'}, {c:'服', m:'옷 복'}, {c:'復', m:'회복할 복'}],
 '본': [{c:'本', m:'근본 본'}],
 '봉': [{c:'逢', m:'만날 봉'}],
-'부': [{c:'父', m:'아비 부'}, {c:'夫', m:'지아비 부'}, {c:'富', m:'부유할 부'}, {c:'部', m:'떼 부'}, {c:'婦', m:'며느리 부'}],
+'부': [{c:'父', m:'아비 부'}, {c:'夫', m:'지아비 부'}, {c:'符', m:'부호 부'},{c:'富', m:'부유할 부'}, {c:'部', m:'떼 부'}, {c:'婦', m:'며느리 부'}],
 '북': [{c:'北', m:'북녘 북'}],
 '분': [{c:'分', m:'나눌 분'}, {c:'粉', m:'가루 분'}],
 '불': [{c:'不', m:'아닐 불'}, {c:'佛', m:'부처 불'}],
@@ -2641,7 +2648,7 @@ const DEFAULT_HANJA_DICT = {
 '의': [{c:'意', m:'뜻 의'}, {c:'義', m:'옳을 의'}, {c:'醫', m:'의원 의'}, {c:'衣', m:'옷 의'}, {c:'議', m:'의논할 의'}],
 '이': [{c:'二', m:'두 이'}, {c:'以', m:'써 이'}, {c:'李', m:'성 이'}, {c:'耳', m:'귀 이'}, {c:'已', m:'이미 이'}],
 '익': [{c:'益', m:'더할 익'}],
-'인': [{c:'人', m:'사람 인'}, {c:'因', m:'인할 인'}, {c:'引', m:'끌 인'}, {c:'忍', m:'참을 인'}, {c:'認', m:'알 인'}],
+'인': [{c:'人', m:'사람 인'}, {c:'因', m:'인할 인'}, {c:'引', m:'끌 인'}, {c:'忍', m:'참을 인'}, {c:'認', m:'알 인'}, {c:'印', m:'도장 인'}],
 '일': [{c:'一', m:'한 일'}, {c:'日', m:'날 일'}],
 '임': [{c:'任', m:'맡길 임'}, {c:'林', m:'수풀 임'}],
 '입': [{c:'入', m:'들 입'}],
@@ -2656,6 +2663,8 @@ const DEFAULT_HANJA_DICT = {
   '정': [{c:'正', m:'바를 정'}, {c:'丁', m:'고무래 정 '}, {c:'釘', m:'못 정 '}, {c:'鼎', m:'솥 정 '}, {c:'庭', m:'뜰 정 '}, {c:'政', m:'정사 정 '}],
 '족': [{c:'足', m:'발 족'}],
   '주': [{c:'宙', m:'집 주'}, {c:'酒', m:'술 주'} ,{c:'主', m:'주인 주'}],
+  '지': [{c:'之', m:'갈 지'}, {c:'枝', m:'가지 지'}],
+  '진': [{c:'進', m:'나아갈 진'}, {c:'眞', m:'참 진'}],
   '참': [{c:'參', m:'참여할 참'}],
 '창': [{c:'窓', m:'창 창'}, {c:'唱', m:'부를 창'}],
 '채': [{c:'採', m:'캘 채'}, {c:'菜', m:'나물 채'}],
@@ -2698,7 +2707,7 @@ const DEFAULT_HANJA_DICT = {
 '판': [{c:'判', m:'판단할 판'}, {c:'板', m:'널 판'}],
 '팔': [{c:'八', m:'여덟 팔'}],
 '패': [{c:'敗', m:'패할 패'}],
-'편': [{c:'便', m:'편할 편'}, {c:'片', m:'조각 편'}, {c:'篇', m:'책 편'}],
+'편': [{c:'便', m:'편할 편'}, {c:'片', m:'조각 편'}, {c:'篇', m:'책篇'}],
 '평': [{c:'平', m:'평평할 평'}],
 '폐': [{c:'閉', m:'닫을 폐'}, {c:'廢', m:'폐할 폐'}],
 '포': [{c:'布', m:'베 포'}, {c:'抱', m:'안을 포'}, {c:'包', m:'쌀 포'}],
@@ -3079,9 +3088,19 @@ function chooseSlotApp() {
     closeSlotChoice();
     const list = document.getElementById('installedAppsList');
     const status = document.getElementById('installedAppsStatus');
+    const delBtn = document.getElementById('installedModalDeleteBtn');
     list.innerHTML = '';
     document.getElementById('installedAppsModal').style.display = 'flex';
     status.textContent = '앱 목록을 불러오는 중...';
+
+    const db = getDB();
+    const currentVal = db[pendingAppSlot];
+    if (currentVal && typeof currentVal === 'object' && currentVal.type === 'app') {
+        delBtn.style.display = 'block';
+    } else {
+        delBtn.style.display = 'none';
+    }
+
     if (!window.AndroidBridge || !window.AndroidBridge.getInstalledApps) {
         status.textContent = '앱 목록 기능을 사용하려면 Kotlin 연결 코드가 필요합니다.';
         return;
@@ -3094,24 +3113,59 @@ function chooseSlotApp() {
         apps.forEach(app => {
             const button = document.createElement('button');
             button.type = 'button';
-            button.style.cssText = 'display:flex;width:100%;align-items:center;text-align:left;padding:11px 8px;border:0;border-bottom:1px solid #eee;background:white;color:#222;gap:10px;';
+            button.style.cssText = 'display:flex;width:100%;align-items:center;text-align:left;padding:12px 10px;border:0;border-bottom:1px solid #eee;background:white;color:#222;gap:10px;font-size:16px;cursor:pointer;';
             const label = document.createElement('span');
             label.textContent = app.label || app.packageName || '앱';
-            label.style.cssText = 'font-size:15px;overflow-wrap:anywhere;';
+            label.style.cssText = 'overflow-wrap:anywhere;font-weight:500;';
             button.appendChild(label);
             button.addEventListener('click', () => {
-                const db = getDB();
                 db[pendingAppSlot] = { type: 'app', title: app.label || app.packageName, packageName: app.packageName };
                 saveDB(db); renderSlots(); closeInstalledApps(); pendingAppSlot = null;
+                showToast("저장되었습니다");
             });
             list.appendChild(button);
         });
     } catch (e) { status.textContent = '앱 목록을 불러오지 못했습니다.'; }
 }
+
+function deleteAppFromInstalledModal() {
+    if (!pendingAppSlot) return;
+    let db = getDB();
+    delete db[pendingAppSlot];
+    saveDB(db);
+    renderSlots();
+    closeInstalledApps();
+    pendingAppSlot = null;
+    showToast("삭제되었습니다");
+}
+
+function deleteSlotFromChoice() {
+    if (!pendingAppSlot) return;
+    let db = getDB();
+    delete db[pendingAppSlot];
+    saveDB(db);
+    renderSlots();
+    closeSlotChoice();
+    pendingAppSlot = null;
+    showToast("삭제되었습니다");
+}
+
 function closeInstalledApps() { document.getElementById('installedAppsModal').style.display = 'none'; }
 
 function openModal(slotKey, type) {
-if (APP_SLOT_KEYS.has(slotKey)) { pendingAppSlot = slotKey; document.getElementById('slotChoiceModal').style.display = 'flex'; return; }
+if (APP_SLOT_KEYS.has(slotKey)) { 
+    pendingAppSlot = slotKey; 
+    let db = getDB();
+    let val = db[slotKey];
+    let delRow = document.getElementById('slotChoiceDeleteRow');
+    if (val) {
+        delRow.style.display = 'block';
+    } else {
+        delRow.style.display = 'none';
+    }
+    document.getElementById('slotChoiceModal').style.display = 'flex'; 
+    return; 
+}
 currentSlot = slotKey; 
 currentType = (slotKey === 'snippet_15') ? 'url' : type;
 let db = getDB(), val = db[slotKey] || {};
@@ -3154,6 +3208,7 @@ if (text) db[currentSlot] = text;
 else delete db[currentSlot];
 }
 saveDB(db); renderSlots(); closeModal();
+showToast("저장되었습니다");
 }
 
 function deleteData() {
