@@ -840,6 +840,20 @@ background: #e2e8f0;
 </div>
 </div>
 
+<div id="slotChoiceModal" class="modal-overlay" style="z-index:2100;">
+<div class="modal-box" style="max-width:300px;">
+<div class="modal-header"><span>빈칸 설정</span><span class="modal-close" onclick="closeSlotChoice()">×</span></div>
+<button onclick="chooseSlotUrl()" style="width:100%;padding:12px;margin:4px 0;border:0;border-radius:7px;background:#4285f4;color:white;font-weight:bold;">URL 추가</button>
+<button onclick="chooseSlotApp()" style="width:100%;padding:12px;margin:4px 0;border:0;border-radius:7px;background:#34a853;color:white;font-weight:bold;">설치된 앱 추가</button>
+<button onclick="closeSlotChoice()" style="width:100%;padding:10px;margin-top:4px;border:0;border-radius:7px;background:#888;color:white;">취소</button>
+</div></div>
+<div id="installedAppsModal" class="modal-overlay" style="z-index:2200;">
+<div class="modal-box" style="max-width:340px;max-height:75vh;display:flex;flex-direction:column;">
+<div class="modal-header"><span>설치된 앱 선택</span><span class="modal-close" onclick="closeInstalledApps()">×</span></div>
+<div id="installedAppsStatus" style="font-size:13px;color:#666;padding:8px 2px;">앱 목록을 불러오는 중...</div>
+<div id="installedAppsList" style="overflow-y:auto;max-height:55vh;"></div>
+<button onclick="closeInstalledApps()" style="padding:10px;margin-top:8px;border:0;border-radius:7px;background:#888;color:white;">취소</button>
+</div></div>
 <div id="slotModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
@@ -2960,6 +2974,11 @@ if (slotKey === 'snippet_15' && !val) {
     val = { title: "사용법", url: "https://shinminsu11.github.io/keyboard/노래.html" };
 }
 if (!val) { e.preventDefault(); showToast("길게 누르세요"); return; }
+if (val && typeof val === 'object' && val.type === 'app' && val.packageName) {
+    if (window.AndroidBridge && window.AndroidBridge.launchApp) window.AndroidBridge.launchApp(val.packageName);
+    else showToast('앱 실행 기능은 Kotlin 연결이 필요합니다.');
+    return;
+}
 if (type === 'url' || slotKey === 'snippet_15') {
 let targetUrl = '';
 if (typeof val === 'object' && val !== null) {
@@ -3029,7 +3048,61 @@ if (window.AndroidBridge && window.AndroidBridge.openUrl) {
 }
 });
 
+const APP_SLOT_KEYS = new Set(['url_0','url_1','url_4','url_5','url_8','url_9','url_10','url_12','url_13','url_14']);
+let pendingAppSlot = null;
+function closeSlotChoice() { document.getElementById('slotChoiceModal').style.display = 'none'; }
+function chooseSlotUrl() {
+    const slot = pendingAppSlot;
+    closeSlotChoice();
+    if (slot) openUrlEditor(slot);
+}
+function openUrlEditor(slotKey) {
+    currentSlot = slotKey; currentType = 'url';
+    const db = getDB(), val = db[slotKey] || {};
+    document.getElementById('snippetInput').style.display = 'none';
+    document.getElementById('urlFields').style.display = 'block';
+    document.getElementById('urlTitle').value = (typeof val === 'object' && val) ? (val.title || '') : '';
+    document.getElementById('urlAddr').value = (typeof val === 'object' && val) ? (val.url || '') : (typeof val === 'string' ? val : '');
+    document.getElementById('modalTitle').textContent = 'URL 설정';
+    document.getElementById('slotModal').style.display = 'flex';
+}
+function chooseSlotApp() {
+    closeSlotChoice();
+    const list = document.getElementById('installedAppsList');
+    const status = document.getElementById('installedAppsStatus');
+    list.innerHTML = '';
+    document.getElementById('installedAppsModal').style.display = 'flex';
+    status.textContent = '앱 목록을 불러오는 중...';
+    if (!window.AndroidBridge || !window.AndroidBridge.getInstalledApps) {
+        status.textContent = '앱 목록 기능을 사용하려면 Kotlin 연결 코드가 필요합니다.';
+        return;
+    }
+    try {
+        const raw = window.AndroidBridge.getInstalledApps();
+        const apps = JSON.parse(raw || '[]');
+        if (!apps.length) { status.textContent = '표시할 앱이 없습니다.'; return; }
+        status.textContent = '등록할 앱을 선택하세요.';
+        apps.forEach(app => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.style.cssText = 'display:flex;width:100%;align-items:center;text-align:left;padding:11px 8px;border:0;border-bottom:1px solid #eee;background:white;color:#222;gap:10px;';
+            const label = document.createElement('span');
+            label.textContent = app.label || app.packageName || '앱';
+            label.style.cssText = 'font-size:15px;overflow-wrap:anywhere;';
+            button.appendChild(label);
+            button.addEventListener('click', () => {
+                const db = getDB();
+                db[pendingAppSlot] = { type: 'app', title: app.label || app.packageName, packageName: app.packageName };
+                saveDB(db); renderSlots(); closeInstalledApps(); pendingAppSlot = null;
+            });
+            list.appendChild(button);
+        });
+    } catch (e) { status.textContent = '앱 목록을 불러오지 못했습니다.'; }
+}
+function closeInstalledApps() { document.getElementById('installedAppsModal').style.display = 'none'; }
+
 function openModal(slotKey, type) {
+if (APP_SLOT_KEYS.has(slotKey)) { pendingAppSlot = slotKey; document.getElementById('slotChoiceModal').style.display = 'flex'; return; }
 currentSlot = slotKey; 
 currentType = (slotKey === 'snippet_15') ? 'url' : type;
 let db = getDB(), val = db[slotKey] || {};
