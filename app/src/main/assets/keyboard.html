@@ -1734,33 +1734,65 @@ function backspaceHangul() {
 
 let bsTimer = null;
 let bsStartX = 0;
+let bsStartY = 0;
+let bsHasSwiped = false;
 
 document.querySelectorAll('.bs-key-common, #backspaceBtn').forEach(bsKey => {
 bsKey.addEventListener('touchstart', (e) => {
 if (e.touches && e.touches.length > 0) {
 bsStartX = e.touches[0].clientX;
+bsStartY = e.touches[0].clientY;
 }
-backspaceHangul();
+bsHasSwiped = false;
+
+// 🛑 중요: 터치 직후엔 즉시 지우지 않고 꾹 누르고 반복 삭제(클릭 유지) 용도로만 타이머 대기
 if (bsTimer) clearInterval(bsTimer);
-bsTimer = setInterval(() => {
-backspaceHangul();
-}, 150);
+bsTimer = setTimeout(() => {
+if (!bsHasSwiped) {
+    backspaceHangul();
+    bsTimer = setInterval(() => {
+        backspaceHangul();
+    }, 150);
+}
+}, 200);
+}, { passive: true });
+
+bsKey.addEventListener('touchmove', (e) => {
+if (e.touches && e.touches.length > 0) {
+let currentX = e.touches[0].clientX;
+let currentY = e.touches[0].clientY;
+let diffX = currentX - bsStartX;
+let diffY = currentY - bsStartY;
+
+// 스와이프 움직임이 감지되면 단독 터치 타이머 즉시 취소
+if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
+    bsHasSwiped = true;
+    if (bsTimer) {
+        clearInterval(bsTimer);
+        clearTimeout(bsTimer);
+        bsTimer = null;
+    }
+}
+}
 }, { passive: true });
 
 bsKey.addEventListener('touchend', (e) => {
 if (bsTimer) {
 clearInterval(bsTimer);
+clearTimeout(bsTimer);
 bsTimer = null;
 }
+
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
+let endY = e.changedTouches[0].clientY;
 let diffX = endX - bsStartX;
+let diffY = endY - bsStartY;
 
 // 1. 좌로 밀기: 좌측 전체 삭제
-if (diffX < -30) {
+if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
-
         const totalUtf16 = committedText.length;
         const totalChars = Array.from(committedText).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
@@ -1793,8 +1825,8 @@ if (diffX < -30) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 '우측' 문자열만 정확히 삭제 (좌측 문자/기호 완벽 보호)
-if (diffX > 30) {
+// 2. 우로 밀기: 커서 기준 우측만 완전 삭제 (좌측 기호 철벽 보호)
+if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
@@ -1804,8 +1836,6 @@ if (diffX > 30) {
 
         let fullStr = committedText;
         let charArray = Array.from(fullStr);
-        
-        // 커서 위치(cursorPos)를 기준으로 정확하게 좌우 문자 배열을 나눕니다.
         let leftChars = charArray.slice(0, cursorPos);
         let rightChars = charArray.slice(cursorPos);
         
@@ -1834,14 +1864,20 @@ if (diffX > 30) {
     return;
 }
 
+// 3. 단순 탭 (스와이프가 아닐 때만 1글자 지우기 실행)
+if (!bsHasSwiped && Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
+    backspaceHangul();
+}
 }
 });
 
 bsKey.addEventListener('touchcancel', () => {
 if (bsTimer) {
 clearInterval(bsTimer);
+clearTimeout(bsTimer);
 bsTimer = null;
 }
+bsHasSwiped = false;
 });
 });
 
