@@ -1756,7 +1756,7 @@ if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
 let diffX = endX - bsStartX;
 
-// 1. 좌로 밀기: 좌측 전체 삭제 (기존 기능)
+// 1. 좌로 밀기: 좌측 전체 삭제
 if (diffX < -30) {
     try {
         commitCurrent();
@@ -1793,7 +1793,7 @@ if (diffX < -30) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 우측 전체 삭제 (새로 추가된 기능!)
+// 2. 우로 밀기: 커서 기준 우측 전체 삭제 (앞 글자 침범 원천 차단)
 if (diffX > 30) {
     try {
         commitCurrent();
@@ -1802,24 +1802,31 @@ if (diffX > 30) {
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        let chars = Array.from(committedText);
-        // 커서(cursorPos)부터 끝까지의 텍스트만 남기고 자르기 (즉, 우측 부분 삭제)
-        let leftChars = chars.slice(0, cursorPos);
-        let rightChars = chars.slice(cursorPos);
+        let fullStr = committedText;
+        let chars = Array.from(fullStr);
         
-        let rightUtf16Len = rightChars.join('').length;
+        let utf16CursorPos = 0;
+        for (let i = 0; i < cursorPos && i < chars.length; i++) {
+            utf16CursorPos += chars[i].length;
+        }
+
+        let leftStr = fullStr.substring(0, utf16CursorPos);
+        let rightStr = fullStr.substring(utf16CursorPos);
+        let rightUtf16Len = rightStr.length;
 
         if (rightUtf16Len > 0) {
             if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
-                let utf16Cursor = getUtf16Index(chars, cursorPos);
-                let utf16Total = committedText.length;
-                window.AndroidBridge.setSelection(utf16Cursor, utf16Total);
+                let utf16Total = fullStr.length;
+                window.AndroidBridge.setSelection(utf16CursorPos, utf16Total);
                 window.AndroidBridge.deleteText();
             } else if (window.AndroidBridge && window.AndroidBridge.deleteRightText) {
                 window.AndroidBridge.deleteRightText(rightUtf16Len);
             }
 
-            committedText = leftChars.join('');
+            committedText = leftStr;
+            let newChars = Array.from(committedText);
+            cursorPos = newChars.length;
+
             renderVersion++;
             renderRequested = false;
             updateScreen();
@@ -2540,7 +2547,7 @@ const DEFAULT_HANJA_DICT = {
 '년': [{c:'年', m:'해 년'}],
 '노': [{c:' 勞', m:'힘쓸 노'}, {c:'老', m:'늙을 노'}, {c:'怒', m:'성낼 노'},  {c:'盧', m:'성씨 노'}, {c:'努', m:'힘쓸 노'},
 {c:'奴', m:'노예 노'}, {c:'櫓', m:'노 노'}],
-  '녹': [{c:' 綠', m:'푸를 녹'}, {c:'錄', m:'기록 록'}, {c:'鹿', m:'사슴 녹'}], 
+  '녹': [{c:' 綠', m:'푸를 녹'}, {c:'錄', m:'기록할 록'}, {c:'鹿', m:'사슴 녹'}], 
 '농': [{c:'農', m:'농사 농'}, {c:'濃', m:'짙을 농'}],
   '누': [{c:'漏', m:'샐 누'}],
 '능': [{c:'能', m:'능할 능'}],
@@ -2559,7 +2566,7 @@ const DEFAULT_HANJA_DICT = {
   '둔': [{c:'屯', m:'진칠 둔'}, {c:'鈍', m:'둔할 둔'}, {c:'遁', m:'숨을 둔'}],
 '등': [{c:'等', m:'무리 등'}, {c:'登', m:'오를 등'}, {c:'燈', m:'등 등'}],
 '라': [{c:'羅', m:'벌릴 라'}, {c:'裸', m:'벗을 라'}, {c:'螺', m:'소라 라'}],
-'락': [{c:'樂', m:'즐거울 락'}, {c:'落', m:'떨어질 락'}, {c:'絡', m:'이을 락'}],
+'락': [{c:'樂', m:'즐거울 낙'}, {c:'落', m:'떨어질 낙'}, {c:'絡', m:'이을 락'}],
 '란': [{c:'卵', m:'알 란'}, {c:'亂', m:'어지러울 란'}, {c:'蘭', m:'난초 란'}, {c:'卵', m:'알 란'}, {c:'丹', m:'붉을 란'}],
 '람': [{c:'覽', m:'볼 람'}],
 '랑': [{c:'郞', m:'사내 랑'}, {c:'娘', m:'아가씨 랑'}, {c:'朗', m:'밝을 랑'}, {c:'浪', m:'물결 랑'}, {c:'狼', m:'이리 랑'}],
