@@ -1793,7 +1793,7 @@ if (diffX < -30) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 우측 전체 삭제 (앞 글자 침범 원천 차단)
+// 2. 우로 밀기: 커서 기준 우측 전체 삭제 (앞 글자 철벽 보호 및 기호 유출 완벽 차단)
 if (diffX > 30) {
     try {
         commitCurrent();
@@ -1803,18 +1803,18 @@ if (diffX > 30) {
         externalCursorInsertMode = false;
 
         let fullStr = committedText;
-        let chars = Array.from(fullStr);
+        let charArray = Array.from(fullStr);
         
-        let utf16CursorPos = 0;
-        for (let i = 0; i < cursorPos && i < chars.length; i++) {
-            utf16CursorPos += chars[i].length;
-        }
-
-        let leftStr = fullStr.substring(0, utf16CursorPos);
-        let rightStr = fullStr.substring(utf16CursorPos);
+        // 현재 cursorPos 개수만큼의 실제 문자 배열만 정확히 좌측으로 지정합니다.
+        let leftChars = charArray.slice(0, cursorPos);
+        let rightChars = charArray.slice(cursorPos);
+        
+        let leftStr = leftChars.join('');
+        let rightStr = rightChars.join('');
         let rightUtf16Len = rightStr.length;
 
         if (rightUtf16Len > 0) {
+            let utf16CursorPos = leftStr.length;
             if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
                 let utf16Total = fullStr.length;
                 window.AndroidBridge.setSelection(utf16CursorPos, utf16Total);
@@ -1824,8 +1824,7 @@ if (diffX > 30) {
             }
 
             committedText = leftStr;
-            let newChars = Array.from(committedText);
-            cursorPos = newChars.length;
+            cursorPos = leftChars.length;
 
             renderVersion++;
             renderRequested = false;
@@ -2755,7 +2754,7 @@ const DEFAULT_HANJA_DICT = {
 '청': [{c:'靑', m:'푸를 청'}, {c:'淸', m:'맑을 청'}, {c:'廳', m:'관청 청'}, {c:'聽', m:'들을 청'}, {c:'請', m:'청할 청'}],
 '체': [{c:'體', m:'몸 체'}],
 '초': [{c:'初', m:'처음 초'}, {c:'草', m:'풀 초'}, {c:'招', m:'부를 초'}],
-'촌': [{c:'村', m:'마을 촌'}, {c:'寸', m:'마디 촌'}],
+'촌': [{c:'村', m:'마ль 촌'}, {c:'寸', m:'마디 촌'}],
 '총': [{c:'總', m:'다 총'}],
 '최': [{c:'最', m:'가장 최'}, {c:'崔', m:'성 최'}],
 '추': [{c:'秋', m:'가을 추'}, {c:'追', m:'쫓을 추'}, {c:'推', m:'밀 추'}],
