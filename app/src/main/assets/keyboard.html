@@ -1793,7 +1793,7 @@ if (diffX < -30) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 우측 전체 삭제 (앞 글자 철벽 보호 및 기호 유출 완벽 차단)
+// 2. 우로 밀기: 커서 기준 '우측' 문자열만 정확히 삭제 (좌측 문자/기호 완벽 보호)
 if (diffX > 30) {
     try {
         commitCurrent();
@@ -1805,7 +1805,7 @@ if (diffX > 30) {
         let fullStr = committedText;
         let charArray = Array.from(fullStr);
         
-        // 현재 cursorPos 개수만큼의 실제 문자 배열만 정확히 좌측으로 지정합니다.
+        // 커서 위치(cursorPos)를 기준으로 정확하게 좌우 문자 배열을 나눕니다.
         let leftChars = charArray.slice(0, cursorPos);
         let rightChars = charArray.slice(cursorPos);
         
