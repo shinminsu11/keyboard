@@ -1754,7 +1754,10 @@ bsTimer = null;
 }
 if (e.changedTouches && e.changedTouches.length > 0) {
 let endX = e.changedTouches[0].clientX;
-if (endX - bsStartX < -30) {
+let diffX = endX - bsStartX;
+
+// 1. 좌로 밀기: 좌측 전체 삭제 (기존 기능)
+if (diffX < -30) {
     try {
         commitCurrent();
 
@@ -1789,6 +1792,42 @@ if (endX - bsStartX < -30) {
     } catch (e) {}
     return;
 }
+
+// 2. 우로 밀기: 커서 기준 우측 전체 삭제 (새로 추가된 기능!)
+if (diffX > 30) {
+    try {
+        commitCurrent();
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        externalFinalCandidate = null;
+        externalCursorInsertMode = false;
+
+        let chars = Array.from(committedText);
+        // 커서(cursorPos)부터 끝까지의 텍스트만 남기고 자르기 (즉, 우측 부분 삭제)
+        let leftChars = chars.slice(0, cursorPos);
+        let rightChars = chars.slice(cursorPos);
+        
+        let rightUtf16Len = rightChars.join('').length;
+
+        if (rightUtf16Len > 0) {
+            if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
+                let utf16Cursor = getUtf16Index(chars, cursorPos);
+                let utf16Total = committedText.length;
+                window.AndroidBridge.setSelection(utf16Cursor, utf16Total);
+                window.AndroidBridge.deleteText();
+            } else if (window.AndroidBridge && window.AndroidBridge.deleteRightText) {
+                window.AndroidBridge.deleteRightText(rightUtf16Len);
+            }
+
+            committedText = leftChars.join('');
+            renderVersion++;
+            renderRequested = false;
+            updateScreen();
+        }
+    } catch (e) {}
+    return;
+}
+
 }
 });
 
