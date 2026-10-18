@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>쓸기자판 7.1 최종완성본</title>
+<title>쓸기자판 1.0 최종완성본</title>
 <style>
 * {
 box-sizing: border-box;
@@ -1228,7 +1228,7 @@ const VOWEL_COMBINE = {
 };
 const CONSONANT_COMBINE = {
 'ㄱ+ㅅ':'ㄳ', 'ㄴ+ㅈ':'ㄵ', 'ㄴ+ㅎ':'ㄶ',
-'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㄿ':'ㄿ', 'ㄹ+ㅎ':'ㅀ',
+'ㄹ+ㄱ':'ㄺ', 'ㄹ+ㅁ':'ㄻ', 'ㄹ+ㅂ':'ㄼ', 'ㄹ+ㅅ':'ㄽ', 'ㄹ+ㅌ':'ㄾ', 'ㄹ+ㅍ':'ㄿ', 'ㄹ+ㅎ':'ㅀ',
 'ㅂ+ㅅ':'ㅄ'
 };
 
@@ -1745,6 +1745,7 @@ bsStartY = e.touches[0].clientY;
 }
 bsHasSwiped = false;
 
+// 🛑 중요: 터치 직후엔 즉시 지우지 않고 꾹 누르고 반복 삭제(클릭 유지) 용도로만 타이머 대기
 if (bsTimer) clearInterval(bsTimer);
 bsTimer = setTimeout(() => {
 if (!bsHasSwiped) {
@@ -1763,6 +1764,7 @@ let currentY = e.touches[0].clientY;
 let diffX = currentX - bsStartX;
 let diffY = currentY - bsStartY;
 
+// 스와이프 움직임이 감지되면 단독 터치 타이머 즉시 취소
 if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
     bsHasSwiped = true;
     if (bsTimer) {
@@ -1862,7 +1864,7 @@ if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
     return;
 }
 
-// 3. 단순 탭
+// 3. 단순 탭 (스와이프가 아닐 때만 1글자 지우기 실행)
 if (!bsHasSwiped && Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
     backspaceHangul();
 }
@@ -3347,7 +3349,7 @@ else delete db[currentSlot];
 } else {
 let text = document.getElementById('snippetInput').value.trim();
 if (text) db[currentSlot] = text;
-else delete db[currentSong] = text; // safety fallback
+else delete db[currentSlot];
 }
 saveDB(db); renderSlots(); closeModal();
 showToast("저장되었습니다");
