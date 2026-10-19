@@ -559,7 +559,7 @@ background: #e2e8f0;
 <div class="key func" id="backspaceBtn">
 <svg width="28" height="20" viewBox="0 0 24 18" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 1H8l-7 8 7 8h13a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2z"></path><line x1="18" y1="5" x2="10" y2="13"></line><line x1="10" y1="5" x2="18" y2="13"></line></svg>
 </div>
-<div class="key orange slide-con" data-base="ㄴ" data-right="ㄹ" data-down="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
+<div class="key orange slide-con" data-base="ㄴ" data-left="https://www.naver.com" data-right="ㄹ" data-down="ㄹ" data-long="4">ㄴ<span class="sub-top">4</span></div>
 <div class="key slide-con" data-base="ㄷ" data-up="ㄸ" data-right="ㅌ" data-long="5">ㄷ<span class="sub-top">5</span></div>
 <div class="key" id="slideKey" data-long="6">
 <svg width="32" height="32" viewBox="0 0 36 36" fill="none" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2158,7 +2158,19 @@ if (Math.abs(diffY) > Math.abs(diffX) && diffY > 18 && down) {
 appendHangul(down);
 return;
 }
-if (diffX < -18) {
+if (diffX < -2) {
+if (key.getAttribute('data-left')) {
+    let left = key.getAttribute('data-left');
+    if (left.startsWith('http')) {
+        if (window.AndroidBridge && window.AndroidBridge.openUrl) {
+            window.AndroidBridge.openUrl(left);
+        } else {
+            window.open(left, '_blank');
+        }
+    } else {
+        appendHangul(left);
+    }
+}
 return;
 }
 if (Math.abs(diffX) < 18 && Math.abs(diffY) < 18) {
