@@ -982,11 +982,6 @@ document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
         cursorPos = Array.from(subStrUtf16).length;
         committedText = fullStr;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-        
-        externalCursorInsertMode = false;
-        externalFinalCandidate = null;
-        lastSlideDir = '';
-
         updateScreen();
     });
 
@@ -1054,8 +1049,6 @@ window.setNativeCursorPosition = function(start, end) {
 
     hangulBuffer = { cho: -1, jung: -1, jong: -1 };
     lastSlideDir = '';
-    externalCursorInsertMode = false;
-    externalFinalCandidate = null;
 };
 
 window.syncNativeText = function(before, after) {
@@ -1752,6 +1745,7 @@ bsStartY = e.touches[0].clientY;
 }
 bsHasSwiped = false;
 
+// 🛑 중요: 터치 직후엔 즉시 지우지 않고 꾹 누르고 반복 삭제(클릭 유지) 용도로만 타이머 대기
 if (bsTimer) clearInterval(bsTimer);
 bsTimer = setTimeout(() => {
 if (!bsHasSwiped) {
@@ -1770,6 +1764,7 @@ let currentY = e.touches[0].clientY;
 let diffX = currentX - bsStartX;
 let diffY = currentY - bsStartY;
 
+// 스와이프 움직임이 감지되면 단독 터치 타이머 즉시 취소
 if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
     bsHasSwiped = true;
     if (bsTimer) {
@@ -1794,7 +1789,7 @@ let endY = e.changedTouches[0].clientY;
 let diffX = endX - bsStartX;
 let diffY = endY - bsStartY;
 
-// 1. 좌로 밀기: 좌측 전체 삭제 (setTimeout 미세 지연 적용)
+// 1. 좌로 밀기: 좌측 전체 삭제
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
@@ -1805,19 +1800,18 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        setTimeout(() => {
-            if (totalChars > 0 &&
-                window.AndroidBridge &&
-                window.AndroidBridge.deleteAllByKeyEvents) {
-                window.AndroidBridge.deleteAllByKeyEvents(totalChars);
-            } else if (totalUtf16 > 0 &&
-                window.AndroidBridge &&
-                window.AndroidBridge.setSelection &&
-                window.AndroidBridge.deleteText) {
-                window.AndroidBridge.setSelection(0, totalUtf16);
-                window.AndroidBridge.deleteText();
-            }
-        }, 15);
+        // HTML 내부 committedText가 커서 이동 직후 아직 동기화되지 않았을 수 있으므로,
+        // totalChars가 0이어도 네이티브 삭제 함수를 호출해 실제 커서 앞 텍스트를 확인한다.
+        if (window.AndroidBridge &&
+            window.AndroidBridge.deleteAllByKeyEvents) {
+            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
+        } else if (totalUtf16 > 0 &&
+            window.AndroidBridge &&
+            window.AndroidBridge.setSelection &&
+            window.AndroidBridge.deleteText) {
+            window.AndroidBridge.setSelection(0, totalUtf16);
+            window.AndroidBridge.deleteText();
+        }
 
         committedText = '';
         cursorPos = 0;
@@ -1832,7 +1826,7 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 우측만 완전 삭제 (setTimeout 미세 지연 적용)
+// 2. 우로 밀기: 커서 기준 우측만 완전 삭제 (좌측 기호 철벽 보호)
 if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
@@ -1852,16 +1846,13 @@ if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
 
         if (rightUtf16Len > 0) {
             let utf16CursorPos = leftStr.length;
-            
-            setTimeout(() => {
-                if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
-                    let utf16Total = fullStr.length;
-                    window.AndroidBridge.setSelection(utf16CursorPos, utf16Total);
-                    window.AndroidBridge.deleteText();
-                } else if (window.AndroidBridge && window.AndroidBridge.deleteRightText) {
-                    window.AndroidBridge.deleteRightText(rightUtf16Len);
-                }
-            }, 15);
+            if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
+                let utf16Total = fullStr.length;
+                window.AndroidBridge.setSelection(utf16CursorPos, utf16Total);
+                window.AndroidBridge.deleteText();
+            } else if (window.AndroidBridge && window.AndroidBridge.deleteRightText) {
+                window.AndroidBridge.deleteRightText(rightUtf16Len);
+            }
 
             committedText = leftStr;
             cursorPos = leftChars.length;
