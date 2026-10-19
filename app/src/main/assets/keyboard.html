@@ -983,7 +983,6 @@ document.querySelectorAll('#testInput, #testTextarea').forEach(el => {
         committedText = fullStr;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         
-        // 🛠️ 수정 포인트: 커서 이동(클릭) 직후 내부 상태를 완전히 동기화 및 리셋하여 첫 삭제 동작 보장
         externalCursorInsertMode = false;
         externalFinalCandidate = null;
         lastSlideDir = '';
@@ -1753,7 +1752,6 @@ bsStartY = e.touches[0].clientY;
 }
 bsHasSwiped = false;
 
-// 🛑 중요: 터치 직후엔 즉시 지우지 않고 꾹 누르고 반복 삭제(클릭 유지) 용도로만 타이머 대기
 if (bsTimer) clearInterval(bsTimer);
 bsTimer = setTimeout(() => {
 if (!bsHasSwiped) {
@@ -1772,7 +1770,6 @@ let currentY = e.touches[0].clientY;
 let diffX = currentX - bsStartX;
 let diffY = currentY - bsStartY;
 
-// 스와이프 움직임이 감지되면 단독 터치 타이머 즉시 취소
 if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
     bsHasSwiped = true;
     if (bsTimer) {
@@ -1797,7 +1794,7 @@ let endY = e.changedTouches[0].clientY;
 let diffX = endX - bsStartX;
 let diffY = endY - bsStartY;
 
-// 1. 좌로 밀기: 좌측 전체 삭제
+// 1. 좌로 밀기: 좌측 전체 삭제 (setTimeout 미세 지연 적용)
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
@@ -1808,17 +1805,19 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        if (totalChars > 0 &&
-            window.AndroidBridge &&
-            window.AndroidBridge.deleteAllByKeyEvents) {
-            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
-        } else if (totalUtf16 > 0 &&
-            window.AndroidBridge &&
-            window.AndroidBridge.setSelection &&
-            window.AndroidBridge.deleteText) {
-            window.AndroidBridge.setSelection(0, totalUtf16);
-            window.AndroidBridge.deleteText();
-        }
+        setTimeout(() => {
+            if (totalChars > 0 &&
+                window.AndroidBridge &&
+                window.AndroidBridge.deleteAllByKeyEvents) {
+                window.AndroidBridge.deleteAllByKeyEvents(totalChars);
+            } else if (totalUtf16 > 0 &&
+                window.AndroidBridge &&
+                window.AndroidBridge.setSelection &&
+                window.AndroidBridge.deleteText) {
+                window.AndroidBridge.setSelection(0, totalUtf16);
+                window.AndroidBridge.deleteText();
+            }
+        }, 15);
 
         committedText = '';
         cursorPos = 0;
@@ -1833,7 +1832,7 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 우측만 완전 삭제 (좌측 기호 철벽 보호)
+// 2. 우로 밀기: 커서 기준 우측만 완전 삭제 (setTimeout 미세 지연 적용)
 if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
@@ -1853,13 +1852,16 @@ if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
 
         if (rightUtf16Len > 0) {
             let utf16CursorPos = leftStr.length;
-            if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
-                let utf16Total = fullStr.length;
-                window.AndroidBridge.setSelection(utf16CursorPos, utf16Total);
-                window.AndroidBridge.deleteText();
-            } else if (window.AndroidBridge && window.AndroidBridge.deleteRightText) {
-                window.AndroidBridge.deleteRightText(rightUtf16Len);
-            }
+            
+            setTimeout(() => {
+                if (window.AndroidBridge && window.AndroidBridge.setSelection && window.AndroidBridge.deleteText) {
+                    let utf16Total = fullStr.length;
+                    window.AndroidBridge.setSelection(utf16CursorPos, utf16Total);
+                    window.AndroidBridge.deleteText();
+                } else if (window.AndroidBridge && window.AndroidBridge.deleteRightText) {
+                    window.AndroidBridge.deleteRightText(rightUtf16Len);
+                }
+            }, 15);
 
             committedText = leftStr;
             cursorPos = leftChars.length;
