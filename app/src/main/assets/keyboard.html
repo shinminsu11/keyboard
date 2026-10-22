@@ -1155,6 +1155,7 @@ window.resetToMainBoard = function() {
     closeClipboardModal();
     closeEmojiModal();
     closeHanjaModal();
+    closeAddHanjaModal();
 };
 
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
@@ -2801,7 +2802,8 @@ const DEFAULT_HANJA_DICT = {
   '저': [{c:'抵', m:'막을 저'}, {c:'貯', m:'쌓을 저'}],
   '적': [{c:'敵', m:'대적할 적'}, {c:'的', m:'과녁 적'}, {c:'赤', m:'붉을 적'}, {c:'賊', m:'도적 적'}, {c:'適', m:'마침 적'}, {c:'寂', m:'고요할 적'}, {c:'跡', m:'자취 적'}, {c:'笛', m:'피리 적'}],
   '전': [{c:'田', m:'밭 전'}, {c:'傳', m:'전할 전'}, {c:'殿', m:'궁전 전 '},{c:'電', m:'번개 전'}, {c:'戰', m:'싸울 전'}, {c:'展', m:'펼 전'}],  
-  '절': [{c:'節', m:'마디 절'}],
+  '절': [{c:'節', m:'마디 절'}, {c:'切', m:'끊을 절'}, {c:'折', m:'꺾을 절'},
+{c:'絶', m:' 끊을 절'}],
   '점': [{c:'占', m:'점칠 점'},{c:'點', m:'점 점'}],
   '접': [{c:'接', m:'이을 접'}],
   '정': [{c:'正', m:'바를 정'}, {c:'丁', m:'고무래 정 '}, {c:'釘', m:'못 정'}, {c:'鼎', m:'솥 정'}, {c:'庭', m:'뜰 정'}, {c:'政', m:'정사 정'}],
@@ -2984,7 +2986,7 @@ hanjaModal.style.display = 'flex';
 }
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
 function openAddHanjaModal(char) {
-
+addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한문과 뜻을 입력해주세요.`;
 document.getElementById('customHanjaChar').value = '';
 document.getElementById('customHanjaMeaning').value = '';
 addHanjaModal.style.display = 'flex';
