@@ -945,7 +945,7 @@ background: #e2e8f0;
 <div class="modal-header">
 <span id="hanjaModalTitle">한문 변환</span>
 <div style="display:flex; align-items:center; gap:10px;">
-<button id="addCustomHanjaHeaderBtn" onclick="openAddHanjaFromCurrent()" style="padding:7px 11px; background:#4285f4; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; white-space:nowrap;">＋ 한문 추가</button>
+<button id="addCustomHanjaHeaderBtn" onclick="openAddHanjaFromCurrent()" style="padding:7px 11px; background:#4285f4; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; white-space:nowrap;">추가</button>
 <span class="modal-close" onclick="closeHanjaModal()">×</span>
 </div>
 </div>
@@ -1030,6 +1030,22 @@ const hanjaModalTitle = document.getElementById('hanjaModalTitle');
 const addHanjaTargetDesc = document.getElementById('addHanjaTargetDesc');
 const toastMessage = document.getElementById('toastMessage');
 
+// 💡 자판이 다시 열릴 때 열려있던 팝업/창을 모두 닫고 본자판으로 초기화하는 함수 추가
+window.resetKeyboardState = function() {
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.style.display = 'none';
+    });
+    switchToBoard('mainBoard');
+    pendingAppSlot = null;
+    currentSlot = null;
+    activeSymbolIndex = null;
+};
+
+window.resetToMainBoard = function() {
+    window.resetKeyboardState();
+};
+window.resetKeyboardBuffer = resetKeyboardBuffer;
+
 function resetKeyboardBuffer() {
     committedText = '';
     cursorPos = 0;
@@ -1038,7 +1054,6 @@ function resetKeyboardBuffer() {
         updateScreen();
     }
 }
-window.resetKeyboardBuffer = resetKeyboardBuffer;
 
 window.setNativeCursorPosition = function(start, end) {
     let text = committedText || '';
@@ -1149,14 +1164,6 @@ if (board) board.classList.remove('active');
 const target = document.getElementById(boardId);
 if (target) target.classList.add('active');
 }
-
-window.resetToMainBoard = function() {
-    switchToBoard('mainBoard');
-    closeClipboardModal();
-    closeEmojiModal();
-    closeHanjaModal();
-    closeAddHanjaModal();
-};
 
 engHomeBtn.addEventListener('click', () => { switchToBoard('mainBoard'); });
 
@@ -1751,7 +1758,6 @@ bsStartY = e.touches[0].clientY;
 }
 bsHasSwiped = false;
 
-// 🛑 중요: 터치 직후엔 즉시 지우지 않고 꾹 누르고 반복 삭제(클릭 유지) 용도로만 타이머 대기
 if (bsTimer) clearInterval(bsTimer);
 bsTimer = setTimeout(() => {
 if (!bsHasSwiped) {
@@ -1770,7 +1776,6 @@ let currentY = e.touches[0].clientY;
 let diffX = currentX - bsStartX;
 let diffY = currentY - bsStartY;
 
-// 스와이프 움직임이 감지되면 단독 터치 타이머 즉시 취소
 if (Math.abs(diffX) > 15 || Math.abs(diffY) > 15) {
     bsHasSwiped = true;
     if (bsTimer) {
@@ -1795,7 +1800,6 @@ let endY = e.changedTouches[0].clientY;
 let diffX = endX - bsStartX;
 let diffY = endY - bsStartY;
 
-// 1. 좌로 밀기: 좌측 전체 삭제
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
@@ -1806,8 +1810,6 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        // HTML 내부 committedText가 커서 이동 직후 아직 동기화되지 않았을 수 있으므로,
-        // totalChars가 0이어도 네이티브 삭제 함수를 호출해 실제 커서 앞 텍스트를 확인한다.
         if (window.AndroidBridge &&
             window.AndroidBridge.deleteAllByKeyEvents) {
             window.AndroidBridge.deleteAllByKeyEvents(totalChars);
@@ -1832,7 +1834,6 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     return;
 }
 
-// 2. 우로 밀기: 커서 기준 우측만 완전 삭제 (좌측 기호 철벽 보호)
 if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
         commitCurrent();
@@ -1871,7 +1872,6 @@ if (diffX > 30 && Math.abs(diffX) > Math.abs(diffY)) {
     return;
 }
 
-// 3. 단순 탭 (스와이프가 아닐 때만 1글자 지우기 실행)
 if (!bsHasSwiped && Math.abs(diffX) < 15 && Math.abs(diffY) < 15) {
     backspaceHangul();
 }
