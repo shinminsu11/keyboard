@@ -956,7 +956,7 @@ background: #e2e8f0;
 <div id="addHanjaModal" class="modal-overlay">
 <div class="modal-box">
 <div class="modal-header">
-<span>사용자 한문 추가</span>
+
 <span class="modal-close" onclick="closeAddHanjaModal()">×</span>
 </div>
 <div style="font-size:12px; color:#666; margin-bottom:8px;" id="addHanjaTargetDesc"></div>
@@ -2969,9 +2969,8 @@ emptyDiv.style.gridColumn = "span 2";
 emptyDiv.style.padding = "15px";
 emptyDiv.style.textAlign = "center";
 emptyDiv.style.color = "#777";
-emptyDiv.innerHTML = `등록된 한문이 없습니다.<br><button id='addCustomHanjaBtn' style='margin-top:10px; padding:6px 12px; background:#4285f4; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;'>사용자 한문 추가하기</button>`;
+emptyDiv.innerHTML = `등록된 한문이 없습니다.`;
 hanjaGridContainer.appendChild(emptyDiv);
-document.getElementById('addCustomHanjaBtn').onclick = () => { closeHanjaModal(); openAddHanjaModal(lastChar); };
 } else {
 hanjaModalTitle.textContent = `한문 변환 ('${lastChar}')`;
 list.forEach(item => {
