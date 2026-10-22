@@ -2984,7 +2984,9 @@ hanjaModal.style.display = 'flex';
 }
 function closeHanjaModal() { hanjaModal.style.display = 'none'; }
 function openAddHanjaModal(char) {
-addHanjaTargetDesc.textContent = `'${char}' 글자에 연결할 한문과 뜻을 입력해주세요.`;
+
+document.getElementById('customHanjaChar').value = '';
+document.getElementById('customHanjaMeaning').value = '';
 addHanjaModal.style.display = 'flex';
 }
 function closeAddHanjaModal() { addHanjaModal.style.display = 'none'; }
