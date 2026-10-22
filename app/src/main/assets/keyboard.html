@@ -944,7 +944,10 @@ background: #e2e8f0;
 <div class="modal-box">
 <div class="modal-header">
 <span id="hanjaModalTitle">한문 변환</span>
+<div style="display:flex; align-items:center; gap:10px;">
+<button id="addCustomHanjaHeaderBtn" onclick="openAddHanjaFromCurrent()" style="padding:7px 11px; background:#4285f4; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer; white-space:nowrap;">＋ 한문 추가</button>
 <span class="modal-close" onclick="closeHanjaModal()">×</span>
+</div>
 </div>
 <div class="hanja-grid" id="hanjaGridContainer"></div>
 </div>
@@ -2941,6 +2944,13 @@ return merged;
 }
 
 let targetHanjaCharForAdd = '';
+function openAddHanjaFromCurrent() {
+    if (!targetHanjaCharForAdd) {
+        showToast("먼저 한글 한 글자를 입력해주세요");
+        return;
+    }
+    openAddHanjaModal(targetHanjaCharForAdd);
+}
 function openHanjaModal() {
 commitCurrent();
 let chars = Array.from(committedText);
