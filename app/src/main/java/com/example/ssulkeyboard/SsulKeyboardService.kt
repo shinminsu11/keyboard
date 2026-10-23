@@ -772,45 +772,61 @@ class SsulKeyboardService : InputMethodService() {
                 try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 300L
+                    android.os.SystemClock.uptimeMillis() + 350L
 
                 ic.beginBatchEdit()
                 try {
-                    // 네이버 본문에서는 deleteSurroundingText가 기존 글에
-                    // 적용되지 않는 경우가 있어, 편집기 자체의 전체 선택 기능을 사용합니다.
-                    var deleted = false
+                    // 먼저 편집기 자체의 전체 선택 기능을 사용합니다.
+                    var hasSelection = false
                     try {
-                        val selectedAll = ic.performContextMenuAction(android.R.id.selectAll)
-                        val selectedText = ic.getSelectedText(0)
-                        if (selectedAll && !selectedText.isNullOrEmpty()) {
-                            ic.commitText("", 1)
-                            deleted = true
-                        }
+                        ic.performContextMenuAction(android.R.id.selectAll)
+                        hasSelection = !ic.getSelectedText(0).isNullOrEmpty()
                     } catch (_: Exception) {
                     }
 
-                    // 전체 선택 기능을 지원하지 않는 입력창에 한해 기존 삭제 방식으로 대체합니다.
-                    if (!deleted) {
+                    // 네이버 본문처럼 context-menu 선택이 반영되지 않는 편집기에서는 Ctrl+A를 시도합니다.
+                    if (!hasSelection) {
+                        try {
+                            val now = android.os.SystemClock.uptimeMillis()
+                            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON))
+                            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON))
+                            hasSelection = !ic.getSelectedText(0).isNullOrEmpty()
+                        } catch (_: Exception) {
+                        }
+                    }
+
+                    // 선택 영역이 실제로 생긴 경우에만 삭제합니다.
+                    if (hasSelection) {
+                        ic.commitText("", 1)
+                    } else {
+                        // 전체 선택이 지원되지 않으면 커서 왼쪽 텍스트만 삭제합니다.
                         val beforeLength = try {
                             ic.getTextBeforeCursor(50000, 0)?.length ?: count
                         } catch (_: Exception) {
                             count
                         }
                         if (beforeLength > 0) {
-                            ic.deleteSurroundingText(beforeLength, 0)
+                            try {
+                                ic.deleteSurroundingText(beforeLength, 0)
+                            } catch (_: Exception) {
+                                // 최후의 대체 경로: 커서 앞 길이를 기준으로 선택 후 삭제
+                                try {
+                                    ic.setSelection(0, beforeLength)
+                                    ic.commitText("", 1)
+                                } catch (_: Exception) {
+                                }
+                            }
                         }
                     }
                 } finally {
                     ic.endBatchEdit()
                 }
 
-                lastKnownSelectionStart = 0
-                lastKnownSelectionEnd = 0
-                cancelHtmlExternalCursorState()
                 rememberActualSelection()
+                cancelHtmlExternalCursorState()
                 syncHtmlWithNativeText()
             } catch (e: Exception) {
-                Log.e("SwipeDeleteTest", "좌밀기 전체 삭제 오류", e)
+                Log.e("SwipeDeleteTest", "좌밀기 삭제 오류", e)
             }
         }
 
