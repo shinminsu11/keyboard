@@ -781,17 +781,49 @@ class SsulKeyboardService : InputMethodService() {
 
                 ic.beginBatchEdit()
                 try {
-                    // 네이버 카페 본문에서 기존 글까지 삭제되는지 확인하기 위한 변경.
-                    // 커서 왼쪽만 대상으로 하며, 커서 오른쪽 글은 삭제하지 않습니다.
-                    ic.deleteSurroundingText(50000, 0)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    // 네이버 카페 본문 시험용:
+                    // 큰 범위를 한 번에 삭제하지 않고, 커서 왼쪽을
+                    // 한 글자씩 반복 삭제합니다. 커서 오른쪽은 삭제하지 않습니다.
+                    var remaining = try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+                    } catch (_: Exception) {
+                        0
+                    }
+
+                    // 편집기 응답 지연이나 비정상 동작으로 인한 무한 반복 방지
+                    var attempts = 0
+                    val maxAttempts = 50000
+
+                    while (remaining > 0 && attempts < maxAttempts) {
+                        val before = remaining
+
+                        try {
+                            ic.deleteSurroundingText(1, 0)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            break
+                        }
+
+                        attempts++
+
+                        remaining = try {
+                            ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+                        } catch (_: Exception) {
+                            // 길이를 다시 확인할 수 없으면 안전하게 종료
+                            break
+                        }
+
+                        // 삭제가 진행되지 않으면 반복을 멈춰 멈춤 현상을 방지
+                        if (remaining >= before) {
+                            break
+                        }
+                    }
                 } finally {
                     ic.endBatchEdit()
                 }
 
-                rememberActualSelection()
                 cancelHtmlExternalCursorState()
+                rememberActualSelection()
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
