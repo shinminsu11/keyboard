@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -764,71 +765,90 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection ?: return
+            val ic = currentInputConnection ?: run {
+                Log.e("SwipeDeleteTest", "실패: currentInputConnection이 null")
+                return
+            }
 
             try {
+                Log.d("SwipeDeleteTest", "===== 좌밀기 선택영역 삭제 시작 =====")
+                Log.d("SwipeDeleteTest", "HTML 전달 count=$count")
 
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
                 try {
                     ic.finishComposingText()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "finishComposingText 오류", e)
                 }
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 500L
+                    android.os.SystemClock.uptimeMillis() + 300L
 
                 ic.beginBatchEdit()
                 try {
-                    // 네이버 카페 본문 시험용:
-                    // 큰 범위를 한 번에 삭제하지 않고, 커서 왼쪽을
-                    // 한 글자씩 반복 삭제합니다. 커서 오른쪽은 삭제하지 않습니다.
-                    var remaining = try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-                    } catch (_: Exception) {
-                        0
+                    // 먼저 편집기의 실제 커서 위치를 조회합니다.
+                    val extracted = try {
+                        ic.getExtractedText(
+                            android.view.inputmethod.ExtractedTextRequest(),
+                            0
+                        )
+                    } catch (e: Exception) {
+                        Log.e("SwipeDeleteTest", "커서 위치 조회 오류", e)
+                        null
                     }
 
-                    // 편집기 응답 지연이나 비정상 동작으로 인한 무한 반복 방지
-                    var attempts = 0
-                    val maxAttempts = 50000
+                    val cursorAbsolute = if (extracted != null && extracted.selectionStart >= 0) {
+                        extracted.startOffset + extracted.selectionStart
+                    } else {
+                        -1
+                    }
 
-                    while (remaining > 0 && attempts < maxAttempts) {
-                        val before = remaining
+                    Log.d(
+                        "SwipeDeleteTest",
+                        "추출 텍스트 startOffset=${extracted?.startOffset}, " +
+                            "selectionStart=${extracted?.selectionStart}, 실제 커서=$cursorAbsolute"
+                    )
 
+                    var deletedBySelection = false
+                    if (cursorAbsolute > 0) {
                         try {
-                            ic.deleteSurroundingText(1, 0)
+                            // 커서 왼쪽만 선택한 뒤, 이미 동작 확인된 선택영역 삭제 방식으로 지웁니다.
+                            ic.setSelection(0, cursorAbsolute)
+                            ic.commitText("", 1)
+                            deletedBySelection = true
+                            Log.d("SwipeDeleteTest", "선택영역 삭제 방식 실행 완료")
                         } catch (e: Exception) {
-                            e.printStackTrace()
-                            break
+                            Log.e("SwipeDeleteTest", "선택영역 삭제 실패", e)
                         }
+                    }
 
-                        attempts++
-
-                        remaining = try {
-                            ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-                        } catch (_: Exception) {
-                            // 길이를 다시 확인할 수 없으면 안전하게 종료
-                            break
+                    // 커서 위치를 읽을 수 없거나 선택영역 방식이 실패한 경우에만 기존 방식으로 대체합니다.
+                    if (!deletedBySelection) {
+                        val beforeLength = try {
+                            ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                        } catch (e: Exception) {
+                            Log.e("SwipeDeleteTest", "커서 앞 길이 조회 오류", e)
+                            count
                         }
-
-                        // 삭제가 진행되지 않으면 반복을 멈춰 멈춤 현상을 방지
-                        if (remaining >= before) {
-                            break
+                        if (beforeLength > 0) {
+                            val success = ic.deleteSurroundingText(beforeLength, 0)
+                            Log.d("SwipeDeleteTest", "기존 삭제 방식 실행, 반환값=$success, 길이=$beforeLength")
                         }
                     }
                 } finally {
                     ic.endBatchEdit()
                 }
 
+                lastKnownSelectionStart = 0
+                lastKnownSelectionEnd = 0
                 cancelHtmlExternalCursorState()
                 rememberActualSelection()
                 syncHtmlWithNativeText()
 
+                Log.d("SwipeDeleteTest", "===== 좌밀기 선택영역 삭제 종료 =====")
             } catch (e: Exception) {
-
-                e.printStackTrace()
+                Log.e("SwipeDeleteTest", "좌밀기 삭제 처리 전체 오류", e)
             }
         }
 
