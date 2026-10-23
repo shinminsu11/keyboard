@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -764,55 +765,86 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection ?: return
+            val ic = currentInputConnection ?: run {
+                Log.e("SwipeDeleteTest", "실패: currentInputConnection이 null")
+                return
+            }
 
             try {
+                Log.d("SwipeDeleteTest", "===== 좌밀기 삭제 시작 =====")
+                Log.d("SwipeDeleteTest", "HTML 전달 count=$count")
 
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
 
                 try {
                     ic.finishComposingText()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "finishComposingText 오류", e)
                 }
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeLength =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                    } catch (_: Exception) {
-                        count
-                    }
+                val beforeText = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "삭제 전 텍스트 조회 오류", e)
+                    null
+                }
+
+                // 기존 동작을 유지: 조회 결과가 null이면 HTML에서 전달된 count 사용
+                val beforeLength = beforeText?.length ?: count
+
+                Log.d(
+                    "SwipeDeleteTest",
+                    "삭제 전 커서 앞 UTF-16 길이=$beforeLength" +
+                        if (beforeText == null) " (조회 실패/null, count 사용)" else ""
+                )
+                Log.d("SwipeDeleteTest", "삭제 전 텍스트 끝부분=${beforeText?.takeLast(100) ?: "null"}")
 
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(beforeLength, 0)
+                        val success = ic.deleteSurroundingText(beforeLength, 0)
+                        Log.d("SwipeDeleteTest", "deleteSurroundingText 반환값=$success")
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e("SwipeDeleteTest", "삭제 명령 오류", e)
                         try {
                             ic.setSelection(0, beforeLength)
                             ic.commitText("", 1)
-                        } catch (_: Exception) {}
+                            Log.d("SwipeDeleteTest", "대체 삭제 명령 실행")
+                        } catch (e2: Exception) {
+                            Log.e("SwipeDeleteTest", "대체 삭제도 실패", e2)
+                        }
                     } finally {
                         ic.endBatchEdit()
                     }
+                } else {
+                    Log.d("SwipeDeleteTest", "삭제 명령 생략: 커서 앞 텍스트 길이가 0 이하")
                 }
+
+                val afterText = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "삭제 후 텍스트 조회 오류", e)
+                    null
+                }
+
+                Log.d("SwipeDeleteTest", "삭제 후 커서 앞 UTF-16 길이=${afterText?.length ?: -1}")
+                Log.d("SwipeDeleteTest", "삭제 후 텍스트 끝부분=${afterText?.takeLast(100) ?: "null"}")
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
 
-            } catch (e: Exception) {
+                Log.d("SwipeDeleteTest", "===== 좌밀기 삭제 종료 =====")
 
-                e.printStackTrace()
+            } catch (e: Exception) {
+                Log.e("SwipeDeleteTest", "삭제 처리 전체 오류", e)
             }
         }
 
