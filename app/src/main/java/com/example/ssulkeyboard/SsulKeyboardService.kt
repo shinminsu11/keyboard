@@ -758,9 +758,8 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ----------------------------------------------------
-        // 백스페이스 왼쪽 스와이프: 커서 왼쪽 전체 삭제
-        // 선택영역을 직접 지정해 삭제하여, 일부 편집기가
-        // deleteSurroundingText를 한 글자만 처리하는 경우를 보완합니다.
+        // 백스페이스 왼쪽 스와이프(좌측 전체 삭제) 전용 함수
+        // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
@@ -774,38 +773,68 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 500L
 
-                val beforeLength = try {
-                    ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                // 실험 1: 먼저 원래 방식으로 삭제를 시도합니다.
+                // 삭제가 반영되지 않았을 때만 Backspace 키 이벤트를 반복 전송합니다.
+                val beforeText = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
                 } catch (_: Exception) {
-                    count
+                    null
                 }
+                val beforeLength = beforeText?.length ?: 0
 
                 if (beforeLength > 0) {
-                    ic.beginBatchEdit()
                     try {
-                        // 커서 위치를 기준으로 왼쪽 범위만 선택합니다.
-                        // 우측 텍스트는 선택 범위에 포함하지 않습니다.
-                        val rememberedCursor = lastKnownSelectionStart
-                        val end = if (rememberedCursor >= beforeLength) {
-                            rememberedCursor
-                        } else {
-                            beforeLength
-                        }
-                        val start = (end - beforeLength).coerceAtLeast(0)
-
-                        ic.setSelection(start, end)
-                        ic.commitText("", 1)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        // 편집기가 범위 선택을 지원하지 않을 때의 대체 처리
-                        try { ic.deleteSurroundingText(beforeLength, 0) } catch (_: Exception) {}
+                        ic.beginBatchEdit()
+                        ic.deleteSurroundingText(beforeLength, 0)
                     } finally {
-                        ic.endBatchEdit()
+                        try { ic.endBatchEdit() } catch (_: Exception) {}
                     }
                 }
 
-                rememberActualSelection()
+                val afterBulk = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
+                } catch (_: Exception) {
+                    null
+                }
+
+                // 네이버 편집기가 deleteSurroundingText를 무시했거나
+                // 한 글자만 지웠다면, 커서 왼쪽에 한해 Backspace 키를 보냅니다.
+                val bulkDidNotWork = beforeText != null && afterBulk != null &&
+                    afterBulk.length >= beforeText.length
+                if (bulkDidNotWork) {
+                    val fallbackCount = when {
+                        beforeLength > 1 -> beforeLength
+                        count > 0 -> count.coerceAtMost(5000)
+                        else -> 1
+                    }
+
+                    var previousLength = try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+                    } catch (_: Exception) {
+                        0
+                    }
+
+                    var attempts = 0
+                    while (attempts < fallbackCount && previousLength > 0) {
+                        val now = android.os.SystemClock.uptimeMillis()
+                        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0))
+                        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0))
+                        attempts++
+
+                        val currentLength = try {
+                            ic.getTextBeforeCursor(50000, 0)?.length
+                        } catch (_: Exception) {
+                            null
+                        } ?: break
+
+                        // 커서 왼쪽 길이가 줄지 않으면 반복을 멈춰 무한 루프를 방지합니다.
+                        if (currentLength >= previousLength) break
+                        previousLength = currentLength
+                    }
+                }
+
                 cancelHtmlExternalCursorState()
+                rememberActualSelection()
                 syncHtmlWithNativeText()
             } catch (e: Exception) {
                 e.printStackTrace()
