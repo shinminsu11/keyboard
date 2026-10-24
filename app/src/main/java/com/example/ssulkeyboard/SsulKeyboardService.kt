@@ -763,61 +763,38 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
             val ic = currentInputConnection ?: return
-
             try {
+                // 실험 4: deleteSurroundingText / beginBatchEdit / finishComposingText를
+                // 사용하지 않고, 현재 커서 위치에서 DEL 키 이벤트만 직접 보냅니다.
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
-
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 800L
 
-                // 실제 편집기 커서 기준 왼쪽 텍스트 길이를 다시 읽습니다.
-                val beforeText = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (_: Exception) { null }
+                val beforeLength = try {
+                    ic.getTextBeforeCursor(50000, 0)?.length
+                } catch (_: Exception) {
+                    null
+                } ?: count.coerceAtLeast(0)
 
-                val beforeLength = beforeText?.length ?: count.coerceAtLeast(0)
-
-                if (beforeLength > 0) {
-                    ic.beginBatchEdit()
+                repeat(beforeLength) {
+                    val downTime = android.os.SystemClock.uptimeMillis()
                     try {
-                        // 1차: 기존 방식으로 커서 왼쪽 전체 삭제
-                        try { ic.deleteSurroundingText(beforeLength, 0) } catch (_: Exception) {}
-
-                        // 일부 편집기에서 deleteSurroundingText가 예외 없이 무시되는 경우 확인
-                        val afterText = try {
-                            ic.getTextBeforeCursor(50000, 0)?.toString()
-                        } catch (_: Exception) { null }
-
-                        val remaining = if (afterText != null && beforeText != null) {
-                            afterText.length.coerceAtMost(beforeLength)
-                        } else {
-                            // 읽기 결과를 확인할 수 없을 때만 원래 길이만큼 DEL 키 이벤트 시도
-                            beforeLength
-                        }
-
-                        // 2차: 실제로 남아 있으면 DEL 키 이벤트로 남은 왼쪽 글자 삭제
-                        if (remaining > 0) {
-                            repeat(remaining) {
-                                val now = android.os.SystemClock.uptimeMillis()
-                                try {
-                                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0))
-                                    ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0))
-                                } catch (_: Exception) { }
-                            }
-                        }
-                    } finally {
-                        ic.endBatchEdit()
+                        ic.sendKeyEvent(
+                            KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0)
+                        )
+                        ic.sendKeyEvent(
+                            KeyEvent(downTime, downTime, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0)
+                        )
+                    } catch (_: Exception) {
+                        // 남은 삭제를 계속 시도합니다.
                     }
                 }
 
                 cancelHtmlExternalCursorState()
                 rememberActualSelection()
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
