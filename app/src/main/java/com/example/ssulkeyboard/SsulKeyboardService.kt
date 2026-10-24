@@ -763,80 +763,56 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-            val ic = currentInputConnection
-            if (ic == null) {
-                android.widget.Toast.makeText(
-                    this@SsulKeyboardService,
-                    "실험5: InputConnection 없음",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-                return
-            }
+
+            val ic = currentInputConnection ?: return
 
             try {
-                // 삭제하기 전 편집기가 실제로 제공하는 커서/텍스트 상태를 확인합니다.
-                val before = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString() ?: "<null>"
-                } catch (e: Exception) {
-                    "<오류:${e.javaClass.simpleName}>"
-                }
-                val selected = try {
-                    ic.getSelectedText(0)?.toString() ?: ""
-                } catch (_: Exception) { "<선택조회오류>" }
-                val after = try {
-                    ic.getTextAfterCursor(200, 0)?.toString() ?: "<null>"
-                } catch (_: Exception) { "<오른쪽조회오류>" }
 
-                val beforeLen = if (before.startsWith("<")) -1 else before.length
-                val selectedLen = if (selected.startsWith("<")) -1 else selected.length
-                val afterLen = if (after.startsWith("<")) -1 else after.length
-                val beforeTail = if (beforeLen > 0) before.takeLast(12).replace("\n", "↵") else before
-                val afterHead = if (afterLen > 0) after.take(8).replace("\n", "↵") else after
-
-                android.widget.Toast.makeText(
-                    this@SsulKeyboardService,
-                    "실험5 전: 왼쪽=$beforeLen 선택=$selectedLen 오른쪽=$afterLen\n끝:$beforeTail | 뒤:$afterHead",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-
-                // 삭제 동작 자체는 원본 그대로 유지합니다.
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
-                internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 250L
 
-                if (beforeLen > 0) {
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
+
+                internalSelectionUntil =
+                    android.os.SystemClock.uptimeMillis() + 250L
+
+                val beforeLength =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                    } catch (_: Exception) {
+                        count
+                    }
+
+                if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(beforeLen, 0)
+                        ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
                 }
 
-                val remaining = try {
-                    ic.getTextBeforeCursor(50000, 0)?.length ?: -1
-                } catch (_: Exception) { -1 }
-                android.widget.Toast.makeText(
-                    this@SsulKeyboardService,
-                    "실험5 후: 왼쪽 글자 수=$remaining",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
-
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
+
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
+
             } catch (e: Exception) {
+
                 e.printStackTrace()
-                android.widget.Toast.makeText(
-                    this@SsulKeyboardService,
-                    "실험5 오류: ${e.javaClass.simpleName}",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
             }
         }
 
@@ -1412,14 +1388,6 @@ class SsulKeyboardService : InputMethodService() {
 
         if (newSelStart != newSelEnd) {
 
-            try {
-
-                currentInputConnection
-                    ?.finishComposingText()
-
-            } catch (_: Exception) {
-            }
-
             lastKnownSelectionStart =
                 newSelStart
 
@@ -1471,14 +1439,6 @@ class SsulKeyboardService : InputMethodService() {
                 newSelEnd
 
             return
-        }
-
-        try {
-
-            currentInputConnection
-                ?.finishComposingText()
-
-        } catch (_: Exception) {
         }
 
         externalComposingActive =
