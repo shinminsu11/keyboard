@@ -763,80 +763,55 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
+
             val ic = currentInputConnection ?: return
 
             try {
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 500L
+                    android.os.SystemClock.uptimeMillis() + 250L
 
-                // 실험 1: 먼저 원래 방식으로 삭제를 시도합니다.
-                // 삭제가 반영되지 않았을 때만 Backspace 키 이벤트를 반복 전송합니다.
-                val beforeText = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (_: Exception) {
-                    null
-                }
-                val beforeLength = beforeText?.length ?: 0
+                val beforeLength =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                    } catch (_: Exception) {
+                        count
+                    }
 
                 if (beforeLength > 0) {
+                    ic.beginBatchEdit()
                     try {
-                        ic.beginBatchEdit()
                         ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
-                        try { ic.endBatchEdit() } catch (_: Exception) {}
+                        ic.endBatchEdit()
                     }
                 }
 
-                val afterBulk = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (_: Exception) {
-                    null
-                }
-
-                // 네이버 편집기가 deleteSurroundingText를 무시했거나
-                // 한 글자만 지웠다면, 커서 왼쪽에 한해 Backspace 키를 보냅니다.
-                val bulkDidNotWork = beforeText != null && afterBulk != null &&
-                    afterBulk.length >= beforeText.length
-                if (bulkDidNotWork) {
-                    val fallbackCount = when {
-                        beforeLength > 1 -> beforeLength
-                        count > 0 -> count.coerceAtMost(5000)
-                        else -> 1
-                    }
-
-                    var previousLength = try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-                    } catch (_: Exception) {
-                        0
-                    }
-
-                    var attempts = 0
-                    while (attempts < fallbackCount && previousLength > 0) {
-                        val now = android.os.SystemClock.uptimeMillis()
-                        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0))
-                        ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0))
-                        attempts++
-
-                        val currentLength = try {
-                            ic.getTextBeforeCursor(50000, 0)?.length
-                        } catch (_: Exception) {
-                            null
-                        } ?: break
-
-                        // 커서 왼쪽 길이가 줄지 않으면 반복을 멈춰 무한 루프를 방지합니다.
-                        if (currentLength >= previousLength) break
-                        previousLength = currentLength
-                    }
-                }
+                lastKnownSelectionStart = 0
+                lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
+
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
