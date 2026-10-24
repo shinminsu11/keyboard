@@ -758,70 +758,56 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ----------------------------------------------------
-        // 백스페이스 왼쪽 스와이프(좌측 전체 삭제) 전용 함수
-        // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
+        // 백스페이스 왼쪽 스와이프: 커서 왼쪽 전체 삭제
+        // 선택영역을 직접 지정해 삭제하여, 일부 편집기가
+        // deleteSurroundingText를 한 글자만 처리하는 경우를 보완합니다.
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
             val ic = currentInputConnection ?: return
 
             try {
-
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
+                try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 250L
+                    android.os.SystemClock.uptimeMillis() + 500L
 
-                val beforeLength =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                    } catch (_: Exception) {
-                        count
-                    }
+                val beforeLength = try {
+                    ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                } catch (_: Exception) {
+                    count
+                }
 
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        // 대부분의 앱은 기존 방식 그대로 처리합니다.
-                        // 본문 길이는 여러 글자인데 커서 앞 글자 수가 1로만
-                        // 보고되는 편집기에서만 한 글자씩 반복 삭제합니다.
-                        if (beforeLength == 1 && count > 1) {
-                            repeat(count.coerceAtMost(50000)) {
-                                val deleted = ic.deleteSurroundingText(1, 0)
-                                if (!deleted) return@repeat
-                            }
+                        // 커서 위치를 기준으로 왼쪽 범위만 선택합니다.
+                        // 우측 텍스트는 선택 범위에 포함하지 않습니다.
+                        val rememberedCursor = lastKnownSelectionStart
+                        val end = if (rememberedCursor >= beforeLength) {
+                            rememberedCursor
                         } else {
-                            ic.deleteSurroundingText(beforeLength, 0)
+                            beforeLength
                         }
+                        val start = (end - beforeLength).coerceAtLeast(0)
+
+                        ic.setSelection(start, end)
+                        ic.commitText("", 1)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        try {
-                            ic.setSelection(0, beforeLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
+                        // 편집기가 범위 선택을 지원하지 않을 때의 대체 처리
+                        try { ic.deleteSurroundingText(beforeLength, 0) } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
                 }
 
-                lastKnownSelectionStart = 0
-                lastKnownSelectionEnd = 0
-
-                cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
+                cancelHtmlExternalCursorState()
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
-
                 e.printStackTrace()
             }
         }
