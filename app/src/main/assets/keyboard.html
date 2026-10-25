@@ -1802,7 +1802,8 @@ let diffY = endY - bsStartY;
 
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
-        commitCurrent();
+        // 실험 16: 삭제 직전에 commitCurrent()를 호출하지 않습니다.
+        // Kotlin 쪽 삭제 함수가 실제 입력창의 커서 기준으로 처리하도록 맡깁니다.
         const totalUtf16 = committedText.length;
         const totalChars = Array.from(committedText).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
