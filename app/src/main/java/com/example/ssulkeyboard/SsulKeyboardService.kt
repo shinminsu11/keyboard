@@ -708,52 +708,51 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun moveCursorStep(direction: Int) {
-            // 실험 10: DPAD 키 이벤트 대신 실제 InputConnection 커서 위치를
-            // 읽고 setSelection으로 한 글자 이동한다. 다른 기능은 변경하지 않는다.
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 120L
+
             val ic = currentInputConnection ?: return
-            if (direction == 0) return
 
             try {
-                val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: return
-                val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
 
-                // Unicode 코드포인트 하나를 기준으로 이동해 이모지 등의
-                // surrogate pair 중간으로 커서가 들어가는 것을 방지한다.
-                val step = if (direction < 0) {
-                    if (before.isEmpty()) 0 else Character.charCount(before.codePointBefore(before.length))
-                } else {
-                    if (after.isEmpty()) 0 else Character.charCount(after.codePointAt(0))
-                }
-                if (step == 0) return
-
-                val current = before.length
-                val target = if (direction < 0) current - step else current + step
-                val safeTarget = target.coerceAtLeast(0)
-
-                internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 300L
-
-                ic.setSelection(safeTarget, safeTarget)
-
-                // setSelection 반영 후 실제 커서 주변 텍스트를 다시 읽는다.
-                val actualBefore = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
-                val actualAfter = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
-                lastKnownSelectionStart = actualBefore.length
-                lastKnownSelectionEnd = actualBefore.length
-                pendingExternalCursorUtf16 = actualBefore.length
-                externalComposingActive = false
-
-                if (::webView.isInitialized) {
-                    val beforeJs = org.json.JSONObject.quote(actualBefore)
-                    val afterJs = org.json.JSONObject.quote(actualAfter)
-                    webView.post {
-                        webView.evaluateJavascript(
-                            "(function(){ if(window.syncNativeText){window.syncNativeText($beforeJs,$afterJs);} if(window.beginExternalCursorInsert){window.beginExternalCursorInsert();} })();",
-                            null
-                        )
+                val keyCode =
+                    if (direction > 0) {
+                        KeyEvent.KEYCODE_DPAD_RIGHT
+                    } else {
+                        KeyEvent.KEYCODE_DPAD_LEFT
                     }
+
+                val now =
+                    android.os.SystemClock.uptimeMillis()
+
+                ic.sendKeyEvent(
+                    KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        keyCode,
+                        0
+                    )
+                )
+
+                ic.sendKeyEvent(
+                    KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_UP,
+                        keyCode,
+                        0
+                    )
+                )
+
+                if (lastKnownSelectionStart >= 0) {
+                    lastKnownSelectionStart += direction
+                    lastKnownSelectionEnd = lastKnownSelectionStart
                 }
+
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
@@ -790,13 +789,37 @@ class SsulKeyboardService : InputMethodService() {
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(beforeLength, 0)
+                        // 실험 12:
+                        // deleteSurroundingText가 네이버 카페 본문에서
+                        // 커서 이동 후 반영되지 않는 경우를 확인하기 위해,
+                        // 커서 왼쪽 글자 수만큼 실제 DEL 키 이벤트를 보냅니다.
+                        var deleted = 0
+                        while (deleted < beforeLength) {
+                            val now = android.os.SystemClock.uptimeMillis()
+                            val down = ic.sendKeyEvent(
+                                KeyEvent(
+                                    now,
+                                    now,
+                                    KeyEvent.ACTION_DOWN,
+                                    KeyEvent.KEYCODE_DEL,
+                                    0
+                                )
+                            )
+                            val upTime = android.os.SystemClock.uptimeMillis()
+                            val up = ic.sendKeyEvent(
+                                KeyEvent(
+                                    upTime,
+                                    upTime,
+                                    KeyEvent.ACTION_UP,
+                                    KeyEvent.KEYCODE_DEL,
+                                    0
+                                )
+                            )
+                            if (!down || !up) break
+                            deleted++
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        try {
-                            ic.setSelection(0, beforeLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
