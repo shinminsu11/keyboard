@@ -763,46 +763,41 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
             val ic = currentInputConnection ?: return
-
             try {
-                // 실험 15:
-                // 커서를 옮긴 뒤 일부 입력창에서 finishComposingText 또는
-                // batch edit가 삭제 동작에 영향을 주는지 확인하기 위해,
-                // 두 호출 없이 커서 왼쪽으로 DEL 키 이벤트를 보냅니다.
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
-                val beforeLength = try {
-                    ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                } catch (_: Exception) {
-                    count
-                }.coerceIn(0, 50000)
+                try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                if (beforeLength > 0) {
-                    val keyCode = KeyEvent.KEYCODE_DEL
-                    repeat(beforeLength) {
-                        val now = android.os.SystemClock.uptimeMillis()
-                        ic.sendKeyEvent(
-                            KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0)
-                        )
-                        ic.sendKeyEvent(
-                            KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0)
-                        )
+                // 실험 13: 커서 앞 글자 수를 InputConnection에 묻지 않고,
+                // HTML에서 전달된 count만큼 실제 DEL 키 이벤트를 보냅니다.
+                val deleteCount = count.coerceIn(0, 50000)
+                if (deleteCount > 0) {
+                    ic.beginBatchEdit()
+                    try {
+                        val keyCode = KeyEvent.KEYCODE_DEL
+                        repeat(deleteCount) {
+                            val now = android.os.SystemClock.uptimeMillis()
+                            ic.sendKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0)
+                            )
+                            ic.sendKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0)
+                            )
+                        }
+                    } finally {
+                        ic.endBatchEdit()
                     }
                 }
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
-
                 cancelHtmlExternalCursorState()
                 rememberActualSelection()
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
