@@ -763,55 +763,45 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
             val ic = currentInputConnection ?: return
-
             try {
-
+                // 실험 7: 편집기가 보고하는 실제 선택/커서 좌표를 읽어
+                // 커서 왼쪽 범위만 절대 좌표로 선택한 뒤 비웁니다.
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
+                internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 500L
 
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
+                val beforeText = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
+                } catch (_: Exception) { null }
+                val beforeLength = beforeText?.length ?: 0
+
+                val extracted = try {
+                    ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+                } catch (_: Exception) { null }
+
+                val cursorStart = extracted?.selectionStart
+                    ?.takeIf { it >= 0 }
+                    ?: lastKnownSelectionStart
+                val cursorEnd = extracted?.selectionEnd
+                    ?.takeIf { it >= 0 }
+                    ?: lastKnownSelectionEnd
+
+                if (beforeLength > 0 && cursorStart >= beforeLength && cursorEnd == cursorStart) {
+                    val rangeStart = cursorStart - beforeLength
+                    val rangeEnd = cursorStart
+                    ic.setSelection(rangeStart, rangeEnd)
+                    ic.commitText("", 1)
+                } else if (beforeLength > 0 && cursorStart >= 0 && cursorEnd >= 0 && cursorStart != cursorEnd) {
+                    // 실제 선택이 있으면 선택 영역과 그 왼쪽 텍스트를 함께 지우지 않도록 중단
+                    // (선택 상태를 임의로 덮어쓰지 않음)
+                    return
                 }
-
-                internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 250L
-
-                val beforeLength =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                    } catch (_: Exception) {
-                        count
-                    }
-
-                if (beforeLength > 0) {
-                    ic.beginBatchEdit()
-                    try {
-                        ic.deleteSurroundingText(beforeLength, 0)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        try {
-                            ic.setSelection(0, beforeLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
-                    } finally {
-                        ic.endBatchEdit()
-                    }
-                }
-
-                lastKnownSelectionStart = 0
-                lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
-
                 e.printStackTrace()
             }
         }
@@ -1388,6 +1378,14 @@ class SsulKeyboardService : InputMethodService() {
 
         if (newSelStart != newSelEnd) {
 
+            try {
+
+                currentInputConnection
+                    ?.finishComposingText()
+
+            } catch (_: Exception) {
+            }
+
             lastKnownSelectionStart =
                 newSelStart
 
@@ -1439,6 +1437,14 @@ class SsulKeyboardService : InputMethodService() {
                 newSelEnd
 
             return
+        }
+
+        try {
+
+            currentInputConnection
+                ?.finishComposingText()
+
+        } catch (_: Exception) {
         }
 
         externalComposingActive =
