@@ -763,63 +763,31 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
             val ic = currentInputConnection ?: return
-
             try {
-
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
+                try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeLength =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                    } catch (_: Exception) {
-                        count
-                    }
-
-                if (beforeLength > 0) {
+                // 실험 13: 커서 앞 글자 수를 InputConnection에 묻지 않고,
+                // HTML에서 전달된 count만큼 실제 DEL 키 이벤트를 보냅니다.
+                val deleteCount = count.coerceIn(0, 50000)
+                if (deleteCount > 0) {
                     ic.beginBatchEdit()
                     try {
-                        // 실험 12:
-                        // deleteSurroundingText가 네이버 카페 본문에서
-                        // 커서 이동 후 반영되지 않는 경우를 확인하기 위해,
-                        // 커서 왼쪽 글자 수만큼 실제 DEL 키 이벤트를 보냅니다.
-                        var deleted = 0
-                        while (deleted < beforeLength) {
+                        val keyCode = KeyEvent.KEYCODE_DEL
+                        repeat(deleteCount) {
                             val now = android.os.SystemClock.uptimeMillis()
-                            val down = ic.sendKeyEvent(
-                                KeyEvent(
-                                    now,
-                                    now,
-                                    KeyEvent.ACTION_DOWN,
-                                    KeyEvent.KEYCODE_DEL,
-                                    0
-                                )
+                            ic.sendKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0)
                             )
-                            val upTime = android.os.SystemClock.uptimeMillis()
-                            val up = ic.sendKeyEvent(
-                                KeyEvent(
-                                    upTime,
-                                    upTime,
-                                    KeyEvent.ACTION_UP,
-                                    KeyEvent.KEYCODE_DEL,
-                                    0
-                                )
+                            ic.sendKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0)
                             )
-                            if (!down || !up) break
-                            deleted++
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     } finally {
                         ic.endBatchEdit()
                     }
@@ -827,15 +795,10 @@ class SsulKeyboardService : InputMethodService() {
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
-
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
-
                 e.printStackTrace()
             }
         }
