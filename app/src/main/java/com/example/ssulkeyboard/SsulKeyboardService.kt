@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
-import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -747,9 +746,38 @@ class SsulKeyboardService : InputMethodService() {
                     )
                 )
 
-                if (lastKnownSelectionStart >= 0) {
-                    lastKnownSelectionStart += direction
-                    lastKnownSelectionEnd = lastKnownSelectionStart
+                // 실험 9: 방향키를 보낸 뒤 커서 위치를 추정하지 않고,
+                // InputConnection에서 실제 커서 앞/뒤 텍스트를 다시 읽어
+                // HTML 자판의 텍스트와 커서를 동기화합니다.
+                try {
+                    val before = ic.getTextBeforeCursor(10000, 0)?.toString() ?: ""
+                    val after = ic.getTextAfterCursor(10000, 0)?.toString() ?: ""
+                    val actualCursor = before.length
+
+                    lastKnownSelectionStart = actualCursor
+                    lastKnownSelectionEnd = actualCursor
+                    pendingExternalCursorUtf16 = actualCursor
+                    externalComposingActive = false
+
+                    val beforeJs = org.json.JSONObject.quote(before)
+                    val afterJs = org.json.JSONObject.quote(after)
+                    webView.post {
+                        webView.evaluateJavascript(
+                            """
+                            (function() {
+                                if (window.syncNativeText) {
+                                    window.syncNativeText($beforeJs, $afterJs);
+                                }
+                                if (window.beginExternalCursorInsert) {
+                                    window.beginExternalCursorInsert();
+                                }
+                            })();
+                            """.trimIndent(),
+                            null
+                        )
+                    }
+                } catch (_: Exception) {
+                    // 실험 중 동기화 실패가 일반 입력을 막지 않도록 무시합니다.
                 }
 
             } catch (e: Exception) {
@@ -765,86 +793,55 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection ?: run {
-                Log.e("SwipeDeleteTest", "실패: currentInputConnection이 null")
-                return
-            }
+            val ic = currentInputConnection ?: return
 
             try {
-                Log.d("SwipeDeleteTest", "===== 좌밀기 삭제 시작 =====")
-                Log.d("SwipeDeleteTest", "HTML 전달 count=$count")
 
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
 
                 try {
                     ic.finishComposingText()
-                } catch (e: Exception) {
-                    Log.e("SwipeDeleteTest", "finishComposingText 오류", e)
+                } catch (_: Exception) {
                 }
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeText = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (e: Exception) {
-                    Log.e("SwipeDeleteTest", "삭제 전 텍스트 조회 오류", e)
-                    null
-                }
-
-                // 기존 동작을 유지: 조회 결과가 null이면 HTML에서 전달된 count 사용
-                val beforeLength = beforeText?.length ?: count
-
-                Log.d(
-                    "SwipeDeleteTest",
-                    "삭제 전 커서 앞 UTF-16 길이=$beforeLength" +
-                        if (beforeText == null) " (조회 실패/null, count 사용)" else ""
-                )
-                Log.d("SwipeDeleteTest", "삭제 전 텍스트 끝부분=${beforeText?.takeLast(100) ?: "null"}")
+                val beforeLength =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                    } catch (_: Exception) {
+                        count
+                    }
 
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        val success = ic.deleteSurroundingText(beforeLength, 0)
-                        Log.d("SwipeDeleteTest", "deleteSurroundingText 반환값=$success")
+                        ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
-                        Log.e("SwipeDeleteTest", "삭제 명령 오류", e)
+                        e.printStackTrace()
                         try {
                             ic.setSelection(0, beforeLength)
                             ic.commitText("", 1)
-                            Log.d("SwipeDeleteTest", "대체 삭제 명령 실행")
-                        } catch (e2: Exception) {
-                            Log.e("SwipeDeleteTest", "대체 삭제도 실패", e2)
-                        }
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
-                } else {
-                    Log.d("SwipeDeleteTest", "삭제 명령 생략: 커서 앞 텍스트 길이가 0 이하")
                 }
-
-                val afterText = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (e: Exception) {
-                    Log.e("SwipeDeleteTest", "삭제 후 텍스트 조회 오류", e)
-                    null
-                }
-
-                Log.d("SwipeDeleteTest", "삭제 후 커서 앞 UTF-16 길이=${afterText?.length ?: -1}")
-                Log.d("SwipeDeleteTest", "삭제 후 텍스트 끝부분=${afterText?.takeLast(100) ?: "null"}")
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
 
-                Log.d("SwipeDeleteTest", "===== 좌밀기 삭제 종료 =====")
-
             } catch (e: Exception) {
-                Log.e("SwipeDeleteTest", "삭제 처리 전체 오류", e)
+
+                e.printStackTrace()
             }
         }
 
@@ -1513,10 +1510,16 @@ class SsulKeyboardService : InputMethodService() {
             )
         }
 
-        // EXPERIMENT 8:
-        // 커서 이동 직후 네이티브 본문 전체를 HTML 자판 내부 상태로
-        // 다시 동기화하는 동작만 잠시 중단한다.
-        // 실제 커서 좌표와 pendingExternalCursorUtf16 설정은 유지한다.
+        webView.post {
+
+            if (
+                android.os.SystemClock.uptimeMillis()
+                <= suppressSelectionSyncUntil
+            ) {
+
+                syncHtmlWithNativeText()
+            }
+        }
     }
 
     override fun onStartInputView(
