@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -763,46 +764,87 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-            val ic = currentInputConnection ?: return
+
+            val ic = currentInputConnection ?: run {
+                Log.e("SwipeDeleteTest", "실패: currentInputConnection이 null")
+                return
+            }
+
             try {
-                // 실험 7: 편집기가 보고하는 실제 선택/커서 좌표를 읽어
-                // 커서 왼쪽 범위만 절대 좌표로 선택한 뒤 비웁니다.
+                Log.d("SwipeDeleteTest", "===== 좌밀기 삭제 시작 =====")
+                Log.d("SwipeDeleteTest", "HTML 전달 count=$count")
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 500L
+
+                try {
+                    ic.finishComposingText()
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "finishComposingText 오류", e)
+                }
+
+                internalSelectionUntil =
+                    android.os.SystemClock.uptimeMillis() + 250L
 
                 val beforeText = try {
                     ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (_: Exception) { null }
-                val beforeLength = beforeText?.length ?: 0
-
-                val extracted = try {
-                    ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
-                } catch (_: Exception) { null }
-
-                val cursorStart = extracted?.selectionStart
-                    ?.takeIf { it >= 0 }
-                    ?: lastKnownSelectionStart
-                val cursorEnd = extracted?.selectionEnd
-                    ?.takeIf { it >= 0 }
-                    ?: lastKnownSelectionEnd
-
-                if (beforeLength > 0 && cursorStart >= beforeLength && cursorEnd == cursorStart) {
-                    val rangeStart = cursorStart - beforeLength
-                    val rangeEnd = cursorStart
-                    ic.setSelection(rangeStart, rangeEnd)
-                    ic.commitText("", 1)
-                } else if (beforeLength > 0 && cursorStart >= 0 && cursorEnd >= 0 && cursorStart != cursorEnd) {
-                    // 실제 선택이 있으면 선택 영역과 그 왼쪽 텍스트를 함께 지우지 않도록 중단
-                    // (선택 상태를 임의로 덮어쓰지 않음)
-                    return
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "삭제 전 텍스트 조회 오류", e)
+                    null
                 }
+
+                // 기존 동작을 유지: 조회 결과가 null이면 HTML에서 전달된 count 사용
+                val beforeLength = beforeText?.length ?: count
+
+                Log.d(
+                    "SwipeDeleteTest",
+                    "삭제 전 커서 앞 UTF-16 길이=$beforeLength" +
+                        if (beforeText == null) " (조회 실패/null, count 사용)" else ""
+                )
+                Log.d("SwipeDeleteTest", "삭제 전 텍스트 끝부분=${beforeText?.takeLast(100) ?: "null"}")
+
+                if (beforeLength > 0) {
+                    ic.beginBatchEdit()
+                    try {
+                        val success = ic.deleteSurroundingText(beforeLength, 0)
+                        Log.d("SwipeDeleteTest", "deleteSurroundingText 반환값=$success")
+                    } catch (e: Exception) {
+                        Log.e("SwipeDeleteTest", "삭제 명령 오류", e)
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                            Log.d("SwipeDeleteTest", "대체 삭제 명령 실행")
+                        } catch (e2: Exception) {
+                            Log.e("SwipeDeleteTest", "대체 삭제도 실패", e2)
+                        }
+                    } finally {
+                        ic.endBatchEdit()
+                    }
+                } else {
+                    Log.d("SwipeDeleteTest", "삭제 명령 생략: 커서 앞 텍스트 길이가 0 이하")
+                }
+
+                val afterText = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
+                } catch (e: Exception) {
+                    Log.e("SwipeDeleteTest", "삭제 후 텍스트 조회 오류", e)
+                    null
+                }
+
+                Log.d("SwipeDeleteTest", "삭제 후 커서 앞 UTF-16 길이=${afterText?.length ?: -1}")
+                Log.d("SwipeDeleteTest", "삭제 후 텍스트 끝부분=${afterText?.takeLast(100) ?: "null"}")
+
+                lastKnownSelectionStart = 0
+                lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
                 rememberActualSelection()
                 syncHtmlWithNativeText()
+
+                Log.d("SwipeDeleteTest", "===== 좌밀기 삭제 종료 =====")
+
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("SwipeDeleteTest", "삭제 처리 전체 오류", e)
             }
         }
 
@@ -1471,16 +1513,10 @@ class SsulKeyboardService : InputMethodService() {
             )
         }
 
-        webView.post {
-
-            if (
-                android.os.SystemClock.uptimeMillis()
-                <= suppressSelectionSyncUntil
-            ) {
-
-                syncHtmlWithNativeText()
-            }
-        }
+        // EXPERIMENT 8:
+        // 커서 이동 직후 네이티브 본문 전체를 HTML 자판 내부 상태로
+        // 다시 동기화하는 동작만 잠시 중단한다.
+        // 실제 커서 좌표와 pendingExternalCursorUtf16 설정은 유지한다.
     }
 
     override fun onStartInputView(
