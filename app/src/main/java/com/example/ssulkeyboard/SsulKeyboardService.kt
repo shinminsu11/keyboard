@@ -763,31 +763,62 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
+
             val ic = currentInputConnection ?: return
+
             try {
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // 실험 13: 커서 앞 글자 수를 InputConnection에 묻지 않고,
-                // HTML에서 전달된 count만큼 실제 DEL 키 이벤트를 보냅니다.
-                val deleteCount = count.coerceIn(0, 50000)
-                if (deleteCount > 0) {
+                val beforeTextForCheck =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.toString() ?: "<null>"
+                    } catch (e: Exception) {
+                        "<error:${e.javaClass.simpleName}>"
+                    }
+                val afterTextForCheck =
+                    try {
+                        ic.getTextAfterCursor(200, 0)?.toString() ?: "<null>"
+                    } catch (e: Exception) {
+                        "<error:${e.javaClass.simpleName}>"
+                    }
+                val beforeLength =
+                    if (beforeTextForCheck.startsWith("<error:") || beforeTextForCheck == "<null>") count
+                    else beforeTextForCheck.length
+
+                val beforePreview = beforeTextForCheck
+                    .replace("\n", "↵")
+                    .replace("\r", "")
+                    .takeLast(12)
+                val afterPreview = afterTextForCheck
+                    .replace("\n", "↵")
+                    .replace("\r", "")
+                    .take(12)
+                android.widget.Toast.makeText(
+                    this@SsulKeyboardService,
+                    "삭제 직전: 왼쪽 ${beforeLength}자 / 오른쪽 시작 [${afterPreview}] / 왼쪽 끝 [${beforePreview}]",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+
+                if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        val keyCode = KeyEvent.KEYCODE_DEL
-                        repeat(deleteCount) {
-                            val now = android.os.SystemClock.uptimeMillis()
-                            ic.sendKeyEvent(
-                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0)
-                            )
-                            ic.sendKeyEvent(
-                                KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0)
-                            )
-                        }
+                        ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
@@ -795,10 +826,15 @@ class SsulKeyboardService : InputMethodService() {
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
+
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
+
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
