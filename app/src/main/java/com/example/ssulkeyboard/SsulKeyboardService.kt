@@ -762,7 +762,7 @@ class SsulKeyboardService : InputMethodService() {
         // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
         // ----------------------------------------------------
         @JavascriptInterface
-        fun deleteAllByKeyEvents(count: Int) {
+        fun deleteAllByKeyEvents(leftCharCount: Int, cursorUtf16: Int) {
 
             val ic = currentInputConnection ?: return
 
@@ -776,38 +776,24 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
+                // 실험 20: HTML이 계산한 커서 위치를 삭제 직전에 실제 입력창에 적용합니다.
+                // 커서 이동 동작 자체는 바꾸지 않고, 삭제 시점에만 위치를 맞춥니다.
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 250L
+                    android.os.SystemClock.uptimeMillis() + 500L
 
-                val beforeTextForCheck =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.toString() ?: "<null>"
-                    } catch (e: Exception) {
-                        "<error:${e.javaClass.simpleName}>"
-                    }
-                val afterTextForCheck =
-                    try {
-                        ic.getTextAfterCursor(200, 0)?.toString() ?: "<null>"
-                    } catch (e: Exception) {
-                        "<error:${e.javaClass.simpleName}>"
-                    }
+                try {
+                    val safeCursor = cursorUtf16.coerceAtLeast(0)
+                    ic.setSelection(safeCursor, safeCursor)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
                 val beforeLength =
-                    if (beforeTextForCheck.startsWith("<error:") || beforeTextForCheck == "<null>") count
-                    else beforeTextForCheck.length
-
-                val beforePreview = beforeTextForCheck
-                    .replace("\n", "↵")
-                    .replace("\r", "")
-                    .takeLast(12)
-                val afterPreview = afterTextForCheck
-                    .replace("\n", "↵")
-                    .replace("\r", "")
-                    .take(12)
-                android.widget.Toast.makeText(
-                    this@SsulKeyboardService,
-                    "삭제 직전: 왼쪽 ${beforeLength}자 / 오른쪽 시작 [${afterPreview}] / 왼쪽 끝 [${beforePreview}]",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+                    } catch (_: Exception) {
+                        0
+                    }
 
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
@@ -815,10 +801,6 @@ class SsulKeyboardService : InputMethodService() {
                         ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        try {
-                            ic.setSelection(0, beforeLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
@@ -828,13 +810,10 @@ class SsulKeyboardService : InputMethodService() {
                 lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
-
                 e.printStackTrace()
             }
         }
