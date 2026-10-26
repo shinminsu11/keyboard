@@ -762,7 +762,7 @@ class SsulKeyboardService : InputMethodService() {
         // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
         // ----------------------------------------------------
         @JavascriptInterface
-        fun deleteAllByKeyEvents(leftCharCount: Int, cursorUtf16: Int) {
+        fun deleteAllByKeyEvents(count: Int) {
 
             val ic = currentInputConnection ?: return
 
@@ -776,23 +776,14 @@ class SsulKeyboardService : InputMethodService() {
                 } catch (_: Exception) {
                 }
 
-                // 실험 20: HTML이 계산한 커서 위치를 삭제 직전에 실제 입력창에 적용합니다.
-                // 커서 이동 동작 자체는 바꾸지 않고, 삭제 시점에만 위치를 맞춥니다.
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 500L
-
-                try {
-                    val safeCursor = cursorUtf16.coerceAtLeast(0)
-                    ic.setSelection(safeCursor, safeCursor)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                    android.os.SystemClock.uptimeMillis() + 250L
 
                 val beforeLength =
                     try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
                     } catch (_: Exception) {
-                        0
+                        count
                     }
 
                 if (beforeLength > 0) {
@@ -801,6 +792,10 @@ class SsulKeyboardService : InputMethodService() {
                         ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
@@ -810,10 +805,13 @@ class SsulKeyboardService : InputMethodService() {
                 lastKnownSelectionEnd = 0
 
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
