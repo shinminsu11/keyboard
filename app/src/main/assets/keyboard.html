@@ -1802,27 +1802,46 @@ let diffY = endY - bsStartY;
 
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
-        // 커서 이동 후에는 조합 중인 글자가 없으므로 불필요한 commitCurrent()를 피합니다.
-        // 실제 조합 중인 글자가 있을 때만 먼저 확정합니다.
-        const hasPendingSyllable =
-            hangulBuffer &&
-            (hangulBuffer.cho !== -1 ||
-             hangulBuffer.jung !== -1 ||
-             hangulBuffer.jong !== -1);
-        if (hasPendingSyllable) commitCurrent();
+        commitCurrent();
+        // 실험 22: 삭제 직전에 실제 입력창의 커서 앞/뒤 문자열로 HTML 상태를 맞춥니다.
+        // 기존 삭제 함수는 그대로 사용합니다.
+        if (window.AndroidBridge && window.AndroidBridge.readNativeCursorContext) {
+            try {
+                const nativeContext = JSON.parse(window.AndroidBridge.readNativeCursorContext());
+                const nativeBefore = String(nativeContext.before || '');
+                const nativeAfter = String(nativeContext.after || '');
+                committedText = nativeBefore + nativeAfter;
+                cursorPos = Array.from(nativeBefore).length;
+            } catch (e) {}
+        }
 
+        const totalUtf16 = committedText.length;
+        const totalChars = Array.from(committedText).length;
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
-        // 삭제량은 Kotlin이 실제 입력창의 커서 왼쪽 텍스트에서 계산합니다.
         if (window.AndroidBridge &&
             window.AndroidBridge.deleteAllByKeyEvents) {
-            window.AndroidBridge.deleteAllByKeyEvents(0);
+            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
+        } else if (totalUtf16 > 0 &&
+            window.AndroidBridge &&
+            window.AndroidBridge.setSelection &&
+            window.AndroidBridge.deleteText) {
+            window.AndroidBridge.setSelection(0, totalUtf16);
+            window.AndroidBridge.deleteText();
         }
-        // JS의 committedText/cursorPos를 여기서 강제로 비우지 않습니다.
-        // Kotlin의 syncHtmlWithNativeText()가 실제 입력창 내용으로 동기화합니다.
+
+        committedText = '';
+        cursorPos = 0;
+        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
+        lastSlideDir = '';
+        externalFinalCandidate = null;
+        externalCursorInsertMode = false;
+        renderVersion++;
+        renderRequested = false;
+        updateScreen();
     } catch (e) {}
     return;
 }
