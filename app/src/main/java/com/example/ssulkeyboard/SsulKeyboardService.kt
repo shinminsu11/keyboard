@@ -71,11 +71,18 @@ class SsulKeyboardService : InputMethodService() {
 
                     if (text.trim().isNotEmpty()) {
 
+                        // 기존 기능
+                        // 최근 복사 내용과 시간을 기록
                         lastObservedClipboardText = text
 
                         lastObservedClipboardTime =
                             android.os.SystemClock.elapsedRealtime()
 
+                        // ------------------------------------------------
+                        // 추가 기능
+                        // 클립보드 창이 이미 열려 있으면
+                        // 복사한 내용을 즉시 현재 목록에 추가
+                        // ------------------------------------------------
                         if (::webView.isInitialized) {
 
                             val textJs =
@@ -752,11 +759,7 @@ class SsulKeyboardService : InputMethodService() {
 
         // ----------------------------------------------------
         // 백스페이스 왼쪽 스와이프(좌측 전체 삭제) 전용 함수
-        // - 네이버 카페처럼 "커서 앞에 몇 글자 있는지" 물어보면
-        //   커서 이동/엔터 직후 0으로 답하는 화면이 있어서, 아예
-        //   묻지 않고 진짜 백스페이스 키 신호를 글자 수만큼 반복해서
-        //   보낸다. 실제로 지워지는 만큼만 지워지므로, 최소한
-        //   "방금 입력한 부분"은 커서 이동 후에도 지워질 가능성이 있다.
+        // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
@@ -774,35 +777,28 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() +
-                        (count * 15L) + 200L
+                    android.os.SystemClock.uptimeMillis() + 250L
 
-                val now = android.os.SystemClock.uptimeMillis()
+                val beforeLength =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                    } catch (_: Exception) {
+                        count
+                    }
 
-                var i = 0
-                while (i < count) {
-
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            now,
-                            now,
-                            KeyEvent.ACTION_DOWN,
-                            KeyEvent.KEYCODE_DEL,
-                            0
-                        )
-                    )
-
-                    ic.sendKeyEvent(
-                        KeyEvent(
-                            now,
-                            now,
-                            KeyEvent.ACTION_UP,
-                            KeyEvent.KEYCODE_DEL,
-                            0
-                        )
-                    )
-
-                    i++
+                if (beforeLength > 0) {
+                    ic.beginBatchEdit()
+                    try {
+                        ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
+                    } finally {
+                        ic.endBatchEdit()
+                    }
                 }
 
                 lastKnownSelectionStart = 0
