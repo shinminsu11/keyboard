@@ -758,25 +758,6 @@ class SsulKeyboardService : InputMethodService() {
         }
 
         // ----------------------------------------------------
-        // 실험 22: 실제 입력창의 커서 앞/뒤 문자열을 HTML에 전달합니다.
-        // 삭제 방식 자체는 변경하지 않습니다.
-        // ----------------------------------------------------
-        @JavascriptInterface
-        fun readNativeCursorContext(): String {
-            val ic = currentInputConnection ?: return "{\"before\":\"\",\"after\":\"\"}"
-            return try {
-                val before = ic.getTextBeforeCursor(50000, 0)?.toString() ?: ""
-                val after = ic.getTextAfterCursor(50000, 0)?.toString() ?: ""
-                org.json.JSONObject().apply {
-                    put("before", before)
-                    put("after", after)
-                }.toString()
-            } catch (_: Exception) {
-                "{\"before\":\"\",\"after\":\"\"}"
-            }
-        }
-
-        // ----------------------------------------------------
         // 백스페이스 왼쪽 스와이프(좌측 전체 삭제) 전용 함수
         // - 우측 글은 절대 건드리지 않고, 오직 커서 기준 좌측(Before)만 삭제합니다.
         // ----------------------------------------------------
