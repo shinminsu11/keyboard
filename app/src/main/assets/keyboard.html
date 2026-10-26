@@ -1802,36 +1802,27 @@ let diffY = endY - bsStartY;
 
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
-        commitCurrent();
-        const totalUtf16 = committedText.length;
-        const charsAtSwipe = Array.from(committedText);
-        const leftCharCount = Math.max(0, Math.min(cursorPos, charsAtSwipe.length));
-        const cursorUtf16 = getUtf16Index(charsAtSwipe, leftCharCount);
+        // 커서 이동 후에는 조합 중인 글자가 없으므로 불필요한 commitCurrent()를 피합니다.
+        // 실제 조합 중인 글자가 있을 때만 먼저 확정합니다.
+        const hasPendingSyllable =
+            hangulBuffer &&
+            (hangulBuffer.cho !== -1 ||
+             hangulBuffer.jung !== -1 ||
+             hangulBuffer.jong !== -1);
+        if (hasPendingSyllable) commitCurrent();
+
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
         externalFinalCandidate = null;
         externalCursorInsertMode = false;
 
+        // 삭제량은 Kotlin이 실제 입력창의 커서 왼쪽 텍스트에서 계산합니다.
         if (window.AndroidBridge &&
             window.AndroidBridge.deleteAllByKeyEvents) {
-            window.AndroidBridge.deleteAllByKeyEvents(leftCharCount, cursorUtf16);
-        } else if (totalUtf16 > 0 &&
-            window.AndroidBridge &&
-            window.AndroidBridge.setSelection &&
-            window.AndroidBridge.deleteText) {
-            window.AndroidBridge.setSelection(0, totalUtf16);
-            window.AndroidBridge.deleteText();
+            window.AndroidBridge.deleteAllByKeyEvents(0);
         }
-
-        committedText = '';
-        cursorPos = 0;
-        hangulBuffer = { cho: -1, jung: -1, jong: -1 };
-        lastSlideDir = '';
-        externalFinalCandidate = null;
-        externalCursorInsertMode = false;
-        renderVersion++;
-        renderRequested = false;
-        updateScreen();
+        // JS의 committedText/cursorPos를 여기서 강제로 비우지 않습니다.
+        // Kotlin의 syncHtmlWithNativeText()가 실제 입력창 내용으로 동기화합니다.
     } catch (e) {}
     return;
 }
