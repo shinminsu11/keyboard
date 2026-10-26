@@ -1802,10 +1802,11 @@ let diffY = endY - bsStartY;
 
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
     try {
-        // 실험 16: 삭제 직전에 commitCurrent()를 호출하지 않습니다.
-        // Kotlin 쪽 삭제 함수가 실제 입력창의 커서 기준으로 처리하도록 맡깁니다.
+        commitCurrent();
         const totalUtf16 = committedText.length;
-        const totalChars = Array.from(committedText).length;
+        const charsAtSwipe = Array.from(committedText);
+        const leftCharCount = Math.max(0, Math.min(cursorPos, charsAtSwipe.length));
+        const cursorUtf16 = getUtf16Index(charsAtSwipe, leftCharCount);
         hangulBuffer = { cho: -1, jung: -1, jong: -1 };
         lastSlideDir = '';
         externalFinalCandidate = null;
@@ -1813,7 +1814,7 @@ if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
 
         if (window.AndroidBridge &&
             window.AndroidBridge.deleteAllByKeyEvents) {
-            window.AndroidBridge.deleteAllByKeyEvents(totalChars);
+            window.AndroidBridge.deleteAllByKeyEvents(leftCharCount, cursorUtf16);
         } else if (totalUtf16 > 0 &&
             window.AndroidBridge &&
             window.AndroidBridge.setSelection &&
