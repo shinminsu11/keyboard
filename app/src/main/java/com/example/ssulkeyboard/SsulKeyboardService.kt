@@ -763,9 +763,11 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
+
             val ic = currentInputConnection ?: return
 
             try {
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
 
@@ -777,20 +779,23 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // 실제 편집기에서 현재 커서 왼쪽의 텍스트를 확인합니다.
-                val beforeText = try {
-                    ic.getTextBeforeCursor(50000, 0)?.toString()
-                } catch (_: Exception) {
-                    null
-                }
+                val beforeLength =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                    } catch (_: Exception) {
+                        count
+                    }
 
-                if (!beforeText.isNullOrEmpty()) {
-                    val beforeLength = beforeText.length
+                if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
                         ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
@@ -798,10 +803,15 @@ class SsulKeyboardService : InputMethodService() {
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
+
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
+
             } catch (e: Exception) {
+
                 e.printStackTrace()
             }
         }
