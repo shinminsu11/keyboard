@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
+import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -763,67 +764,69 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
             val ic = currentInputConnection ?: return
 
             try {
-
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
+                try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 250L
+                    android.os.SystemClock.uptimeMillis() + 350L
 
-                // 실험 24: 네이티브 커서 왼쪽 길이가 0으로 잘못 보고되는 경우만
-                // HTML이 전달한 글자 수를 대체값으로 사용합니다.
-                // 삭제 API는 여전히 커서 왼쪽(before)만 대상으로 하며,
-                // 오른쪽 텍스트는 삭제 대상으로 지정하지 않습니다.
-                val nativeBeforeLength =
+                ic.beginBatchEdit()
+                try {
+                    // 먼저 편집기 자체의 전체 선택 기능을 사용합니다.
+                    var hasSelection = false
                     try {
-                        ic.getTextBeforeCursor(50000, 0)?.length
+                        ic.performContextMenuAction(android.R.id.selectAll)
+                        hasSelection = !ic.getSelectedText(0).isNullOrEmpty()
                     } catch (_: Exception) {
-                        null
                     }
 
-                val beforeLength =
-                    if (nativeBeforeLength == null || nativeBeforeLength == 0) {
-                        count.coerceAtLeast(0)
-                    } else {
-                        nativeBeforeLength
-                    }
-
-                if (beforeLength > 0) {
-                    ic.beginBatchEdit()
-                    try {
-                        ic.deleteSurroundingText(beforeLength, 0)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    // 네이버 본문처럼 context-menu 선택이 반영되지 않는 편집기에서는 Ctrl+A를 시도합니다.
+                    if (!hasSelection) {
                         try {
-                            ic.setSelection(0, beforeLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
-                    } finally {
-                        ic.endBatchEdit()
+                            val now = android.os.SystemClock.uptimeMillis()
+                            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON))
+                            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON))
+                            hasSelection = !ic.getSelectedText(0).isNullOrEmpty()
+                        } catch (_: Exception) {
+                        }
                     }
+
+                    // 선택 영역이 실제로 생긴 경우에만 삭제합니다.
+                    if (hasSelection) {
+                        ic.commitText("", 1)
+                    } else {
+                        // 전체 선택이 지원되지 않으면 커서 왼쪽 텍스트만 삭제합니다.
+                        val beforeLength = try {
+                            ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                        } catch (_: Exception) {
+                            count
+                        }
+                        if (beforeLength > 0) {
+                            try {
+                                ic.deleteSurroundingText(beforeLength, 0)
+                            } catch (_: Exception) {
+                                // 최후의 대체 경로: 커서 앞 길이를 기준으로 선택 후 삭제
+                                try {
+                                    ic.setSelection(0, beforeLength)
+                                    ic.commitText("", 1)
+                                } catch (_: Exception) {
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    ic.endBatchEdit()
                 }
 
-                lastKnownSelectionStart = 0
-                lastKnownSelectionEnd = 0
-
-                cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
+                cancelHtmlExternalCursorState()
                 syncHtmlWithNativeText()
-
             } catch (e: Exception) {
-
-                e.printStackTrace()
+                Log.e("SwipeDeleteTest", "좌밀기 삭제 오류", e)
             }
         }
 
