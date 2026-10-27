@@ -222,6 +222,18 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
+    // 좌로 밀기 진단 전용: 기존 삭제 동작은 바꾸지 않고 HTML 토스트만 표시합니다.
+    private fun showSwipeDiagnostic(message: String) {
+        if (!::webView.isInitialized) return
+        webView.post {
+            try {
+                val safeMessage = message.replace("\\", "\\\\").replace("'", "\\'")
+                webView.evaluateJavascript("showToast('$safeMessage')", null)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun rememberActualSelection() {
 
         val ic =
@@ -764,7 +776,12 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection ?: return
+            showSwipeDiagnostic("진단2: Kotlin 함수 도달")
+            val ic = currentInputConnection
+            if (ic == null) {
+                showSwipeDiagnostic("진단3: 입력 연결 없음")
+                return
+            }
 
             try {
 
@@ -779,12 +796,18 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeLength =
+                val beforeResult =
                     try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                        ic.getTextBeforeCursor(50000, 0)?.length
                     } catch (_: Exception) {
-                        count
+                        null
                     }
+                // 진단을 위해 원래 동작을 유지: 조회 실패 시 기존처럼 count를 사용합니다.
+                val beforeLength = beforeResult ?: count
+
+                showSwipeDiagnostic(
+                    "진단3: 조회 ${beforeResult ?: "실패/없음"} / 적용 ${beforeLength}자 / HTML ${count}자"
+                )
 
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
@@ -799,6 +822,9 @@ class SsulKeyboardService : InputMethodService() {
                     } finally {
                         ic.endBatchEdit()
                     }
+                    showSwipeDiagnostic("진단4: 삭제 명령 실행, 앞 ${beforeLength}자")
+                } else {
+                    showSwipeDiagnostic("진단4: 커서 앞 글자 없음 또는 확인 실패")
                 }
 
                 lastKnownSelectionStart = 0
