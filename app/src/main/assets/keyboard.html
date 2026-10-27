@@ -1801,6 +1801,7 @@ let diffX = endX - bsStartX;
 let diffY = endY - bsStartY;
 
 if (diffX < -30 && Math.abs(diffX) > Math.abs(diffY)) {
+    showToast("진단1: HTML 좌로밀기 감지");
     try {
         commitCurrent();
         const totalUtf16 = committedText.length;
