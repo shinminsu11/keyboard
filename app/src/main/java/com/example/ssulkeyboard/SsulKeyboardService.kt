@@ -779,11 +779,22 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeLength =
+                // 실험 24: 네이티브 커서 왼쪽 길이가 0으로 잘못 보고되는 경우만
+                // HTML이 전달한 글자 수를 대체값으로 사용합니다.
+                // 삭제 API는 여전히 커서 왼쪽(before)만 대상으로 하며,
+                // 오른쪽 텍스트는 삭제 대상으로 지정하지 않습니다.
+                val nativeBeforeLength =
                     try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                        ic.getTextBeforeCursor(50000, 0)?.length
                     } catch (_: Exception) {
-                        count
+                        null
+                    }
+
+                val beforeLength =
+                    if (nativeBeforeLength == null || nativeBeforeLength == 0) {
+                        count.coerceAtLeast(0)
+                    } else {
+                        nativeBeforeLength
                     }
 
                 if (beforeLength > 0) {
