@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Color
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
-import android.util.Log
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -769,64 +768,41 @@ class SsulKeyboardService : InputMethodService() {
             try {
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
 
-                internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 350L
-
-                ic.beginBatchEdit()
                 try {
-                    // 먼저 편집기 자체의 전체 선택 기능을 사용합니다.
-                    var hasSelection = false
-                    try {
-                        ic.performContextMenuAction(android.R.id.selectAll)
-                        hasSelection = !ic.getSelectedText(0).isNullOrEmpty()
-                    } catch (_: Exception) {
-                    }
-
-                    // 네이버 본문처럼 context-menu 선택이 반영되지 않는 편집기에서는 Ctrl+A를 시도합니다.
-                    if (!hasSelection) {
-                        try {
-                            val now = android.os.SystemClock.uptimeMillis()
-                            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON))
-                            ic.sendKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON))
-                            hasSelection = !ic.getSelectedText(0).isNullOrEmpty()
-                        } catch (_: Exception) {
-                        }
-                    }
-
-                    // 선택 영역이 실제로 생긴 경우에만 삭제합니다.
-                    if (hasSelection) {
-                        ic.commitText("", 1)
-                    } else {
-                        // 전체 선택이 지원되지 않으면 커서 왼쪽 텍스트만 삭제합니다.
-                        val beforeLength = try {
-                            ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                        } catch (_: Exception) {
-                            count
-                        }
-                        if (beforeLength > 0) {
-                            try {
-                                ic.deleteSurroundingText(beforeLength, 0)
-                            } catch (_: Exception) {
-                                // 최후의 대체 경로: 커서 앞 길이를 기준으로 선택 후 삭제
-                                try {
-                                    ic.setSelection(0, beforeLength)
-                                    ic.commitText("", 1)
-                                } catch (_: Exception) {
-                                }
-                            }
-                        }
-                    }
-                } finally {
-                    ic.endBatchEdit()
+                    ic.finishComposingText()
+                } catch (_: Exception) {
                 }
 
-                rememberActualSelection()
+                internalSelectionUntil =
+                    android.os.SystemClock.uptimeMillis() + 250L
+
+                // 실제 편집기에서 현재 커서 왼쪽의 텍스트를 확인합니다.
+                val beforeText = try {
+                    ic.getTextBeforeCursor(50000, 0)?.toString()
+                } catch (_: Exception) {
+                    null
+                }
+
+                if (!beforeText.isNullOrEmpty()) {
+                    val beforeLength = beforeText.length
+                    ic.beginBatchEdit()
+                    try {
+                        ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        ic.endBatchEdit()
+                    }
+                }
+
+                lastKnownSelectionStart = 0
+                lastKnownSelectionEnd = 0
                 cancelHtmlExternalCursorState()
+                rememberActualSelection()
                 syncHtmlWithNativeText()
             } catch (e: Exception) {
-                Log.e("SwipeDeleteTest", "좌밀기 삭제 오류", e)
+                e.printStackTrace()
             }
         }
 
