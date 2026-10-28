@@ -9,7 +9,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -776,50 +775,40 @@ class SsulKeyboardService : InputMethodService() {
         // ----------------------------------------------------
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
-
-            showSwipeDiagnostic("진단2: Kotlin 도달")
+            showSwipeDiagnostic("진단2: Kotlin 함수 도달")
             val ic = currentInputConnection
             if (ic == null) {
-                showSwipeDiagnostic("진단: 입력 연결 없음")
+                showSwipeDiagnostic("진단3: 입력 연결 없음")
                 return
             }
 
-            // 삭제 전 상태를 읽기만 합니다. 삭제 동작 자체는 진단1과 동일하게 유지합니다.
-            fun readBefore(): String? = try {
-                ic.getTextBeforeCursor(50000, 0)?.toString()
-            } catch (_: Exception) { null }
-            fun readSelected(): String? = try {
-                ic.getSelectedText(0)?.toString()
-            } catch (_: Exception) { null }
-            fun readExtracted(): android.view.inputmethod.ExtractedText? = try {
-                ic.getExtractedText(ExtractedTextRequest(), 0)
-            } catch (_: Exception) { null }
-
-            val beforeText = readBefore()
-            val selectedText = readSelected()
-            val extracted = readExtracted()
-            val extractedLength = extracted?.text?.length
-            val selectionStart = extracted?.selectionStart
-            val selectionEnd = extracted?.selectionEnd
-            val beforeLength = beforeText?.length ?: count
-
-            showSwipeDiagnostic(
-                "삭제 전: 앞=${beforeText?.length ?: "조회실패"} 선택=${selectedText?.length ?: "없음/실패"} 본문=${extractedLength ?: "조회실패"} 커서=${selectionStart ?: "?"}-${selectionEnd ?: "?"}"
-            )
+            fun snapshot(): String {
+                val before = try { ic.getTextBeforeCursor(50000, 0)?.toString() } catch (_: Exception) { null }
+                val selected = try { ic.getSelectedText(0)?.toString() } catch (_: Exception) { null }
+                val extracted = try {
+                    ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+                } catch (_: Exception) { null }
+                val beforeLen = before?.length?.toString() ?: "실패"
+                val selectedLen = selected?.length?.toString() ?: "없음/실패"
+                val extractedText = extracted?.text?.toString()
+                val extractedLen = extractedText?.length?.toString() ?: "실패"
+                val selStart = extracted?.selectionStart?.toString() ?: "?"
+                val selEnd = extracted?.selectionEnd?.toString() ?: "?"
+                val preview = (before ?: "?").replace("\n", "↵").replace("\r", "↵").takeLast(8)
+                return "앞=$beforeLen($preview) 선택=$selectedLen 본문=$extractedLen 위치=$selStart-$selEnd"
+            }
 
             try {
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
+                try { ic.finishComposingText() } catch (_: Exception) {}
+                internalSelectionUntil = android.os.SystemClock.uptimeMillis() + 250L
 
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
+                val beforeSnapshot = snapshot()
+                val beforeResult = try { ic.getTextBeforeCursor(50000, 0)?.length } catch (_: Exception) { null }
+                val beforeLength = beforeResult ?: count
+                showSwipeDiagnostic("진단3 전: $beforeSnapshot / HTML=$count")
 
-                internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 250L
-
-                // 기존 진단1과 동일한 삭제 명령을 그대로 사용합니다.
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
@@ -835,32 +824,22 @@ class SsulKeyboardService : InputMethodService() {
                     }
                 }
 
+                val afterSnapshot = snapshot()
+                // HTML 토스트는 한 번에 하나만 보이므로, 전/후 결과가 겹치지 않게 나눠 표시합니다.
+                if (::webView.isInitialized) {
+                    webView.postDelayed({
+                        showSwipeDiagnostic("진단4 후: $afterSnapshot")
+                    }, 2100L)
+                }
+
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
                 cancelHtmlExternalCursorState()
                 rememberActualSelection()
                 syncHtmlWithNativeText()
-
-                // 네이버 편집기가 상태를 갱신할 시간을 준 뒤 삭제 후 상태를 읽어 표시합니다.
-                webView.postDelayed({
-                    try {
-                        val afterText = readBefore()
-                        val afterSelected = readSelected()
-                        val afterExtracted = readExtracted()
-                        val afterLength = afterExtracted?.text?.length
-                        val afterStart = afterExtracted?.selectionStart
-                        val afterEnd = afterExtracted?.selectionEnd
-                        showSwipeDiagnostic(
-                            "삭제 후: 앞=${afterText?.length ?: "조회실패"} 선택=${afterSelected?.length ?: "없음/실패"} 본문=${afterLength ?: "조회실패"} 커서=${afterStart ?: "?"}-${afterEnd ?: "?"}"
-                        )
-                    } catch (_: Exception) {
-                        showSwipeDiagnostic("삭제 후: 상태 조회 예외")
-                    }
-                }, 1700L)
-
             } catch (e: Exception) {
                 e.printStackTrace()
-                showSwipeDiagnostic("진단: 삭제 함수 예외")
+                showSwipeDiagnostic("진단 오류: ${e.javaClass.simpleName}")
             }
         }
 
