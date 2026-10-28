@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -776,15 +777,37 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            showSwipeDiagnostic("진단2: Kotlin 함수 도달")
+            showSwipeDiagnostic("진단2: Kotlin 도달")
             val ic = currentInputConnection
             if (ic == null) {
-                showSwipeDiagnostic("진단3: 입력 연결 없음")
+                showSwipeDiagnostic("진단: 입력 연결 없음")
                 return
             }
 
-            try {
+            // 삭제 전 상태를 읽기만 합니다. 삭제 동작 자체는 진단1과 동일하게 유지합니다.
+            fun readBefore(): String? = try {
+                ic.getTextBeforeCursor(50000, 0)?.toString()
+            } catch (_: Exception) { null }
+            fun readSelected(): String? = try {
+                ic.getSelectedText(0)?.toString()
+            } catch (_: Exception) { null }
+            fun readExtracted(): android.view.inputmethod.ExtractedText? = try {
+                ic.getExtractedText(ExtractedTextRequest(), 0)
+            } catch (_: Exception) { null }
 
+            val beforeText = readBefore()
+            val selectedText = readSelected()
+            val extracted = readExtracted()
+            val extractedLength = extracted?.text?.length
+            val selectionStart = extracted?.selectionStart
+            val selectionEnd = extracted?.selectionEnd
+            val beforeLength = beforeText?.length ?: count
+
+            showSwipeDiagnostic(
+                "삭제 전: 앞=${beforeText?.length ?: "조회실패"} 선택=${selectedText?.length ?: "없음/실패"} 본문=${extractedLength ?: "조회실패"} 커서=${selectionStart ?: "?"}-${selectionEnd ?: "?"}"
+            )
+
+            try {
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
 
@@ -796,19 +819,7 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeResult =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length
-                    } catch (_: Exception) {
-                        null
-                    }
-                // 진단을 위해 원래 동작을 유지: 조회 실패 시 기존처럼 count를 사용합니다.
-                val beforeLength = beforeResult ?: count
-
-                showSwipeDiagnostic(
-                    "진단3: 조회 ${beforeResult ?: "실패/없음"} / 적용 ${beforeLength}자 / HTML ${count}자"
-                )
-
+                // 기존 진단1과 동일한 삭제 명령을 그대로 사용합니다.
                 if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
@@ -822,23 +833,34 @@ class SsulKeyboardService : InputMethodService() {
                     } finally {
                         ic.endBatchEdit()
                     }
-                    showSwipeDiagnostic("진단4: 삭제 명령 실행, 앞 ${beforeLength}자")
-                } else {
-                    showSwipeDiagnostic("진단4: 커서 앞 글자 없음 또는 확인 실패")
                 }
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
-
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
 
-            } catch (e: Exception) {
+                // 네이버 편집기가 상태를 갱신할 시간을 준 뒤 삭제 후 상태를 읽어 표시합니다.
+                webView.postDelayed({
+                    try {
+                        val afterText = readBefore()
+                        val afterSelected = readSelected()
+                        val afterExtracted = readExtracted()
+                        val afterLength = afterExtracted?.text?.length
+                        val afterStart = afterExtracted?.selectionStart
+                        val afterEnd = afterExtracted?.selectionEnd
+                        showSwipeDiagnostic(
+                            "삭제 후: 앞=${afterText?.length ?: "조회실패"} 선택=${afterSelected?.length ?: "없음/실패"} 본문=${afterLength ?: "조회실패"} 커서=${afterStart ?: "?"}-${afterEnd ?: "?"}"
+                        )
+                    } catch (_: Exception) {
+                        showSwipeDiagnostic("삭제 후: 상태 조회 예외")
+                    }
+                }, 1700L)
 
+            } catch (e: Exception) {
                 e.printStackTrace()
+                showSwipeDiagnostic("진단: 삭제 함수 예외")
             }
         }
 
