@@ -222,6 +222,18 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
+    // 진단 2 전용: 기존 삭제 동작은 바꾸지 않고 현재 값을 화면에 표시합니다.
+    private fun showSwipeDiagnostic(message: String) {
+        if (!::webView.isInitialized) return
+        webView.post {
+            try {
+                val safeMessage = message.replace("\\", "\\\\").replace("'", "\\'")
+                webView.evaluateJavascript("showToast('$safeMessage')", null)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun rememberActualSelection() {
 
         val ic =
@@ -764,9 +776,14 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection ?: return
+            val ic = currentInputConnection
+            if (ic == null) {
+                showSwipeDiagnostic("진단2: Kotlin 도달 / 입력 연결 없음 / HTML=${count}자")
+                return
+            }
 
             try {
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
 
@@ -778,38 +795,47 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // Keep the original fast, single bulk-delete operation.
-                // The HTML keyboard's committedText count is used as a safe
-                // upper bound because some web editors report a stale/short
-                // getTextBeforeCursor() result after the caret has moved.
-                val reportedBeforeLength = try {
-                    ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-                } catch (_: Exception) {
-                    0
+                var beforeResult: Int? = null
+                var beforeError = ""
+                try {
+                    beforeResult = ic.getTextBeforeCursor(50000, 0)?.length
+                    if (beforeResult == null) beforeError = "null"
+                } catch (e: Exception) {
+                    beforeError = e.javaClass.simpleName
                 }
+                // 진단만 추가합니다. 삭제 길이와 삭제 명령은 원본 방식 그대로입니다.
+                val beforeLength = beforeResult ?: count
+                showSwipeDiagnostic(
+                    "진단2: Kotlin 도달 / HTML=${count}자 / 커서앞=${beforeResult?.toString() ?: beforeError} / 적용=${beforeLength}자"
+                )
 
-                val deleteLength =
-                    maxOf(count.coerceAtLeast(0), reportedBeforeLength)
-                        .coerceAtMost(50000)
-
-                if (deleteLength > 0) {
+                if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        // deleteSurroundingText deletes only to the LEFT of
-                        // the current native caret; it does not select the
-                        // whole document or intentionally touch right-side text.
-                        ic.deleteSurroundingText(deleteLength, 0)
+                        ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
                 }
 
+                lastKnownSelectionStart = 0
+                lastKnownSelectionEnd = 0
+
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
 
             } catch (e: Exception) {
                 e.printStackTrace()
+                showSwipeDiagnostic("진단2 오류: ${e.javaClass.simpleName}")
             }
         }
 
