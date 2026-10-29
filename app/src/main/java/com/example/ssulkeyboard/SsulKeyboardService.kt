@@ -776,45 +776,32 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 internalSelectionUntil =
-                    android.os.SystemClock.uptimeMillis() + 500L
+                    android.os.SystemClock.uptimeMillis() + 250L
 
-                ic.beginBatchEdit()
-                try {
-                    // Some web editors return only a short/stale value from
-                    // getTextBeforeCursor(50000). Delete one UTF-16 unit at a
-                    // time, re-checking the text immediately before the caret.
-                    // `count` is the JS-side upper bound; the live before-caret
-                    // query prevents deleting anything to the right of the caret.
-                    val requestedLimit = count.coerceIn(0, 50000)
-                    val reportedBeforeLength = try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: 0
-                    } catch (_: Exception) {
-                        0
-                    }
-                    val maxDeletes = maxOf(requestedLimit, reportedBeforeLength)
+                // Keep the original fast, single bulk-delete operation.
+                // The HTML keyboard's committedText count is used as a safe
+                // upper bound because some web editors report a stale/short
+                // getTextBeforeCursor() result after the caret has moved.
+                val reportedBeforeLength = try {
+                    ic.getTextBeforeCursor(50000, 0)?.length ?: 0
+                } catch (_: Exception) {
+                    0
+                }
+
+                val deleteLength =
+                    maxOf(count.coerceAtLeast(0), reportedBeforeLength)
                         .coerceAtMost(50000)
 
-                    var deleted = 0
-                    while (deleted < maxDeletes) {
-                        val immediatelyBefore = try {
-                            ic.getTextBeforeCursor(1, 0)
-                        } catch (_: Exception) {
-                            null
-                        }
-
-                        // If the editor reliably reports an empty left side,
-                        // stop at the caret's beginning. If it returns null,
-                        // use the bounded count supplied by the HTML keyboard.
-                        if (immediatelyBefore != null && immediatelyBefore.isEmpty()) {
-                            break
-                        }
-                        if (!ic.deleteSurroundingText(1, 0)) {
-                            break
-                        }
-                        deleted++
+                if (deleteLength > 0) {
+                    ic.beginBatchEdit()
+                    try {
+                        // deleteSurroundingText deletes only to the LEFT of
+                        // the current native caret; it does not select the
+                        // whole document or intentionally touch right-side text.
+                        ic.deleteSurroundingText(deleteLength, 0)
+                    } finally {
+                        ic.endBatchEdit()
                     }
-                } finally {
-                    ic.endBatchEdit()
                 }
 
                 cancelHtmlExternalCursorState()
