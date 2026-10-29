@@ -71,18 +71,11 @@ class SsulKeyboardService : InputMethodService() {
 
                     if (text.trim().isNotEmpty()) {
 
-                        // 기존 기능
-                        // 최근 복사 내용과 시간을 기록
                         lastObservedClipboardText = text
 
                         lastObservedClipboardTime =
                             android.os.SystemClock.elapsedRealtime()
 
-                        // ------------------------------------------------
-                        // 추가 기능
-                        // 클립보드 창이 이미 열려 있으면
-                        // 복사한 내용을 즉시 현재 목록에 추가
-                        // ------------------------------------------------
                         if (::webView.isInitialized) {
 
                             val textJs =
@@ -220,18 +213,6 @@ class SsulKeyboardService : InputMethodService() {
         container.addView(webView)
 
         return container
-    }
-
-    // 진단 2 전용: 기존 삭제 동작은 바꾸지 않고 현재 값을 화면에 표시합니다.
-    private fun showSwipeDiagnostic(message: String) {
-        if (!::webView.isInitialized) return
-        webView.post {
-            try {
-                val safeMessage = message.replace("\\", "\\\\").replace("'", "\\'")
-                webView.evaluateJavascript("showToast('$safeMessage')", null)
-            } catch (_: Exception) {
-            }
-        }
     }
 
     private fun rememberActualSelection() {
@@ -776,38 +757,36 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection
-            if (ic == null) {
-                showSwipeDiagnostic("진단3: 입력 연결 없음 / HTML=${count}자")
-                return
-            }
+            val ic = currentInputConnection ?: return
 
             try {
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                var beforeTextLength: Int? = null
-                var beforeError = ""
-                try {
-                    beforeTextLength = ic.getTextBeforeCursor(50000, 0)?.length
-                    if (beforeTextLength == null) beforeError = "null"
-                } catch (e: Exception) {
-                    beforeError = e.javaClass.simpleName
-                }
+                val beforeLength =
+                    try {
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
+                    } catch (_: Exception) {
+                        count
+                    }
 
-                val deleteLength = beforeTextLength ?: count
-                if (deleteLength > 0) {
+                if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(deleteLength, 0)
+                        ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         try {
-                            ic.setSelection(0, deleteLength)
+                            ic.setSelection(0, beforeLength)
                             ic.commitText("", 1)
                         } catch (_: Exception) {}
                     } finally {
@@ -815,37 +794,18 @@ class SsulKeyboardService : InputMethodService() {
                     }
                 }
 
-                var afterDeleteLength: Int? = null
-                var afterDeleteError = ""
-                try {
-                    afterDeleteLength = ic.getTextBeforeCursor(50000, 0)?.length
-                    if (afterDeleteLength == null) afterDeleteError = "null"
-                } catch (e: Exception) {
-                    afterDeleteError = e.javaClass.simpleName
-                }
-
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
+
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
 
-                var afterSyncLength: Int? = null
-                var afterSyncError = ""
-                try {
-                    afterSyncLength = ic.getTextBeforeCursor(50000, 0)?.length
-                    if (afterSyncLength == null) afterSyncError = "null"
-                } catch (e: Exception) {
-                    afterSyncError = e.javaClass.simpleName
-                }
-
-                showSwipeDiagnostic(
-                    "진단3: HTML=${count} / 삭제전=${beforeTextLength?.toString() ?: beforeError} / 삭제직후=${afterDeleteLength?.toString() ?: afterDeleteError} / 동기화후=${afterSyncLength?.toString() ?: afterSyncError}"
-                )
-
             } catch (e: Exception) {
+
                 e.printStackTrace()
-                showSwipeDiagnostic("진단3 오류: ${e.javaClass.simpleName}")
             }
         }
 
