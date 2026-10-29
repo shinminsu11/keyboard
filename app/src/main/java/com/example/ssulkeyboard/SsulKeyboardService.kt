@@ -778,45 +778,36 @@ class SsulKeyboardService : InputMethodService() {
 
             val ic = currentInputConnection
             if (ic == null) {
-                showSwipeDiagnostic("진단2: Kotlin 도달 / 입력 연결 없음 / HTML=${count}자")
+                showSwipeDiagnostic("진단3: 입력 연결 없음 / HTML=${count}자")
                 return
             }
 
             try {
-
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
+                try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                var beforeResult: Int? = null
+                var beforeTextLength: Int? = null
                 var beforeError = ""
                 try {
-                    beforeResult = ic.getTextBeforeCursor(50000, 0)?.length
-                    if (beforeResult == null) beforeError = "null"
+                    beforeTextLength = ic.getTextBeforeCursor(50000, 0)?.length
+                    if (beforeTextLength == null) beforeError = "null"
                 } catch (e: Exception) {
                     beforeError = e.javaClass.simpleName
                 }
-                // 진단만 추가합니다. 삭제 길이와 삭제 명령은 원본 방식 그대로입니다.
-                val beforeLength = beforeResult ?: count
-                showSwipeDiagnostic(
-                    "진단2: Kotlin 도달 / HTML=${count}자 / 커서앞=${beforeResult?.toString() ?: beforeError} / 적용=${beforeLength}자"
-                )
 
-                if (beforeLength > 0) {
+                val deleteLength = beforeTextLength ?: count
+                if (deleteLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(beforeLength, 0)
+                        ic.deleteSurroundingText(deleteLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         try {
-                            ic.setSelection(0, beforeLength)
+                            ic.setSelection(0, deleteLength)
                             ic.commitText("", 1)
                         } catch (_: Exception) {}
                     } finally {
@@ -824,18 +815,37 @@ class SsulKeyboardService : InputMethodService() {
                     }
                 }
 
+                var afterDeleteLength: Int? = null
+                var afterDeleteError = ""
+                try {
+                    afterDeleteLength = ic.getTextBeforeCursor(50000, 0)?.length
+                    if (afterDeleteLength == null) afterDeleteError = "null"
+                } catch (e: Exception) {
+                    afterDeleteError = e.javaClass.simpleName
+                }
+
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
-
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
+
+                var afterSyncLength: Int? = null
+                var afterSyncError = ""
+                try {
+                    afterSyncLength = ic.getTextBeforeCursor(50000, 0)?.length
+                    if (afterSyncLength == null) afterSyncError = "null"
+                } catch (e: Exception) {
+                    afterSyncError = e.javaClass.simpleName
+                }
+
+                showSwipeDiagnostic(
+                    "진단3: HTML=${count} / 삭제전=${beforeTextLength?.toString() ?: beforeError} / 삭제직후=${afterDeleteLength?.toString() ?: afterDeleteError} / 동기화후=${afterSyncLength?.toString() ?: afterSyncError}"
+                )
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                showSwipeDiagnostic("진단2 오류: ${e.javaClass.simpleName}")
+                showSwipeDiagnostic("진단3 오류: ${e.javaClass.simpleName}")
             }
         }
 
