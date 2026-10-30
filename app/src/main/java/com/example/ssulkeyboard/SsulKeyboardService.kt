@@ -71,11 +71,18 @@ class SsulKeyboardService : InputMethodService() {
 
                     if (text.trim().isNotEmpty()) {
 
+                        // 기존 기능
+                        // 최근 복사 내용과 시간을 기록
                         lastObservedClipboardText = text
 
                         lastObservedClipboardTime =
                             android.os.SystemClock.elapsedRealtime()
 
+                        // ------------------------------------------------
+                        // 추가 기능
+                        // 클립보드 창이 이미 열려 있으면
+                        // 복사한 내용을 즉시 현재 목록에 추가
+                        // ------------------------------------------------
                         if (::webView.isInitialized) {
 
                             val textJs =
@@ -739,10 +746,10 @@ class SsulKeyboardService : InputMethodService() {
                     )
                 )
 
-                if (lastKnownSelectionStart >= 0) {
-                    lastKnownSelectionStart += direction
-                    lastKnownSelectionEnd = lastKnownSelectionStart
-                }
+                // 커서 위치를 direction으로 추측하지 않고,
+                // 이동 명령을 보낸 뒤 InputConnection에서 실제 위치를 다시 읽습니다.
+                // 편집기별 커서 이동/선택 처리 차이로 내부 위치가 어긋나는 것을 줄이기 위한 시험 수정입니다.
+                rememberActualSelection()
 
             } catch (e: Exception) {
 
