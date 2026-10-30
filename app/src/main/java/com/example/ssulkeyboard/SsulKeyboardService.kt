@@ -222,6 +222,18 @@ class SsulKeyboardService : InputMethodService() {
         return container
     }
 
+    // 진단 2 전용: 기존 삭제 동작은 바꾸지 않고 현재 값을 화면에 표시합니다.
+    private fun showSwipeDiagnostic(message: String) {
+        if (!::webView.isInitialized) return
+        webView.post {
+            try {
+                val safeMessage = message.replace("\\", "\\\\").replace("'", "\\'")
+                webView.evaluateJavascript("showToast('$safeMessage')", null)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun rememberActualSelection() {
 
         val ic =
@@ -746,10 +758,10 @@ class SsulKeyboardService : InputMethodService() {
                     )
                 )
 
-                // 커서 위치를 direction으로 추측하지 않고,
-                // 이동 명령을 보낸 뒤 InputConnection에서 실제 위치를 다시 읽습니다.
-                // 편집기별 커서 이동/선택 처리 차이로 내부 위치가 어긋나는 것을 줄이기 위한 시험 수정입니다.
-                rememberActualSelection()
+                if (lastKnownSelectionStart >= 0) {
+                    lastKnownSelectionStart += direction
+                    lastKnownSelectionEnd = lastKnownSelectionStart
+                }
 
             } catch (e: Exception) {
 
@@ -764,36 +776,54 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection ?: return
+            val ic = currentInputConnection
+            if (ic == null) {
+                showSwipeDiagnostic("진단4: 입력 연결 없음 / HTML=${count}자")
+                return
+            }
 
             try {
-
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-
-                try {
-                    ic.finishComposingText()
-                } catch (_: Exception) {
-                }
+                try { ic.finishComposingText() } catch (_: Exception) {}
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                val beforeLength =
-                    try {
-                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
-                    } catch (_: Exception) {
-                        count
-                    }
+                // 진단4: 삭제 직전 커서 앞/뒤 실제 문자열을 함께 기록합니다.
+                var beforeTextLength: Int? = null
+                var beforeError = ""
+                var beforeSnippet = ""
+                var rightSnippet = ""
+                var selectedLength: Int? = null
+                try {
+                    val beforeText = ic.getTextBeforeCursor(50000, 0)
+                    beforeTextLength = beforeText?.length
+                    beforeSnippet = beforeText?.takeLast(8)?.replace("\n", "↵") ?: "null"
+                    if (beforeTextLength == null) beforeError = "null"
+                } catch (e: Exception) {
+                    beforeError = e.javaClass.simpleName
+                }
+                try {
+                    rightSnippet = ic.getTextAfterCursor(8, 0)?.toString()?.replace("\n", "↵") ?: "null"
+                } catch (e: Exception) {
+                    rightSnippet = "오류"
+                }
+                try {
+                    selectedLength = ic.getSelectedText(0)?.length ?: 0
+                } catch (_: Exception) {
+                    selectedLength = -1
+                }
 
-                if (beforeLength > 0) {
+                val deleteLength = beforeTextLength ?: count
+                if (deleteLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(beforeLength, 0)
+                        ic.deleteSurroundingText(deleteLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         try {
-                            ic.setSelection(0, beforeLength)
+                            ic.setSelection(0, deleteLength)
                             ic.commitText("", 1)
                         } catch (_: Exception) {}
                     } finally {
@@ -801,18 +831,37 @@ class SsulKeyboardService : InputMethodService() {
                     }
                 }
 
+                var afterDeleteLength: Int? = null
+                var afterDeleteError = ""
+                try {
+                    afterDeleteLength = ic.getTextBeforeCursor(50000, 0)?.length
+                    if (afterDeleteLength == null) afterDeleteError = "null"
+                } catch (e: Exception) {
+                    afterDeleteError = e.javaClass.simpleName
+                }
+
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
-
                 cancelHtmlExternalCursorState()
-
                 rememberActualSelection()
-
                 syncHtmlWithNativeText()
 
-            } catch (e: Exception) {
+                var afterSyncLength: Int? = null
+                var afterSyncError = ""
+                try {
+                    afterSyncLength = ic.getTextBeforeCursor(50000, 0)?.length
+                    if (afterSyncLength == null) afterSyncError = "null"
+                } catch (e: Exception) {
+                    afterSyncError = e.javaClass.simpleName
+                }
 
+                showSwipeDiagnostic(
+                    "진단4: HTML=${count} / 앞=${beforeTextLength?.toString() ?: beforeError} / 선택=${selectedLength} / 앞문자=${beforeSnippet} / 뒤문자=${rightSnippet} / 삭제후=${afterDeleteLength?.toString() ?: afterDeleteError} / 동기화후=${afterSyncLength?.toString() ?: afterSyncError}"
+                )
+
+            } catch (e: Exception) {
                 e.printStackTrace()
+                showSwipeDiagnostic("진단4 오류: ${e.javaClass.simpleName}")
             }
         }
 
