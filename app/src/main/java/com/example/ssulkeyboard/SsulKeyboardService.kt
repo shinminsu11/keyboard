@@ -799,7 +799,7 @@ class SsulKeyboardService : InputMethodService() {
                 try {
                     val beforeText = ic.getTextBeforeCursor(50000, 0)
                     beforeTextLength = beforeText?.length
-                    beforeSnippet = beforeText?.takeLast(8)?.replace("\n", "↵") ?: "null"
+                    beforeSnippet = beforeText?.takeLast(8)?.toString()?.replace("\n", "↵") ?: "null"
                     if (beforeTextLength == null) beforeError = "null"
                 } catch (e: Exception) {
                     beforeError = e.javaClass.simpleName
