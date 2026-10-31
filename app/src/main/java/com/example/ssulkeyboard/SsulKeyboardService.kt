@@ -1454,6 +1454,27 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
+        // 진단 7: 편집기가 보내는 실제 커서 위치와 커서 주변 문자열만 관찰합니다.
+        // 삭제 방식, 커서 이동 방식, HTML 동기화 방식은 변경하지 않습니다.
+        if (
+            newSelStart == newSelEnd &&
+            (oldSelStart != newSelStart || oldSelEnd != newSelEnd)
+        ) {
+            try {
+                val ic = currentInputConnection
+                val before = ic?.getTextBeforeCursor(8, 0)?.toString() ?: "null"
+                val after = ic?.getTextAfterCursor(8, 0)?.toString() ?: "null"
+                val selected = ic?.getSelectedText(0)?.toString() ?: "없음"
+                val safeBefore = before.replace("\n", "↵").replace("\r", "↵")
+                val safeAfter = after.replace("\n", "↵").replace("\r", "↵")
+                showSwipeDiagnostic(
+                    "진단7: 선택변화 $oldSelStart,$oldSelEnd→$newSelStart,$newSelEnd / 앞=$safeBefore / 뒤=$safeAfter / 선택=$selected"
+                )
+            } catch (e: Exception) {
+                showSwipeDiagnostic("진단7 조회오류: ${e.javaClass.simpleName}")
+            }
+        }
+
         if (newSelStart != newSelEnd) {
 
             try {
