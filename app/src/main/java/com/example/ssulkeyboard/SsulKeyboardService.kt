@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -781,6 +782,50 @@ class SsulKeyboardService : InputMethodService() {
                 showSwipeDiagnostic(
                     "진단6 방향=$direction / 전앞=${compact(beforeLeftText)} / 전뒤=${compact(beforeRightText)} / 전선택=${compact(beforeSelected)} / 후앞=${compact(afterLeftText)} / 후뒤=${compact(afterRightText)} / 후선택=${compact(afterSelected)} / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
                 )
+
+                // 진단9: 커서 이동 콜백 억제 시간(120ms)이 지난 뒤 실제 상태를 한 번 더 읽습니다.
+                // 커서 이동이나 삭제 동작은 변경하지 않고, 지연 조회만 추가합니다.
+                if (::webView.isInitialized) {
+                    webView.postDelayed({
+                        try {
+                            val delayedIc = currentInputConnection
+                            if (delayedIc == null) {
+                                showSwipeDiagnostic("진단9: 지연조회 입력연결 없음")
+                            } else {
+                                val delayedBefore = try {
+                                    delayedIc.getTextBeforeCursor(8, 0)?.toString()
+                                } catch (e: Exception) {
+                                    "오류:${e.javaClass.simpleName}"
+                                }
+                                val delayedAfter = try {
+                                    delayedIc.getTextAfterCursor(8, 0)?.toString()
+                                } catch (e: Exception) {
+                                    "오류:${e.javaClass.simpleName}"
+                                }
+                                val delayedSelected = try {
+                                    delayedIc.getSelectedText(0)?.toString() ?: "없음"
+                                } catch (e: Exception) {
+                                    "오류:${e.javaClass.simpleName}"
+                                }
+                                val extracted = try {
+                                    delayedIc.getExtractedText(ExtractedTextRequest(), 0)
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                val extractedInfo = if (extracted == null) {
+                                    "null"
+                                } else {
+                                    "길이=${extracted.text?.length ?: -1},선택=${extracted.selectionStart}-${extracted.selectionEnd}"
+                                }
+                                showSwipeDiagnostic(
+                                    "진단9(180ms): 앞=${compact(delayedBefore)} / 뒤=${compact(delayedAfter)} / 선택=${compact(delayedSelected)} / 추출=$extractedInfo"
+                                )
+                            }
+                        } catch (e: Exception) {
+                            showSwipeDiagnostic("진단9 지연조회 오류: ${e.javaClass.simpleName}")
+                        }
+                    }, 180L)
+                }
 
             } catch (e: Exception) {
                 showSwipeDiagnostic("진단6 커서이동 오류: ${e.javaClass.simpleName}")
