@@ -725,23 +725,28 @@ class SsulKeyboardService : InputMethodService() {
                 android.os.SystemClock.uptimeMillis() + 120L
 
             val ic = currentInputConnection ?: run {
-                showSwipeDiagnostic("진단5: 커서이동 / 입력연결 없음")
+                showSwipeDiagnostic("진단6: 커서이동 / 입력연결 없음")
                 return
             }
 
             try {
-                // 커서 이동 직전 실제 입력창 상태
-                val beforeLeft = try { ic.getTextBeforeCursor(20, 0)?.length ?: -1 } catch (_: Exception) { -2 }
-                val beforeRight = try { ic.getTextAfterCursor(20, 0)?.length ?: -1 } catch (_: Exception) { -2 }
-                val beforeSelected = try { ic.getSelectedText(0)?.length ?: 0 } catch (_: Exception) { -2 }
+                // 이동 직전: 실제 커서 앞뒤 문자열과 선택 상태를 기록합니다.
+                val beforeLeftText = try {
+                    ic.getTextBeforeCursor(12, 0)?.toString()
+                } catch (_: Exception) { null }
+                val beforeRightText = try {
+                    ic.getTextAfterCursor(12, 0)?.toString()
+                } catch (_: Exception) { null }
+                val beforeSelected = try {
+                    ic.getSelectedText(0)?.toString()
+                } catch (_: Exception) { "오류" }
                 val rememberedBefore = lastKnownSelectionStart
 
-                val keyCode =
-                    if (direction > 0) {
-                        KeyEvent.KEYCODE_DPAD_RIGHT
-                    } else {
-                        KeyEvent.KEYCODE_DPAD_LEFT
-                    }
+                val keyCode = if (direction > 0) {
+                    KeyEvent.KEYCODE_DPAD_RIGHT
+                } else {
+                    KeyEvent.KEYCODE_DPAD_LEFT
+                }
 
                 val now = android.os.SystemClock.uptimeMillis()
                 val downResult = ic.sendKeyEvent(
@@ -756,18 +761,29 @@ class SsulKeyboardService : InputMethodService() {
                     lastKnownSelectionEnd = lastKnownSelectionStart
                 }
 
-                // 커서 이동 직후 실제 입력창 상태를 다시 조회
-                val afterLeft = try { ic.getTextBeforeCursor(20, 0)?.length ?: -1 } catch (_: Exception) { -2 }
-                val afterRight = try { ic.getTextAfterCursor(20, 0)?.length ?: -1 } catch (_: Exception) { -2 }
-                val afterSelected = try { ic.getSelectedText(0)?.length ?: 0 } catch (_: Exception) { -2 }
+                // 이동 직후: 다시 조회하여 실제 커서 이동 여부를 비교합니다.
+                val afterLeftText = try {
+                    ic.getTextBeforeCursor(12, 0)?.toString()
+                } catch (_: Exception) { null }
+                val afterRightText = try {
+                    ic.getTextAfterCursor(12, 0)?.toString()
+                } catch (_: Exception) { null }
+                val afterSelected = try {
+                    ic.getSelectedText(0)?.toString()
+                } catch (_: Exception) { "오류" }
                 val rememberedAfter = lastKnownSelectionStart
 
+                fun compact(value: String?): String = when (value) {
+                    null -> "null"
+                    else -> value.replace("\n", "↵").replace("\r", "↵")
+                }
+
                 showSwipeDiagnostic(
-                    "진단5: 방향=$direction / 전=$beforeLeft,$beforeRight,$beforeSelected / 후=$afterLeft,$afterRight,$afterSelected / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
+                    "진단6 방향=$direction / 전앞=${compact(beforeLeftText)} / 전뒤=${compact(beforeRightText)} / 전선택=${compact(beforeSelected)} / 후앞=${compact(afterLeftText)} / 후뒤=${compact(afterRightText)} / 후선택=${compact(afterSelected)} / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
                 )
 
             } catch (e: Exception) {
-                showSwipeDiagnostic("진단5 커서이동 오류: ${e.javaClass.simpleName}")
+                showSwipeDiagnostic("진단6 커서이동 오류: ${e.javaClass.simpleName}")
                 e.printStackTrace()
             }
         }
