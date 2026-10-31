@@ -835,11 +835,14 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 val deleteLength = beforeTextLength ?: count
+                var deleteResult: String = "건너뜀"
                 if (deleteLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(deleteLength, 0)
+                        val accepted = ic.deleteSurroundingText(deleteLength, 0)
+                        deleteResult = accepted.toString()
                     } catch (e: Exception) {
+                        deleteResult = "오류:${e.javaClass.simpleName}"
                         e.printStackTrace()
                         try {
                             ic.setSelection(0, deleteLength)
@@ -852,11 +855,20 @@ class SsulKeyboardService : InputMethodService() {
 
                 var afterDeleteLength: Int? = null
                 var afterDeleteError = ""
+                var afterBeforeSnippet = ""
+                var afterAfterSnippet = ""
                 try {
-                    afterDeleteLength = ic.getTextBeforeCursor(50000, 0)?.length
+                    val afterBefore = ic.getTextBeforeCursor(50000, 0)
+                    afterDeleteLength = afterBefore?.length
+                    afterBeforeSnippet = afterBefore?.takeLast(8)?.toString()?.replace("\n", "↵") ?: "null"
                     if (afterDeleteLength == null) afterDeleteError = "null"
                 } catch (e: Exception) {
                     afterDeleteError = e.javaClass.simpleName
+                }
+                try {
+                    afterAfterSnippet = ic.getTextAfterCursor(8, 0)?.toString()?.replace("\n", "↵") ?: "null"
+                } catch (e: Exception) {
+                    afterAfterSnippet = "오류:${e.javaClass.simpleName}"
                 }
 
                 lastKnownSelectionStart = 0
@@ -875,7 +887,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 showSwipeDiagnostic(
-                    "진단4: HTML=${count} / 앞=${beforeTextLength?.toString() ?: beforeError} / 선택=${selectedLength} / 앞문자=${beforeSnippet} / 뒤문자=${rightSnippet} / 삭제후=${afterDeleteLength?.toString() ?: afterDeleteError} / 동기화후=${afterSyncLength?.toString() ?: afterSyncError}"
+                    "진단8: HTML=${count} / 삭제길이=${deleteLength} / 삭제요청=${deleteResult} / 전앞=${beforeSnippet} / 전뒤=${rightSnippet} / 후앞=${afterBeforeSnippet} / 후뒤=${afterAfterSnippet} / 동기화후=${afterSyncLength?.toString() ?: afterSyncError}"
                 )
 
             } catch (e: Exception) {
