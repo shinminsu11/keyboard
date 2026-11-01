@@ -932,8 +932,53 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 showSwipeDiagnostic(
-                    "진단8: HTML=${count} / 삭제길이=${deleteLength} / 삭제요청=${deleteResult} / 전앞=${beforeSnippet} / 전뒤=${rightSnippet} / 후앞=${afterBeforeSnippet} / 후뒤=${afterAfterSnippet} / 동기화후=${afterSyncLength?.toString() ?: afterSyncError}"
+                    "진단10: HTML=${count} / 삭제길이=${deleteLength} / 삭제요청=${deleteResult} / 전앞=${beforeSnippet} / 전뒤=${rightSnippet} / 선택=${selectedLength} / 직후앞=${afterBeforeSnippet} / 직후뒤=${afterAfterSnippet} / 동기화후길이=${afterSyncLength?.toString() ?: afterSyncError}"
                 )
+
+                // 진단10: 삭제 요청이 true여도 실제 본문이 유지되는지 확인하기 위해
+                // 동기화가 끝난 250ms 뒤에 커서 앞/뒤 텍스트를 다시 읽습니다.
+                // 추가 삭제나 커서 이동은 하지 않습니다.
+                if (::webView.isInitialized) {
+                    webView.postDelayed({
+                        try {
+                            val checkIc = currentInputConnection
+                            if (checkIc == null) {
+                                showSwipeDiagnostic("진단10(250ms): 입력연결 없음")
+                            } else {
+                                val delayedBefore = try {
+                                    checkIc.getTextBeforeCursor(12, 0)?.toString()
+                                } catch (e: Exception) {
+                                    "오류:${e.javaClass.simpleName}"
+                                }
+                                val delayedAfter = try {
+                                    checkIc.getTextAfterCursor(12, 0)?.toString()
+                                } catch (e: Exception) {
+                                    "오류:${e.javaClass.simpleName}"
+                                }
+                                val delayedSelected = try {
+                                    checkIc.getSelectedText(0)?.toString() ?: "없음"
+                                } catch (e: Exception) {
+                                    "오류:${e.javaClass.simpleName}"
+                                }
+                                val delayedExtracted = try {
+                                    checkIc.getExtractedText(ExtractedTextRequest(), 0)
+                                } catch (_: Exception) {
+                                    null
+                                }
+                                val extractedState = if (delayedExtracted == null) {
+                                    "null"
+                                } else {
+                                    "길이=${delayedExtracted.text?.length ?: -1},선택=${delayedExtracted.selectionStart}-${delayedExtracted.selectionEnd}"
+                                }
+                                showSwipeDiagnostic(
+                                    "진단10(250ms): 앞=${delayedBefore ?: "null"} / 뒤=${delayedAfter ?: "null"} / 선택=${delayedSelected} / 추출=${extractedState}"
+                                )
+                            }
+                        } catch (e: Exception) {
+                            showSwipeDiagnostic("진단10 지연조회 오류: ${e.javaClass.simpleName}")
+                        }
+                    }, 250L)
+                }
 
             } catch (e: Exception) {
                 e.printStackTrace()
