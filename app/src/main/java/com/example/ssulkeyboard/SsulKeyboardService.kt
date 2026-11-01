@@ -877,7 +877,9 @@ class SsulKeyboardService : InputMethodService() {
                         val from = (minOf(selStart, selEnd) - 10).coerceAtLeast(0)
                         val to = (maxOf(selStart, selEnd) + 10).coerceAtMost(allText.length)
                         extractedBeforeSnippet = allText.substring(from, to).replace("\n", "↵")
-                        "길이=${allText.length},선택=${extractedBefore.selectionStart}-${extractedBefore.selectionEnd},오프셋=${extractedBefore.startOffset}"
+                        val rawView = allText.replace("\n", "↵").replace("\r", "␍").replace("\t", "⇥")
+                        val units = allText.toCharArray().joinToString(",") { "${it.toInt().toString(16)}" }
+                        "길이=${allText.length},선택=${extractedBefore.selectionStart}-${extractedBefore.selectionEnd},오프셋=${extractedBefore.startOffset},문자=[$rawView],UTF16=[$units],플래그=${extractedBefore.flags}"
                     }
                 } catch (e: Exception) {
                     extractedBeforeState = "오류:${e.javaClass.simpleName}"
@@ -954,7 +956,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 showSwipeDiagnostic(
-                    "진단12 전: 앱=${editorPackage.substringAfterLast('.')} / 추출=${extractedBeforeState} / 주변=${extractedBeforeSnippet} / 앞길이=${beforeTextLength ?: "null"} / 앞=${beforeSnippet} / 뒤=${rightSnippet} / 선택=${selectedLength}"
+                    "진단13 결과: 앱=${editorPackage.substringAfterLast('.')} / 추출=${extractedBeforeState} / 주변=${extractedBeforeSnippet} / 앞길이=${beforeTextLength ?: "null"} / 앞=${beforeSnippet} / 뒤=${rightSnippet} / 선택=${selectedLength} / 삭제길이=${deleteLength} / 삭제응답=${deleteResult} / 삭제후앞길이=${afterDeleteLength ?: "null"} / 삭제후앞=${afterBeforeSnippet} / 삭제후뒤=${afterAfterSnippet} / 동기화후앞길이=${afterSyncLength ?: "null"}"
                 )
 
                 // 진단10: 삭제 요청이 true여도 실제 본문이 유지되는지 확인하기 위해
