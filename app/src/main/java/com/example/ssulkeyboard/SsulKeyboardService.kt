@@ -864,12 +864,20 @@ class SsulKeyboardService : InputMethodService() {
                 // 삭제 명령과 커서 이동, 동기화 동작은 변경하지 않습니다.
                 var connectionState = "활성"
                 var extractedBeforeState = "조회전"
+                var extractedBeforeSnippet = ""
+                val editorPackage = currentInputEditorInfo?.packageName ?: "정보없음"
                 try {
                     val extractedBefore = ic.getExtractedText(ExtractedTextRequest(), 0)
                     extractedBeforeState = if (extractedBefore == null) {
                         "null"
                     } else {
-                        "본문길이=${extractedBefore.text?.length ?: -1},선택=${extractedBefore.selectionStart}-${extractedBefore.selectionEnd},오프셋=${extractedBefore.startOffset}"
+                        val allText = extractedBefore.text?.toString() ?: ""
+                        val selStart = extractedBefore.selectionStart.coerceIn(0, allText.length)
+                        val selEnd = extractedBefore.selectionEnd.coerceIn(0, allText.length)
+                        val from = (minOf(selStart, selEnd) - 10).coerceAtLeast(0)
+                        val to = (maxOf(selStart, selEnd) + 10).coerceAtMost(allText.length)
+                        extractedBeforeSnippet = allText.substring(from, to).replace("\n", "↵")
+                        "길이=${allText.length},선택=${extractedBefore.selectionStart}-${extractedBefore.selectionEnd},오프셋=${extractedBefore.startOffset}"
                     }
                 } catch (e: Exception) {
                     extractedBeforeState = "오류:${e.javaClass.simpleName}"
@@ -946,7 +954,7 @@ class SsulKeyboardService : InputMethodService() {
                 }
 
                 showSwipeDiagnostic(
-                    "진단11: 연결=${connectionState} / 추출전=${extractedBeforeState} / HTML=${count} / 삭제길이=${deleteLength} / 삭제요청=${deleteResult} / 전앞=${beforeSnippet} / 전뒤=${rightSnippet} / 선택=${selectedLength} / 직후앞=${afterBeforeSnippet} / 직후뒤=${afterAfterSnippet} / 동기화후길이=${afterSyncLength?.toString() ?: afterSyncError}"
+                    "진단12 전: 앱=${editorPackage.substringAfterLast('.')} / 추출=${extractedBeforeState} / 주변=${extractedBeforeSnippet} / 앞길이=${beforeTextLength ?: "null"} / 앞=${beforeSnippet} / 뒤=${rightSnippet} / 선택=${selectedLength}"
                 )
 
                 // 진단10: 삭제 요청이 true여도 실제 본문이 유지되는지 확인하기 위해
@@ -957,7 +965,7 @@ class SsulKeyboardService : InputMethodService() {
                         try {
                             val checkIc = currentInputConnection
                             if (checkIc == null) {
-                                showSwipeDiagnostic("진단11(250ms): 입력연결 없음")
+                                showSwipeDiagnostic("진단12 후250ms: 입력연결 없음")
                             } else {
                                 val delayedBefore = try {
                                     checkIc.getTextBeforeCursor(12, 0)?.toString()
@@ -985,11 +993,11 @@ class SsulKeyboardService : InputMethodService() {
                                     "길이=${delayedExtracted.text?.length ?: -1},선택=${delayedExtracted.selectionStart}-${delayedExtracted.selectionEnd}"
                                 }
                                 showSwipeDiagnostic(
-                                    "진단11(250ms): 앞=${delayedBefore ?: "null"} / 뒤=${delayedAfter ?: "null"} / 선택=${delayedSelected} / 추출=${extractedState}"
+                                    "진단12 후250ms: 앞=${delayedBefore ?: "null"} / 뒤=${delayedAfter ?: "null"} / 선택=${delayedSelected} / 추출=${extractedState}"
                                 )
                             }
                         } catch (e: Exception) {
-                            showSwipeDiagnostic("진단11 지연조회 오류: ${e.javaClass.simpleName}")
+                            showSwipeDiagnostic("진단12 지연조회 오류: ${e.javaClass.simpleName}")
                         }
                     }, 250L)
                 }
