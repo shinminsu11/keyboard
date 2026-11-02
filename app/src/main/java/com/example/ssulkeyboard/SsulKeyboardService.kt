@@ -1577,6 +1577,19 @@ class SsulKeyboardService : InputMethodService() {
             android.os.SystemClock.uptimeMillis()
             < internalSelectionUntil
         ) {
+            // 진단14: 내부 커서 이동 직후 억제되는 onUpdateSelection 콜백의
+            // 실제 새 선택 위치를 관찰합니다. 기존 억제/return 동작은 유지합니다.
+            try {
+                val diagIc = currentInputConnection
+                val diagBefore = diagIc?.getTextBeforeCursor(8, 0)?.toString() ?: "null"
+                val diagAfter = diagIc?.getTextAfterCursor(8, 0)?.toString() ?: "null"
+                val diagSelected = diagIc?.getSelectedText(0)?.toString() ?: "없음"
+                showSwipeDiagnostic(
+                    "진단14 억제콜백: 이전=$oldSelStart,$oldSelEnd / 새위치=$newSelStart,$newSelEnd / 후보=$candidatesStart,$candidatesEnd / 앞=${diagBefore.replace("\n", "↵")} / 뒤=${diagAfter.replace("\n", "↵")} / 선택=$diagSelected / 기억=${lastKnownSelectionStart},${lastKnownSelectionEnd}"
+                )
+            } catch (e: Exception) {
+                showSwipeDiagnostic("진단14 콜백조회 오류: ${e.javaClass.simpleName}")
+            }
             return
         }
 
