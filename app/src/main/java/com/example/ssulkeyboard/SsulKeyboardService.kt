@@ -974,8 +974,27 @@ class SsulKeyboardService : InputMethodService() {
                     afterSyncError = e.javaClass.simpleName
                 }
 
+                // 진단16: 삭제 요청 직전/직후의 커서와 본문 응답을 한 줄로 비교합니다.
+                // 삭제 명령, 길이 계산, 커서 이동 및 HTML 동기화 동작은 변경하지 않습니다.
+                var afterSyncExtractInfo = "null"
+                var afterSyncExtractSnippet = ""
+                try {
+                    val afterSyncExtract = ic.getExtractedText(ExtractedTextRequest(), 0)
+                    if (afterSyncExtract != null) {
+                        val text = afterSyncExtract.text?.toString() ?: ""
+                        val start = afterSyncExtract.selectionStart.coerceIn(0, text.length)
+                        val end = afterSyncExtract.selectionEnd.coerceIn(0, text.length)
+                        val from = (minOf(start, end) - 8).coerceAtLeast(0)
+                        val to = (maxOf(start, end) + 8).coerceAtMost(text.length)
+                        afterSyncExtractSnippet = text.substring(from, to).replace("\n", "↵")
+                        afterSyncExtractInfo = "길이=${text.length},선택=${afterSyncExtract.selectionStart}-${afterSyncExtract.selectionEnd},오프셋=${afterSyncExtract.startOffset}"
+                    }
+                } catch (e: Exception) {
+                    afterSyncExtractInfo = "오류:${e.javaClass.simpleName}"
+                }
+                val rememberedAfterDelete = "${lastKnownSelectionStart},${lastKnownSelectionEnd}"
                 showSwipeDiagnostic(
-                    "진단13 결과: 앱=${editorPackage.substringAfterLast('.')} / 추출=${extractedBeforeState} / 주변=${extractedBeforeSnippet} / 앞길이=${beforeTextLength ?: "null"} / 앞=${beforeSnippet} / 뒤=${rightSnippet} / 선택=${selectedLength} / 삭제길이=${deleteLength} / 삭제응답=${deleteResult} / 삭제후앞길이=${afterDeleteLength ?: "null"} / 삭제후앞=${afterBeforeSnippet} / 삭제후뒤=${afterAfterSnippet} / 동기화후앞길이=${afterSyncLength ?: "null"}"
+                    "진단16: 앱=${editorPackage.substringAfterLast('.')} / 직전앞=${beforeSnippet}(${beforeTextLength ?: "null"}) / 직전뒤=${rightSnippet} / 선택=${selectedLength} / 요청=${deleteLength} / 응답=${deleteResult} / 직후앞=${afterBeforeSnippet}(${afterDeleteLength ?: "null"}) / 직후뒤=${afterAfterSnippet} / 기억=${rememberedAfterDelete} / 추출후=${afterSyncExtractInfo} / 주변후=${afterSyncExtractSnippet}"
                 )
 
                 // 진단10: 삭제 요청이 true여도 실제 본문이 유지되는지 확인하기 위해
