@@ -28,6 +28,9 @@ class SsulKeyboardService : InputMethodService() {
     private var internalSelectionUntil = 0L
     private var externalComposingActive = false
 
+    // 진단15: 커서 이동 직후 편집기가 보내는 선택 위치 콜백을 지연 화면에 보존합니다.
+    @Volatile private var diagnostic15LastCallback = "콜백없음"
+
     // 클립보드 자동 저장용 상태
     private var clipboardManager: ClipboardManager? = null
     private var lastObservedClipboardText = ""
@@ -742,6 +745,7 @@ class SsulKeyboardService : InputMethodService() {
                     ic.getSelectedText(0)?.toString()
                 } catch (_: Exception) { "오류" }
                 val rememberedBefore = lastKnownSelectionStart
+                diagnostic15LastCallback = "콜백없음"
 
                 val keyCode = if (direction > 0) {
                     KeyEvent.KEYCODE_DPAD_RIGHT
@@ -825,6 +829,21 @@ class SsulKeyboardService : InputMethodService() {
                             showSwipeDiagnostic("진단9 지연조회 오류: ${e.javaClass.simpleName}")
                         }
                     }, 180L)
+
+                    // 진단15: 120ms 억제 구간 이후 도착하는 콜백도 놓치지 않도록
+                    // 500ms 시점에 마지막 콜백과 실제 주변 문자열을 함께 표시합니다.
+                    webView.postDelayed({
+                        try {
+                            val lateIc = currentInputConnection
+                            val lateBefore = lateIc?.getTextBeforeCursor(8, 0)?.toString() ?: "null"
+                            val lateAfter = lateIc?.getTextAfterCursor(8, 0)?.toString() ?: "null"
+                            showSwipeDiagnostic(
+                                "진단15(500ms): 콜백=$diagnostic15LastCallback / 기억=$lastKnownSelectionStart,$lastKnownSelectionEnd / 앞=${compact(lateBefore)} / 뒤=${compact(lateAfter)}"
+                            )
+                        } catch (e: Exception) {
+                            showSwipeDiagnostic("진단15 조회오류: ${e.javaClass.simpleName}")
+                        }
+                    }, 500L)
                 }
 
             } catch (e: Exception) {
@@ -1572,6 +1591,11 @@ class SsulKeyboardService : InputMethodService() {
         ) {
             return
         }
+
+        // 진단15: 억제 여부와 무관하게 유효한 onUpdateSelection 콜백을 기록합니다.
+        // 이 기록은 진단 화면에만 사용하며 커서/삭제 동작에는 반영하지 않습니다.
+        diagnostic15LastCallback =
+            "$oldSelStart,$oldSelEnd->$newSelStart,$newSelEnd 후보=$candidatesStart,$candidatesEnd"
 
         if (
             android.os.SystemClock.uptimeMillis()
