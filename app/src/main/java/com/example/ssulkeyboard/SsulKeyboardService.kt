@@ -28,7 +28,7 @@ class SsulKeyboardService : InputMethodService() {
     private var internalSelectionUntil = 0L
     private var externalComposingActive = false
 
-    // 진단15: 커서 이동 직후 편집기가 보내는 선택 위치 콜백을 지연 화면에 보존합니다.
+    // 진단15/16: 커서 이동 직후 편집기의 선택 위치 콜백을 진단16 표시용으로 기록합니다.
     @Volatile private var diagnostic15LastCallback = "콜백없음"
 
     // 클립보드 자동 저장용 상태
@@ -787,64 +787,9 @@ class SsulKeyboardService : InputMethodService() {
                     "진단6 방향=$direction / 전앞=${compact(beforeLeftText)} / 전뒤=${compact(beforeRightText)} / 전선택=${compact(beforeSelected)} / 후앞=${compact(afterLeftText)} / 후뒤=${compact(afterRightText)} / 후선택=${compact(afterSelected)} / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
                 )
 
-                // 진단9: 커서 이동 콜백 억제 시간(120ms)이 지난 뒤 실제 상태를 한 번 더 읽습니다.
-                // 커서 이동이나 삭제 동작은 변경하지 않고, 지연 조회만 추가합니다.
-                if (::webView.isInitialized) {
-                    webView.postDelayed({
-                        try {
-                            val delayedIc = currentInputConnection
-                            if (delayedIc == null) {
-                                showSwipeDiagnostic("진단9: 지연조회 입력연결 없음")
-                            } else {
-                                val delayedBefore = try {
-                                    delayedIc.getTextBeforeCursor(8, 0)?.toString()
-                                } catch (e: Exception) {
-                                    "오류:${e.javaClass.simpleName}"
-                                }
-                                val delayedAfter = try {
-                                    delayedIc.getTextAfterCursor(8, 0)?.toString()
-                                } catch (e: Exception) {
-                                    "오류:${e.javaClass.simpleName}"
-                                }
-                                val delayedSelected = try {
-                                    delayedIc.getSelectedText(0)?.toString() ?: "없음"
-                                } catch (e: Exception) {
-                                    "오류:${e.javaClass.simpleName}"
-                                }
-                                val extracted = try {
-                                    delayedIc.getExtractedText(ExtractedTextRequest(), 0)
-                                } catch (_: Exception) {
-                                    null
-                                }
-                                val extractedInfo = if (extracted == null) {
-                                    "null"
-                                } else {
-                                    "길이=${extracted.text?.length ?: -1},선택=${extracted.selectionStart}-${extracted.selectionEnd}"
-                                }
-                                showSwipeDiagnostic(
-                                    "진단9(180ms): 앞=${compact(delayedBefore)} / 뒤=${compact(delayedAfter)} / 선택=${compact(delayedSelected)} / 추출=$extractedInfo"
-                                )
-                            }
-                        } catch (e: Exception) {
-                            showSwipeDiagnostic("진단9 지연조회 오류: ${e.javaClass.simpleName}")
-                        }
-                    }, 180L)
-
-                    // 진단15: 120ms 억제 구간 이후 도착하는 콜백도 놓치지 않도록
-                    // 500ms 시점에 마지막 콜백과 실제 주변 문자열을 함께 표시합니다.
-                    webView.postDelayed({
-                        try {
-                            val lateIc = currentInputConnection
-                            val lateBefore = lateIc?.getTextBeforeCursor(8, 0)?.toString() ?: "null"
-                            val lateAfter = lateIc?.getTextAfterCursor(8, 0)?.toString() ?: "null"
-                            showSwipeDiagnostic(
-                                "진단15(500ms): 콜백=$diagnostic15LastCallback / 기억=$lastKnownSelectionStart,$lastKnownSelectionEnd / 앞=${compact(lateBefore)} / 뒤=${compact(lateAfter)}"
-                            )
-                        } catch (e: Exception) {
-                            showSwipeDiagnostic("진단15 조회오류: ${e.javaClass.simpleName}")
-                        }
-                    }, 500L)
-                }
+                // 진단16 수정: 커서 이동 뒤 예약된 진단9(180ms), 진단15(500ms)의
+                // 화면 출력은 삭제 결과를 덮어쓸 수 있어 실행하지 않습니다.
+                // 커서 이동/선택 동작 자체는 변경하지 않습니다.
 
             } catch (e: Exception) {
                 showSwipeDiagnostic("진단6 커서이동 오류: ${e.javaClass.simpleName}")
@@ -997,50 +942,8 @@ class SsulKeyboardService : InputMethodService() {
                     "진단16: 앱=${editorPackage.substringAfterLast('.')} / 직전앞=${beforeSnippet}(${beforeTextLength ?: "null"}) / 직전뒤=${rightSnippet} / 선택=${selectedLength} / 요청=${deleteLength} / 응답=${deleteResult} / 직후앞=${afterBeforeSnippet}(${afterDeleteLength ?: "null"}) / 직후뒤=${afterAfterSnippet} / 기억=${rememberedAfterDelete} / 추출후=${afterSyncExtractInfo} / 주변후=${afterSyncExtractSnippet}"
                 )
 
-                // 진단10: 삭제 요청이 true여도 실제 본문이 유지되는지 확인하기 위해
-                // 동기화가 끝난 250ms 뒤에 커서 앞/뒤 텍스트를 다시 읽습니다.
-                // 추가 삭제나 커서 이동은 하지 않습니다.
-                if (::webView.isInitialized) {
-                    webView.postDelayed({
-                        try {
-                            val checkIc = currentInputConnection
-                            if (checkIc == null) {
-                                showSwipeDiagnostic("진단12 후250ms: 입력연결 없음")
-                            } else {
-                                val delayedBefore = try {
-                                    checkIc.getTextBeforeCursor(12, 0)?.toString()
-                                } catch (e: Exception) {
-                                    "오류:${e.javaClass.simpleName}"
-                                }
-                                val delayedAfter = try {
-                                    checkIc.getTextAfterCursor(12, 0)?.toString()
-                                } catch (e: Exception) {
-                                    "오류:${e.javaClass.simpleName}"
-                                }
-                                val delayedSelected = try {
-                                    checkIc.getSelectedText(0)?.toString() ?: "없음"
-                                } catch (e: Exception) {
-                                    "오류:${e.javaClass.simpleName}"
-                                }
-                                val delayedExtracted = try {
-                                    checkIc.getExtractedText(ExtractedTextRequest(), 0)
-                                } catch (_: Exception) {
-                                    null
-                                }
-                                val extractedState = if (delayedExtracted == null) {
-                                    "null"
-                                } else {
-                                    "길이=${delayedExtracted.text?.length ?: -1},선택=${delayedExtracted.selectionStart}-${delayedExtracted.selectionEnd}"
-                                }
-                                showSwipeDiagnostic(
-                                    "진단12 후250ms: 앞=${delayedBefore ?: "null"} / 뒤=${delayedAfter ?: "null"} / 선택=${delayedSelected} / 추출=${extractedState}"
-                                )
-                            }
-                        } catch (e: Exception) {
-                            showSwipeDiagnostic("진단12 지연조회 오류: ${e.javaClass.simpleName}")
-                        }
-                    }, 250L)
-                }
+                // 진단16 수정: 이전 진단의 250ms 지연 화면 출력은 진단16 결과를
+                // 덮어쓸 수 있어 표시하지 않습니다. 삭제/동기화 로직은 그대로 둡니다.
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -1611,7 +1514,7 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        // 진단15: 억제 여부와 무관하게 유효한 onUpdateSelection 콜백을 기록합니다.
+        // 진단15/16: 억제 여부와 무관하게 유효한 onUpdateSelection 콜백을 기록합니다.
         // 이 기록은 진단 화면에만 사용하며 커서/삭제 동작에는 반영하지 않습니다.
         diagnostic15LastCallback =
             "$oldSelStart,$oldSelEnd->$newSelStart,$newSelEnd 후보=$candidatesStart,$candidatesEnd"
