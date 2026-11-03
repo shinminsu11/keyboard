@@ -787,7 +787,7 @@ class SsulKeyboardService : InputMethodService() {
                     "진단6 방향=$direction / 전앞=${compact(beforeLeftText)} / 전뒤=${compact(beforeRightText)} / 전선택=${compact(beforeSelected)} / 후앞=${compact(afterLeftText)} / 후뒤=${compact(afterRightText)} / 후선택=${compact(afterSelected)} / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
                 )
 
-                // 진단16 수정: 커서 이동 뒤 예약된 진단9(180ms), 진단15(500ms)의
+                // 진단17 유지: 커서 이동 뒤 예약된 진단9(180ms), 진단15(500ms)의
                 // 화면 출력은 삭제 결과를 덮어쓸 수 있어 실행하지 않습니다.
                 // 커서 이동/선택 동작 자체는 변경하지 않습니다.
 
@@ -886,6 +886,28 @@ class SsulKeyboardService : InputMethodService() {
                     }
                 }
 
+                // 진단17: HTML 동기화 전에 편집기가 반환하는 ExtractedText를 별도로 확인합니다.
+                // 기존 삭제 명령과 동기화 순서는 변경하지 않고 조회만 추가합니다.
+                var extractedImmediatelyAfterDelete = "조회전"
+                var extractedImmediatelyAfterDeleteSnippet = ""
+                try {
+                    val extractedAfterDelete = ic.getExtractedText(ExtractedTextRequest(), 0)
+                    extractedImmediatelyAfterDelete = if (extractedAfterDelete == null) {
+                        "null"
+                    } else {
+                        val text = extractedAfterDelete.text?.toString() ?: ""
+                        val start = extractedAfterDelete.selectionStart.coerceIn(0, text.length)
+                        val end = extractedAfterDelete.selectionEnd.coerceIn(0, text.length)
+                        val from = (minOf(start, end) - 8).coerceAtLeast(0)
+                        val to = (maxOf(start, end) + 8).coerceAtMost(text.length)
+                        extractedImmediatelyAfterDeleteSnippet = text.substring(from, to)
+                            .replace("\n", "↵").replace("\r", "␍")
+                        "길이=${text.length},선택=${extractedAfterDelete.selectionStart}-${extractedAfterDelete.selectionEnd},오프셋=${extractedAfterDelete.startOffset}"
+                    }
+                } catch (e: Exception) {
+                    extractedImmediatelyAfterDelete = "오류:${e.javaClass.simpleName}"
+                }
+
                 var afterDeleteLength: Int? = null
                 var afterDeleteError = ""
                 var afterBeforeSnippet = ""
@@ -919,7 +941,7 @@ class SsulKeyboardService : InputMethodService() {
                     afterSyncError = e.javaClass.simpleName
                 }
 
-                // 진단16: 삭제 요청 직전/직후의 커서와 본문 응답을 한 줄로 비교합니다.
+                // 진단17: 동기화 전후 ExtractedText와 커서 주변 본문 응답을 비교합니다.
                 // 삭제 명령, 길이 계산, 커서 이동 및 HTML 동기화 동작은 변경하지 않습니다.
                 var afterSyncExtractInfo = "null"
                 var afterSyncExtractSnippet = ""
@@ -938,11 +960,15 @@ class SsulKeyboardService : InputMethodService() {
                     afterSyncExtractInfo = "오류:${e.javaClass.simpleName}"
                 }
                 val rememberedAfterDelete = "${lastKnownSelectionStart},${lastKnownSelectionEnd}"
+                val extractedBeforeShort = extractedBeforeState
+                    .replace("문자=[", "글=[")
+                    .replace("],UTF16=[", "] ")
+                    .replace(",플래그=", ",f=")
                 showSwipeDiagnostic(
-                    "진단16: 앱=${editorPackage.substringAfterLast('.')} / 직전앞=${beforeSnippet}(${beforeTextLength ?: "null"}) / 직전뒤=${rightSnippet} / 선택=${selectedLength} / 요청=${deleteLength} / 응답=${deleteResult} / 직후앞=${afterBeforeSnippet}(${afterDeleteLength ?: "null"}) / 직후뒤=${afterAfterSnippet} / 기억=${rememberedAfterDelete} / 추출후=${afterSyncExtractInfo} / 주변후=${afterSyncExtractSnippet}"
+                    "진단17: 앱=${editorPackage.substringAfterLast('.')} / ET전=${extractedBeforeShort} / ET삭제후=${extractedImmediatelyAfterDelete}[${extractedImmediatelyAfterDeleteSnippet}] / 앞=${beforeSnippet}(${beforeTextLength ?: "null"})->${afterBeforeSnippet}(${afterDeleteLength ?: "null"}) / 뒤=${rightSnippet}->${afterAfterSnippet} / 선택=${selectedLength} / 요청=${deleteLength} / 응답=${deleteResult} / ET동기화후=${afterSyncExtractInfo}[${afterSyncExtractSnippet}]"
                 )
 
-                // 진단16 수정: 이전 진단의 250ms 지연 화면 출력은 진단16 결과를
+                // 진단17 유지: 이전 진단의 250ms 지연 화면 출력은 진단16 결과를
                 // 덮어쓸 수 있어 표시하지 않습니다. 삭제/동기화 로직은 그대로 둡니다.
 
             } catch (e: Exception) {
