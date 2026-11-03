@@ -964,8 +964,18 @@ class SsulKeyboardService : InputMethodService() {
                     .replace("문자=[", "글=[")
                     .replace("],UTF16=[", "] ")
                     .replace(",플래그=", ",f=")
+                // 진단19: 현재 포커스된 편집기 메타정보와 입력 연결 객체를 함께 기록합니다.
+                // 삭제·커서 이동·HTML 동기화 명령은 변경하지 않습니다.
+                val editorInfo = currentInputEditorInfo
+                val editorMeta = if (editorInfo == null) {
+                    "EI=null"
+                } else {
+                    "EI=${editorInfo.packageName}/${editorInfo.fieldId},type=${editorInfo.inputType.toString(16)},ime=${editorInfo.imeOptions.toString(16)},init=${editorInfo.initialSelStart}-${editorInfo.initialSelEnd}"
+                }
+                val icMeta = "IC=${System.identityHashCode(ic).toString(16)}"
+                val callbackMeta = diagnostic15LastCallback.take(90)
                 showSwipeDiagnostic(
-                    "진단18: ET전=${extractedBeforeState.take(100)} / ET직후=${extractedImmediatelyAfterDelete}[${extractedImmediatelyAfterDeleteSnippet}] / 앞=${beforeTextLength}->${afterDeleteLength} / 요청=${deleteLength},응답=${deleteResult} / ET동기화후=${afterSyncExtractInfo}[${afterSyncExtractSnippet}]"
+                    "진단19: $editorMeta $icMeta / 콜백=$callbackMeta / ET전=${extractedBeforeState.take(70)} / ET직후=$extractedImmediatelyAfterDelete[$extractedImmediatelyAfterDeleteSnippet] / 앞=${beforeTextLength}->${afterDeleteLength} / 요청=${deleteLength},응답=$deleteResult / 동기화후=$afterSyncExtractInfo[$afterSyncExtractSnippet]"
                 )
 
                 // 300ms 뒤 ExtractedText를 다시 읽어 즉시 응답과 비교합니다.
@@ -986,10 +996,10 @@ class SsulKeyboardService : InputMethodService() {
                             .replace("\n", "↵").replace("\r", "␍") else "null"
                         val raw = if (laterEt != null) laterText.replace("\n", "↵").replace("\r", "␍") else "null"
                         showSwipeDiagnostic(
-                            "진단18(300ms): ET길이=${laterText.length},선택=${laterStart}-${laterEnd},오프셋=${laterOffset},본문=[$raw],커서주변=[$around]"
+                            "진단19(300ms): ET길이=${laterText.length},선택=${laterStart}-${laterEnd},오프셋=${laterOffset},본문=[$raw],커서주변=[$around]"
                         )
                     } catch (e: Exception) {
-                        showSwipeDiagnostic("진단18(300ms) 오류=${e.javaClass.simpleName}")
+                        showSwipeDiagnostic("진단19(300ms) 오류=${e.javaClass.simpleName}")
                     }
                 }, 300L)
 
