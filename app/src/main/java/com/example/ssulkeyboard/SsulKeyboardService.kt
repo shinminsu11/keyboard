@@ -787,7 +787,7 @@ class SsulKeyboardService : InputMethodService() {
                     "진단6 방향=$direction / 전앞=${compact(beforeLeftText)} / 전뒤=${compact(beforeRightText)} / 전선택=${compact(beforeSelected)} / 후앞=${compact(afterLeftText)} / 후뒤=${compact(afterRightText)} / 후선택=${compact(afterSelected)} / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
                 )
 
-                // 진단17 유지: 커서 이동 뒤 예약된 진단9(180ms), 진단15(500ms)의
+                // 진단18 유지: 커서 이동 뒤 예약된 진단9(180ms), 진단15(500ms)의
                 // 화면 출력은 삭제 결과를 덮어쓸 수 있어 실행하지 않습니다.
                 // 커서 이동/선택 동작 자체는 변경하지 않습니다.
 
@@ -886,7 +886,7 @@ class SsulKeyboardService : InputMethodService() {
                     }
                 }
 
-                // 진단17: HTML 동기화 전에 편집기가 반환하는 ExtractedText를 별도로 확인합니다.
+                // 진단18: HTML 동기화 전에 편집기가 반환하는 ExtractedText를 별도로 확인합니다.
                 // 기존 삭제 명령과 동기화 순서는 변경하지 않고 조회만 추가합니다.
                 var extractedImmediatelyAfterDelete = "조회전"
                 var extractedImmediatelyAfterDeleteSnippet = ""
@@ -941,7 +941,7 @@ class SsulKeyboardService : InputMethodService() {
                     afterSyncError = e.javaClass.simpleName
                 }
 
-                // 진단17: 동기화 전후 ExtractedText와 커서 주변 본문 응답을 비교합니다.
+                // 진단18: 동기화 전후 ExtractedText와 커서 주변 본문 응답을 비교합니다.
                 // 삭제 명령, 길이 계산, 커서 이동 및 HTML 동기화 동작은 변경하지 않습니다.
                 var afterSyncExtractInfo = "null"
                 var afterSyncExtractSnippet = ""
@@ -965,11 +965,34 @@ class SsulKeyboardService : InputMethodService() {
                     .replace("],UTF16=[", "] ")
                     .replace(",플래그=", ",f=")
                 showSwipeDiagnostic(
-                    "진단17: 앱=${editorPackage.substringAfterLast('.')} / ET전=${extractedBeforeShort} / ET삭제후=${extractedImmediatelyAfterDelete}[${extractedImmediatelyAfterDeleteSnippet}] / 앞=${beforeSnippet}(${beforeTextLength ?: "null"})->${afterBeforeSnippet}(${afterDeleteLength ?: "null"}) / 뒤=${rightSnippet}->${afterAfterSnippet} / 선택=${selectedLength} / 요청=${deleteLength} / 응답=${deleteResult} / ET동기화후=${afterSyncExtractInfo}[${afterSyncExtractSnippet}]"
+                    "진단18: ET전=${extractedBeforeState.take(100)} / ET직후=${extractedImmediatelyAfterDelete}[${extractedImmediatelyAfterDeleteSnippet}] / 앞=${beforeTextLength}->${afterDeleteLength} / 요청=${deleteLength},응답=${deleteResult} / ET동기화후=${afterSyncExtractInfo}[${afterSyncExtractSnippet}]"
                 )
 
-                // 진단17 유지: 이전 진단의 250ms 지연 화면 출력은 진단16 결과를
-                // 덮어쓸 수 있어 표시하지 않습니다. 삭제/동기화 로직은 그대로 둡니다.
+                // 300ms 뒤 ExtractedText를 다시 읽어 즉시 응답과 비교합니다.
+                // 화면 표시만 지연하며 삭제·커서 이동·동기화 명령은 추가하지 않습니다.
+                webView.postDelayed({
+                    try {
+                        val laterIc = currentInputConnection
+                        val laterEt = laterIc?.getExtractedText(ExtractedTextRequest(), 0)
+                        val laterText = laterEt?.text?.toString() ?: "null"
+                        val laterStart = laterEt?.selectionStart ?: -1
+                        val laterEnd = laterEt?.selectionEnd ?: -1
+                        val laterOffset = laterEt?.startOffset ?: -1
+                        val safeStart = if (laterEt != null) laterStart.coerceIn(0, laterText.length) else 0
+                        val safeEnd = if (laterEt != null) laterEnd.coerceIn(0, laterText.length) else 0
+                        val from = (minOf(safeStart, safeEnd) - 6).coerceAtLeast(0)
+                        val to = (maxOf(safeStart, safeEnd) + 6).coerceAtMost(laterText.length)
+                        val around = if (laterEt != null) laterText.substring(from, to)
+                            .replace("\n", "↵").replace("\r", "␍") else "null"
+                        val raw = if (laterEt != null) laterText.replace("\n", "↵").replace("\r", "␍") else "null"
+                        showSwipeDiagnostic(
+                            "진단18(300ms): ET길이=${laterText.length},선택=${laterStart}-${laterEnd},오프셋=${laterOffset},본문=[$raw],커서주변=[$around]"
+                        )
+                    } catch (e: Exception) {
+                        showSwipeDiagnostic("진단18(300ms) 오류=${e.javaClass.simpleName}")
+                    }
+                }, 300L)
+
 
             } catch (e: Exception) {
                 e.printStackTrace()
