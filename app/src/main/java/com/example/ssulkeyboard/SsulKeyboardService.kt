@@ -9,7 +9,6 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
@@ -27,9 +26,6 @@ class SsulKeyboardService : InputMethodService() {
     private var suppressSelectionSyncUntil = 0L
     private var internalSelectionUntil = 0L
     private var externalComposingActive = false
-
-    // 진단15/16: 커서 이동 직후 편집기의 선택 위치 콜백을 진단16 표시용으로 기록합니다.
-    @Volatile private var diagnostic15LastCallback = "콜백없음"
 
     // 클립보드 자동 저장용 상태
     private var clipboardManager: ClipboardManager? = null
@@ -224,18 +220,6 @@ class SsulKeyboardService : InputMethodService() {
         container.addView(webView)
 
         return container
-    }
-
-    // 진단 2 전용: 기존 삭제 동작은 바꾸지 않고 현재 값을 화면에 표시합니다.
-    private fun showSwipeDiagnostic(message: String) {
-        if (!::webView.isInitialized) return
-        webView.post {
-            try {
-                val safeMessage = message.replace("\\", "\\\\").replace("'", "\\'")
-                webView.evaluateJavascript("showToast('$safeMessage')", null)
-            } catch (_: Exception) {
-            }
-        }
     }
 
     private fun rememberActualSelection() {
@@ -728,37 +712,38 @@ class SsulKeyboardService : InputMethodService() {
             internalSelectionUntil =
                 android.os.SystemClock.uptimeMillis() + 120L
 
-            val ic = currentInputConnection ?: run {
-                showSwipeDiagnostic("진단6: 커서이동 / 입력연결 없음")
-                return
-            }
+            val ic = currentInputConnection ?: return
 
             try {
-                // 이동 직전: 실제 커서 앞뒤 문자열과 선택 상태를 기록합니다.
-                val beforeLeftText = try {
-                    ic.getTextBeforeCursor(12, 0)?.toString()
-                } catch (_: Exception) { null }
-                val beforeRightText = try {
-                    ic.getTextAfterCursor(12, 0)?.toString()
-                } catch (_: Exception) { null }
-                val beforeSelected = try {
-                    ic.getSelectedText(0)?.toString()
-                } catch (_: Exception) { "오류" }
-                val rememberedBefore = lastKnownSelectionStart
-                diagnostic15LastCallback = "콜백없음"
 
-                val keyCode = if (direction > 0) {
-                    KeyEvent.KEYCODE_DPAD_RIGHT
-                } else {
-                    KeyEvent.KEYCODE_DPAD_LEFT
-                }
+                val keyCode =
+                    if (direction > 0) {
+                        KeyEvent.KEYCODE_DPAD_RIGHT
+                    } else {
+                        KeyEvent.KEYCODE_DPAD_LEFT
+                    }
 
-                val now = android.os.SystemClock.uptimeMillis()
-                val downResult = ic.sendKeyEvent(
-                    KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0)
+                val now =
+                    android.os.SystemClock.uptimeMillis()
+
+                ic.sendKeyEvent(
+                    KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        keyCode,
+                        0
+                    )
                 )
-                val upResult = ic.sendKeyEvent(
-                    KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0)
+
+                ic.sendKeyEvent(
+                    KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_UP,
+                        keyCode,
+                        0
+                    )
                 )
 
                 if (lastKnownSelectionStart >= 0) {
@@ -766,33 +751,8 @@ class SsulKeyboardService : InputMethodService() {
                     lastKnownSelectionEnd = lastKnownSelectionStart
                 }
 
-                // 이동 직후: 다시 조회하여 실제 커서 이동 여부를 비교합니다.
-                val afterLeftText = try {
-                    ic.getTextBeforeCursor(12, 0)?.toString()
-                } catch (_: Exception) { null }
-                val afterRightText = try {
-                    ic.getTextAfterCursor(12, 0)?.toString()
-                } catch (_: Exception) { null }
-                val afterSelected = try {
-                    ic.getSelectedText(0)?.toString()
-                } catch (_: Exception) { "오류" }
-                val rememberedAfter = lastKnownSelectionStart
-
-                fun compact(value: String?): String = when (value) {
-                    null -> "null"
-                    else -> value.replace("\n", "↵").replace("\r", "↵")
-                }
-
-                showSwipeDiagnostic(
-                    "진단6 방향=$direction / 전앞=${compact(beforeLeftText)} / 전뒤=${compact(beforeRightText)} / 전선택=${compact(beforeSelected)} / 후앞=${compact(afterLeftText)} / 후뒤=${compact(afterRightText)} / 후선택=${compact(afterSelected)} / 키=$downResult,$upResult / 기억=$rememberedBefore>$rememberedAfter"
-                )
-
-                // 진단18 유지: 커서 이동 뒤 예약된 진단9(180ms), 진단15(500ms)의
-                // 화면 출력은 삭제 결과를 덮어쓸 수 있어 실행하지 않습니다.
-                // 커서 이동/선택 동작 자체는 변경하지 않습니다.
-
             } catch (e: Exception) {
-                showSwipeDiagnostic("진단6 커서이동 오류: ${e.javaClass.simpleName}")
+
                 e.printStackTrace()
             }
         }
@@ -804,209 +764,68 @@ class SsulKeyboardService : InputMethodService() {
         @JavascriptInterface
         fun deleteAllByKeyEvents(count: Int) {
 
-            val ic = currentInputConnection
-            if (ic == null) {
-                showSwipeDiagnostic("진단4: 입력 연결 없음 / HTML=${count}자")
-                return
-            }
+            val ic = currentInputConnection ?: return
 
             try {
+
                 externalComposingActive = false
                 pendingExternalCursorUtf16 = null
-                try { ic.finishComposingText() } catch (_: Exception) {}
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
 
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // 진단4: 삭제 직전 커서 앞/뒤 실제 문자열을 함께 기록합니다.
-                var beforeTextLength: Int? = null
-                var beforeError = ""
-                var beforeSnippet = ""
-                var rightSnippet = ""
-                var selectedLength: Int? = null
-                // 진단11: 삭제 전 InputConnection 및 ExtractedText 상태를 추가 관찰합니다.
-                // 삭제 명령과 커서 이동, 동기화 동작은 변경하지 않습니다.
-                var connectionState = "활성"
-                var extractedBeforeState = "조회전"
-                var extractedBeforeSnippet = ""
-                val editorPackage = currentInputEditorInfo?.packageName ?: "정보없음"
-                try {
-                    val extractedBefore = ic.getExtractedText(ExtractedTextRequest(), 0)
-                    extractedBeforeState = if (extractedBefore == null) {
-                        "null"
-                    } else {
-                        val allText = extractedBefore.text?.toString() ?: ""
-                        val selStart = extractedBefore.selectionStart.coerceIn(0, allText.length)
-                        val selEnd = extractedBefore.selectionEnd.coerceIn(0, allText.length)
-                        val from = (minOf(selStart, selEnd) - 10).coerceAtLeast(0)
-                        val to = (maxOf(selStart, selEnd) + 10).coerceAtMost(allText.length)
-                        extractedBeforeSnippet = allText.substring(from, to).replace("\n", "↵")
-                        val rawView = allText.replace("\n", "↵").replace("\r", "␍").replace("\t", "⇥")
-                        val units = allText.toCharArray().joinToString(",") { "${it.toInt().toString(16)}" }
-                        "길이=${allText.length},선택=${extractedBefore.selectionStart}-${extractedBefore.selectionEnd},오프셋=${extractedBefore.startOffset},문자=[$rawView],UTF16=[$units],플래그=${extractedBefore.flags}"
-                    }
-                } catch (e: Exception) {
-                    extractedBeforeState = "오류:${e.javaClass.simpleName}"
-                }
-                try {
-                    val beforeText = ic.getTextBeforeCursor(50000, 0)
-                    beforeTextLength = beforeText?.length
-                    beforeSnippet = beforeText?.takeLast(8)?.toString()?.replace("\n", "↵") ?: "null"
-                    if (beforeTextLength == null) beforeError = "null"
-                } catch (e: Exception) {
-                    beforeError = e.javaClass.simpleName
-                }
-                try {
-                    rightSnippet = ic.getTextAfterCursor(8, 0)?.toString()?.replace("\n", "↵") ?: "null"
-                } catch (e: Exception) {
-                    rightSnippet = "오류"
-                }
-                try {
-                    selectedLength = ic.getSelectedText(0)?.length ?: 0
-                } catch (_: Exception) {
-                    selectedLength = -1
-                }
-
-                val deleteLength = beforeTextLength ?: count
-                var deleteResult: String = "건너뜀"
-                if (deleteLength > 0) {
-                    ic.beginBatchEdit()
+                // 입력창이 커서 앞 문자열을 일부만 돌려주는 경우를 대비합니다.
+                // 정상적으로 전체 길이가 확인되면 기존의 빠른 일괄 삭제를 사용하고,
+                // HTML이 전달한 길이보다 짧게 조회되면 DEL 키를 보내 커서 왼쪽만 지웁니다.
+                // DEL 키는 커서 왼쪽에서만 작동하므로 커서 오른쪽 글은 건드리지 않습니다.
+                val beforeText =
                     try {
-                        val accepted = ic.deleteSurroundingText(deleteLength, 0)
-                        deleteResult = accepted.toString()
-                    } catch (e: Exception) {
-                        deleteResult = "오류:${e.javaClass.simpleName}"
-                        e.printStackTrace()
-                        try {
-                            ic.setSelection(0, deleteLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
-                    } finally {
-                        ic.endBatchEdit()
+                        ic.getTextBeforeCursor(50000, 0)?.toString()
+                    } catch (_: Exception) {
+                        null
                     }
-                }
 
-                // 진단18: HTML 동기화 전에 편집기가 반환하는 ExtractedText를 별도로 확인합니다.
-                // 기존 삭제 명령과 동기화 순서는 변경하지 않고 조회만 추가합니다.
-                var extractedImmediatelyAfterDelete = "조회전"
-                var extractedImmediatelyAfterDeleteSnippet = ""
+                val beforeLength = beforeText?.length ?: 0
+                val useKeyEventFallback =
+                    beforeText == null || beforeLength < count
+
+                ic.beginBatchEdit()
                 try {
-                    val extractedAfterDelete = ic.getExtractedText(ExtractedTextRequest(), 0)
-                    extractedImmediatelyAfterDelete = if (extractedAfterDelete == null) {
-                        "null"
-                    } else {
-                        val text = extractedAfterDelete.text?.toString() ?: ""
-                        val start = extractedAfterDelete.selectionStart.coerceIn(0, text.length)
-                        val end = extractedAfterDelete.selectionEnd.coerceIn(0, text.length)
-                        val from = (minOf(start, end) - 8).coerceAtLeast(0)
-                        val to = (maxOf(start, end) + 8).coerceAtMost(text.length)
-                        extractedImmediatelyAfterDeleteSnippet = text.substring(from, to)
-                            .replace("\n", "↵").replace("\r", "␍")
-                        "길이=${text.length},선택=${extractedAfterDelete.selectionStart}-${extractedAfterDelete.selectionEnd},오프셋=${extractedAfterDelete.startOffset}"
+                    if (useKeyEventFallback) {
+                        val deleteCount = count.coerceAtLeast(0)
+                        repeat(deleteCount) {
+                            val now = android.os.SystemClock.uptimeMillis()
+                            ic.sendKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0)
+                            )
+                            ic.sendKeyEvent(
+                                KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0)
+                            )
+                        }
+                    } else if (beforeLength > 0) {
+                        ic.deleteSurroundingText(beforeLength, 0)
                     }
-                } catch (e: Exception) {
-                    extractedImmediatelyAfterDelete = "오류:${e.javaClass.simpleName}"
-                }
-
-                var afterDeleteLength: Int? = null
-                var afterDeleteError = ""
-                var afterBeforeSnippet = ""
-                var afterAfterSnippet = ""
-                try {
-                    val afterBefore = ic.getTextBeforeCursor(50000, 0)
-                    afterDeleteLength = afterBefore?.length
-                    afterBeforeSnippet = afterBefore?.takeLast(8)?.toString()?.replace("\n", "↵") ?: "null"
-                    if (afterDeleteLength == null) afterDeleteError = "null"
-                } catch (e: Exception) {
-                    afterDeleteError = e.javaClass.simpleName
-                }
-                try {
-                    afterAfterSnippet = ic.getTextAfterCursor(8, 0)?.toString()?.replace("\n", "↵") ?: "null"
-                } catch (e: Exception) {
-                    afterAfterSnippet = "오류:${e.javaClass.simpleName}"
+                } finally {
+                    ic.endBatchEdit()
                 }
 
                 lastKnownSelectionStart = 0
                 lastKnownSelectionEnd = 0
+
                 cancelHtmlExternalCursorState()
+
                 rememberActualSelection()
+
                 syncHtmlWithNativeText()
 
-                var afterSyncLength: Int? = null
-                var afterSyncError = ""
-                try {
-                    afterSyncLength = ic.getTextBeforeCursor(50000, 0)?.length
-                    if (afterSyncLength == null) afterSyncError = "null"
-                } catch (e: Exception) {
-                    afterSyncError = e.javaClass.simpleName
-                }
-
-                // 진단18: 동기화 전후 ExtractedText와 커서 주변 본문 응답을 비교합니다.
-                // 삭제 명령, 길이 계산, 커서 이동 및 HTML 동기화 동작은 변경하지 않습니다.
-                var afterSyncExtractInfo = "null"
-                var afterSyncExtractSnippet = ""
-                try {
-                    val afterSyncExtract = ic.getExtractedText(ExtractedTextRequest(), 0)
-                    if (afterSyncExtract != null) {
-                        val text = afterSyncExtract.text?.toString() ?: ""
-                        val start = afterSyncExtract.selectionStart.coerceIn(0, text.length)
-                        val end = afterSyncExtract.selectionEnd.coerceIn(0, text.length)
-                        val from = (minOf(start, end) - 8).coerceAtLeast(0)
-                        val to = (maxOf(start, end) + 8).coerceAtMost(text.length)
-                        afterSyncExtractSnippet = text.substring(from, to).replace("\n", "↵")
-                        afterSyncExtractInfo = "길이=${text.length},선택=${afterSyncExtract.selectionStart}-${afterSyncExtract.selectionEnd},오프셋=${afterSyncExtract.startOffset}"
-                    }
-                } catch (e: Exception) {
-                    afterSyncExtractInfo = "오류:${e.javaClass.simpleName}"
-                }
-                val rememberedAfterDelete = "${lastKnownSelectionStart},${lastKnownSelectionEnd}"
-                val extractedBeforeShort = extractedBeforeState
-                    .replace("문자=[", "글=[")
-                    .replace("],UTF16=[", "] ")
-                    .replace(",플래그=", ",f=")
-                // 진단19: 현재 포커스된 편집기 메타정보와 입력 연결 객체를 함께 기록합니다.
-                // 삭제·커서 이동·HTML 동기화 명령은 변경하지 않습니다.
-                val editorInfo = currentInputEditorInfo
-                val editorMeta = if (editorInfo == null) {
-                    "EI=null"
-                } else {
-                    "EI=${editorInfo.packageName}/${editorInfo.fieldId},type=${editorInfo.inputType.toString(16)},ime=${editorInfo.imeOptions.toString(16)},init=${editorInfo.initialSelStart}-${editorInfo.initialSelEnd}"
-                }
-                val icMeta = "IC=${System.identityHashCode(ic).toString(16)}"
-                val callbackMeta = diagnostic15LastCallback.take(90)
-                showSwipeDiagnostic(
-                    "진단19: $editorMeta $icMeta / 콜백=$callbackMeta / ET전=${extractedBeforeState.take(70)} / ET직후=$extractedImmediatelyAfterDelete[$extractedImmediatelyAfterDeleteSnippet] / 앞=${beforeTextLength}->${afterDeleteLength} / 요청=${deleteLength},응답=$deleteResult / 동기화후=$afterSyncExtractInfo[$afterSyncExtractSnippet]"
-                )
-
-                // 300ms 뒤 ExtractedText를 다시 읽어 즉시 응답과 비교합니다.
-                // 화면 표시만 지연하며 삭제·커서 이동·동기화 명령은 추가하지 않습니다.
-                webView.postDelayed({
-                    try {
-                        val laterIc = currentInputConnection
-                        val laterEt = laterIc?.getExtractedText(ExtractedTextRequest(), 0)
-                        val laterText = laterEt?.text?.toString() ?: "null"
-                        val laterStart = laterEt?.selectionStart ?: -1
-                        val laterEnd = laterEt?.selectionEnd ?: -1
-                        val laterOffset = laterEt?.startOffset ?: -1
-                        val safeStart = if (laterEt != null) laterStart.coerceIn(0, laterText.length) else 0
-                        val safeEnd = if (laterEt != null) laterEnd.coerceIn(0, laterText.length) else 0
-                        val from = (minOf(safeStart, safeEnd) - 6).coerceAtLeast(0)
-                        val to = (maxOf(safeStart, safeEnd) + 6).coerceAtMost(laterText.length)
-                        val around = if (laterEt != null) laterText.substring(from, to)
-                            .replace("\n", "↵").replace("\r", "␍") else "null"
-                        val raw = if (laterEt != null) laterText.replace("\n", "↵").replace("\r", "␍") else "null"
-                        showSwipeDiagnostic(
-                            "진단19(300ms): ET길이=${laterText.length},선택=${laterStart}-${laterEnd},오프셋=${laterOffset},본문=[$raw],커서주변=[$around]"
-                        )
-                    } catch (e: Exception) {
-                        showSwipeDiagnostic("진단19(300ms) 오류=${e.javaClass.simpleName}")
-                    }
-                }, 300L)
-
-
             } catch (e: Exception) {
+
                 e.printStackTrace()
-                showSwipeDiagnostic("진단4 오류: ${e.javaClass.simpleName}")
             }
         }
 
@@ -1573,50 +1392,11 @@ class SsulKeyboardService : InputMethodService() {
             return
         }
 
-        // 진단15/16: 억제 여부와 무관하게 유효한 onUpdateSelection 콜백을 기록합니다.
-        // 이 기록은 진단 화면에만 사용하며 커서/삭제 동작에는 반영하지 않습니다.
-        diagnostic15LastCallback =
-            "$oldSelStart,$oldSelEnd->$newSelStart,$newSelEnd 후보=$candidatesStart,$candidatesEnd"
-
         if (
             android.os.SystemClock.uptimeMillis()
             < internalSelectionUntil
         ) {
-            // 진단14: 내부 커서 이동 직후 억제되는 onUpdateSelection 콜백의
-            // 실제 새 선택 위치를 관찰합니다. 기존 억제/return 동작은 유지합니다.
-            try {
-                val diagIc = currentInputConnection
-                val diagBefore = diagIc?.getTextBeforeCursor(8, 0)?.toString() ?: "null"
-                val diagAfter = diagIc?.getTextAfterCursor(8, 0)?.toString() ?: "null"
-                val diagSelected = diagIc?.getSelectedText(0)?.toString() ?: "없음"
-                showSwipeDiagnostic(
-                    "진단14 억제콜백: 이전=$oldSelStart,$oldSelEnd / 새위치=$newSelStart,$newSelEnd / 후보=$candidatesStart,$candidatesEnd / 앞=${diagBefore.replace("\n", "↵")} / 뒤=${diagAfter.replace("\n", "↵")} / 선택=$diagSelected / 기억=${lastKnownSelectionStart},${lastKnownSelectionEnd}"
-                )
-            } catch (e: Exception) {
-                showSwipeDiagnostic("진단14 콜백조회 오류: ${e.javaClass.simpleName}")
-            }
             return
-        }
-
-        // 진단 7: 편집기가 보내는 실제 커서 위치와 커서 주변 문자열만 관찰합니다.
-        // 삭제 방식, 커서 이동 방식, HTML 동기화 방식은 변경하지 않습니다.
-        if (
-            newSelStart == newSelEnd &&
-            (oldSelStart != newSelStart || oldSelEnd != newSelEnd)
-        ) {
-            try {
-                val ic = currentInputConnection
-                val before = ic?.getTextBeforeCursor(8, 0)?.toString() ?: "null"
-                val after = ic?.getTextAfterCursor(8, 0)?.toString() ?: "null"
-                val selected = ic?.getSelectedText(0)?.toString() ?: "없음"
-                val safeBefore = before.replace("\n", "↵").replace("\r", "↵")
-                val safeAfter = after.replace("\n", "↵").replace("\r", "↵")
-                showSwipeDiagnostic(
-                    "진단7: 선택변화 $oldSelStart,$oldSelEnd→$newSelStart,$newSelEnd / 앞=$safeBefore / 뒤=$safeAfter / 선택=$selected"
-                )
-            } catch (e: Exception) {
-                showSwipeDiagnostic("진단7 조회오류: ${e.javaClass.simpleName}")
-            }
         }
 
         if (newSelStart != newSelEnd) {
