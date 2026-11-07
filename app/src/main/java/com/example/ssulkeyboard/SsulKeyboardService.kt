@@ -779,39 +779,26 @@ class SsulKeyboardService : InputMethodService() {
                 internalSelectionUntil =
                     android.os.SystemClock.uptimeMillis() + 250L
 
-                // 입력창이 커서 앞 문자열을 일부만 돌려주는 경우를 대비합니다.
-                // 정상적으로 전체 길이가 확인되면 기존의 빠른 일괄 삭제를 사용하고,
-                // HTML이 전달한 길이보다 짧게 조회되면 DEL 키를 보내 커서 왼쪽만 지웁니다.
-                // DEL 키는 커서 왼쪽에서만 작동하므로 커서 오른쪽 글은 건드리지 않습니다.
-                val beforeText =
+                val beforeLength =
                     try {
-                        ic.getTextBeforeCursor(50000, 0)?.toString()
+                        ic.getTextBeforeCursor(50000, 0)?.length ?: count
                     } catch (_: Exception) {
-                        null
+                        count
                     }
 
-                val beforeLength = beforeText?.length ?: 0
-                val useKeyEventFallback =
-                    beforeText == null || beforeLength < count
-
-                ic.beginBatchEdit()
-                try {
-                    if (useKeyEventFallback) {
-                        val deleteCount = count.coerceAtLeast(0)
-                        repeat(deleteCount) {
-                            val now = android.os.SystemClock.uptimeMillis()
-                            ic.sendKeyEvent(
-                                KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0)
-                            )
-                            ic.sendKeyEvent(
-                                KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0)
-                            )
-                        }
-                    } else if (beforeLength > 0) {
+                if (beforeLength > 0) {
+                    ic.beginBatchEdit()
+                    try {
                         ic.deleteSurroundingText(beforeLength, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
+                    } finally {
+                        ic.endBatchEdit()
                     }
-                } finally {
-                    ic.endBatchEdit()
                 }
 
                 lastKnownSelectionStart = 0
