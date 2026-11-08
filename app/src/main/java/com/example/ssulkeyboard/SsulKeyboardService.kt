@@ -398,6 +398,74 @@ class SsulKeyboardService : InputMethodService() {
         lastKnownSelectionEnd = pos
     }
 
+    // 네이버 카페 본문처럼 커서 이동 직후 편집기 상태가 늦게 맞춰지는
+    // 화면을 위한 재시도: 0.4초 간격으로 최대 3번, 추출 텍스트의
+    // 커서 위치를 다시 확인해서 앞쪽 글이 보이면 그만큼 지운다.
+    private fun retryDeleteLeft(attempt: Int) {
+
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+
+            try {
+
+                val ic = currentInputConnection ?: return@postDelayed
+
+                val req = android.view.inputmethod.ExtractedTextRequest()
+                req.hintMaxChars = 100000
+                req.hintMaxLines = 10000
+
+                val et = ic.getExtractedText(req, 0)
+
+                val abs =
+                    if (et == null) -1
+                    else et.startOffset + et.selectionStart
+
+                val len = et?.text?.length ?: -1
+
+                if (abs > 0) {
+
+                    internalSelectionUntil =
+                        android.os.SystemClock.uptimeMillis() + 250L
+
+                    ic.beginBatchEdit()
+                    try {
+                        ic.deleteSurroundingText(abs, 0)
+                    } finally {
+                        ic.endBatchEdit()
+                    }
+
+                    showToastFromNative("재시도 $attempt: 지움 커서=$abs")
+
+                } else if (attempt < 3) {
+
+                    retryDeleteLeft(attempt + 1)
+
+                } else {
+
+                    showToastFromNative("재시도 실패: 길이=$len 커서=$abs")
+                }
+
+            } catch (e: Exception) {
+
+                e.printStackTrace()
+            }
+
+        }, 400L)
+    }
+
+    private fun showToastFromNative(message: String) {
+
+        if (!::webView.isInitialized) return
+
+        val msg = org.json.JSONObject.quote(message)
+
+        webView.post {
+            webView.evaluateJavascript(
+                "if(typeof showToast==='function'){showToast(" + msg + ");}",
+                null
+            )
+        }
+    }
+
     private fun cancelHtmlExternalCursorState() {
 
         if (!::webView.isInitialized) return
@@ -877,6 +945,10 @@ class SsulKeyboardService : InputMethodService() {
                             null
                         )
                     }
+                }
+
+                if (!trustedQuery) {
+                    retryDeleteLeft(1)
                 }
 
                 lastKnownSelectionStart = 0
