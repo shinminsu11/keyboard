@@ -398,74 +398,6 @@ class SsulKeyboardService : InputMethodService() {
         lastKnownSelectionEnd = pos
     }
 
-    // 네이버 카페 본문처럼 커서 이동 직후 편집기 상태가 늦게 맞춰지는
-    // 화면을 위한 재시도: 0.4초 간격으로 최대 3번, 추출 텍스트의
-    // 커서 위치를 다시 확인해서 앞쪽 글이 보이면 그만큼 지운다.
-    private fun retryDeleteLeft(attempt: Int) {
-
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-
-            try {
-
-                val ic = currentInputConnection ?: return@postDelayed
-
-                val req = android.view.inputmethod.ExtractedTextRequest()
-                req.hintMaxChars = 100000
-                req.hintMaxLines = 10000
-
-                val et = ic.getExtractedText(req, 0)
-
-                val abs =
-                    if (et == null) -1
-                    else et.startOffset + et.selectionStart
-
-                val len = et?.text?.length ?: -1
-
-                if (abs > 0) {
-
-                    internalSelectionUntil =
-                        android.os.SystemClock.uptimeMillis() + 250L
-
-                    ic.beginBatchEdit()
-                    try {
-                        ic.deleteSurroundingText(abs, 0)
-                    } finally {
-                        ic.endBatchEdit()
-                    }
-
-                    showToastFromNative("재시도 $attempt: 지움 커서=$abs")
-
-                } else if (attempt < 3) {
-
-                    retryDeleteLeft(attempt + 1)
-
-                } else {
-
-                    showToastFromNative("재시도 실패: 길이=$len 커서=$abs")
-                }
-
-            } catch (e: Exception) {
-
-                e.printStackTrace()
-            }
-
-        }, 400L)
-    }
-
-    private fun showToastFromNative(message: String) {
-
-        if (!::webView.isInitialized) return
-
-        val msg = org.json.JSONObject.quote(message)
-
-        webView.post {
-            webView.evaluateJavascript(
-                "if(typeof showToast==='function'){showToast(" + msg + ");}",
-                null
-            )
-        }
-    }
-
     private fun cancelHtmlExternalCursorState() {
 
         if (!::webView.isInitialized) return
@@ -847,108 +779,19 @@ class SsulKeyboardService : InputMethodService() {
                         count
                     }
 
-                // 네이버 카페 본문처럼 커서 이동 직후 "앞 글자 수"를 0으로
-                // 답하는 화면: 물어본 값이 0이면 믿지 않고, 자판이 알고
-                // 있는 글자 수(count)만큼 deleteSurroundingText를 그냥
-                // 실행한다. (뒤쪽 글은 건드리지 않고, 모자라면 있는
-                // 만큼만 지워진다.)
-                val trustedQuery = beforeLength > 0
-                val deleteLength = if (trustedQuery) beforeLength else count
-
-                // 새 시도: getTextBeforeCursor가 0이어도 편집기가 직접
-                // 알려주는 "추출 텍스트"(전체 글 + 커서 위치)는 다를 수
-                // 있다. 그 커서 위치만큼 deleteSurroundingText로 지우고,
-                // 안 지워졌으면 범위선택 후 삭제도 시도한다. 결과는
-                // 화면에 짧게 표시해서 어느 단계가 통했는지 확인한다.
-                var diagBefore = ""
-                if (!trustedQuery) {
-                    try {
-                        val req = android.view.inputmethod.ExtractedTextRequest()
-                        req.hintMaxChars = 100000
-                        req.hintMaxLines = 10000
-                        req.flags = 0
-
-                        val et1 = ic.getExtractedText(req, 0)
-
-                        if (et1 == null) {
-                            diagBefore = "추출실패"
-                        } else {
-                            val len1 = et1.text?.length ?: -1
-                            val abs1 = et1.startOffset + et1.selectionStart
-                            diagBefore = "추출 길이=$len1 커서=$abs1"
-
-                            if (abs1 > 0) {
-                                ic.beginBatchEdit()
-                                try {
-                                    ic.deleteSurroundingText(abs1, 0)
-                                } finally {
-                                    ic.endBatchEdit()
-                                }
-
-                                val et2 = ic.getExtractedText(req, 0)
-                                val abs2 =
-                                    if (et2 == null) -1
-                                    else et2.startOffset + et2.selectionStart
-
-                                if (abs2 > 0) {
-                                    try {
-                                        ic.setSelection(0, abs2)
-                                        ic.commitText("", 1)
-                                    } catch (_: Exception) {
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        diagBefore = "추출오류"
-                    }
-                }
-
-                if (deleteLength > 0) {
+                if (beforeLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(deleteLength, 0)
+                        ic.deleteSurroundingText(beforeLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        if (trustedQuery) {
-                            try {
-                                ic.setSelection(0, beforeLength)
-                                ic.commitText("", 1)
-                            } catch (_: Exception) {}
-                        }
+                        try {
+                            ic.setSelection(0, beforeLength)
+                            ic.commitText("", 1)
+                        } catch (_: Exception) {}
                     } finally {
                         ic.endBatchEdit()
                     }
-                }
-
-                if (diagBefore.isNotEmpty() && ::webView.isInitialized) {
-                    val afterInfo =
-                        try {
-                            val req2 = android.view.inputmethod.ExtractedTextRequest()
-                            req2.hintMaxChars = 100000
-                            req2.hintMaxLines = 10000
-                            val et3 = ic.getExtractedText(req2, 0)
-                            if (et3 == null) "없음"
-                            else "길이=" + (et3.text?.length ?: -1) +
-                                " 커서=" + (et3.startOffset + et3.selectionStart)
-                        } catch (_: Exception) {
-                            "오류"
-                        }
-                    val msg =
-                        org.json.JSONObject.quote(
-                            "삭제전: " + diagBefore + " / 삭제후: " + afterInfo
-                        )
-                    webView.post {
-                        webView.evaluateJavascript(
-                            "if(window.showToast || typeof showToast==='function'){showToast(" + msg + ");}",
-                            null
-                        )
-                    }
-                }
-
-                if (!trustedQuery) {
-                    retryDeleteLeft(1)
                 }
 
                 lastKnownSelectionStart = 0
