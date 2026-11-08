@@ -1,280 +1,126 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>음악 3곡</title>
-
-<style>
-body {
-    background-color: #121214;
-    color: #e4e4e7;
-    font-family: 'Malgun Gothic', sans-serif;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-    text-align: center;
-}
-
-.image-container {
-    margin: 20px 0;
-    background: #1a1a1e;
-    padding: 10px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
-
-img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-}
-
-h1 {
-    font-size: 1.8rem;
-    margin: 30px 0 20px;
-    color: #ffffff;
-}
-
-.playlist {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.track-btn {
-    flex: 1;
-    background-color: #26262b;
-    color: #a1a1aa;
-    border: none;
-    padding: 16px 8px;
-    border-radius: 16px;
-    font-size: 0.95rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.track-btn.active {
-    background-color: #3b82f6;
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(59,130,246,0.4);
-}
-
-.now-playing {
-    background-color: #1a1a1e;
-    padding: 14px;
-    border-radius: 12px;
-    font-size: 0.95rem;
-    color: #a1a1aa;
-    margin-bottom: 15px;
-}
-
-.now-playing span {
-    color: #fbbf24;
-    font-weight: bold;
-}
-
-audio {
-    width: 100%;
-    margin-bottom: 25px;
-}
-
-.lyrics-container {
-    background-color: #1a1a1e;
-    padding: 25px;
-    border-radius: 16px;
-    text-align: left;
-    white-space: pre-wrap;
-    font-size: 0.95rem;
-    line-height: 1.7;
-    color: #d4d4d8;
-    max-height: 500px;
-    overflow-y: auto;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쓸기자판 음악 Player</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        /* 파란색 버튼 스타일 */
+        .play-btn {
+            background-color: #2979ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 15px 0 5px 0;
+            transition: background-color 0.2s;
+        }
+        .play-btn:hover {
+            background-color: #1565c0;
+        }
+        .status {
+            font-size: 14px;
+            color: #b0b0b0;
+            margin-bottom: 20px;
+        }
+        /* 오디오 재생 바 영역 컨테이너 */
+        .audio-container {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .audio-container p {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #ffb74d;
+        }
+        /* HTML5 기본 오디오 바 디자인 조정 */
+        audio {
+            width: 100%;
+            height: 40px;
+        }
+        /* 이미지 스타일 */
+        .image-container {
+            padding: 10px;
+            background-color: #1e1e1e;
+            margin-bottom: 20px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .image-container img {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+        /* 가사 영역 스타일 (크기 축소 및 스크롤 적용) */
+        .lyrics-box {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+            height: 380px;            /* 가사창 높이 고정 (원하는 크기로 조절 가능) */
+            overflow-y: auto;         /* 위아래로 내리고 올릴 수 있도록 스크롤 생성 */
+            text-align: center;
+            line-height: 1.6;
+            color: #cccccc;
+            white-space: pre-line;    /* 줄바꿈 유지 */
+            box-sizing: border-box;
+            font-size: 30px;
+        }
+        .lyrics-title {
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 30px;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="image-container">
-    <img src="쓸기자판.jpg">
-</div>
+    <!-- 이미지 삽입 영역 -->
+    <div class="image-container">
+        <div class="lyrics-title">쓸기자판</div>
+        <img src="쓸기자판.jpg" alt="쓸기자판 이미지">
+    </div>
 
-<h1>음악 3곡</h1>
+    <!-- 파란 버튼 -->
+   <button class="play-btn" id="playBtn">🎵 쓸기자판</button>
+   <div class="status" id="statusText">버튼을 눌러주세요</div>
 
-<div class="playlist">
+    <!-- 오디오 재생 바 영역 -->
+    <div class="audio-container">
+        <p>현재 재생 중 : <b>쓸기자판</b></p>
+        <audio id="audioPlayer" controls loop>
+            <source src="쓸기자판(남).mp3" type="audio/mp3">
+            브라우저가 오디오 태그를 지원하지 않습니다.
+        </audio>
+    </div>
 
-    <button class="track-btn active"
-            id="btn-1"
-            onclick="selectTrack(1)">
-        🎵 쓸기자판
-    </button>
-
-    <button class="track-btn"
-            id="btn-2"
-            onclick="selectTrack(2)">
-        🎵 쓸기자판(남)
-    </button>
-
-    <button class="track-btn"
-            id="btn-3"
-            onclick="selectTrack(3)">
-        🎵 쓸기자판(유아)
-    </button>
-
-</div>
-
-<div class="now-playing">
-    현재 재생 중 :
-    <span id="current-title">쓸기자판</span>
-</div>
-
-<audio id="audio-player" controls>
-    <source id="audio-source"
-            src="쓸기자판(여).mp3"
-            type="audio/mpeg">
-    브라우저가 오디오 재생을 지원하지 않습니다.
-</audio>
-
-<div class="lyrics-container" id="lyrics-display">
-
+    <!-- 가사 삽입 영역 (스크롤 적용) -->
+    <div class="lyrics-box">
 아하가카 나라다타 사자차 마바파
-아하가카 나라다타 사자차 마바파
-    
-​[1절]
-쓱쓱 쓸어서 입력하는 쓸기자판
-글을 쓰듯 쓸어서 입력하는 자판
-모음은 점에서 아 어 오 우 야 여 요 유 쓱쓱 쓱쓱  쓸어라
-이와 으도 점 위와 아래에서 밀어서 입력하네 쓱쓱 쓱쓱 쓸어라
-
-가획자음은 오른쪽으로 밀어 키옄 티긑 치읓 피읖 쓱쓱 쓱쓱 쓸어라
-
-쌍자음은 위로 쓱쓱 밀어 올리면 쌍자음이 입력되 쓱쓱 쓱쓱 쓸어라
-
-글을 쓰듯 물 흐르듯 쓰는 자판, 쓸기자판~ 쓸기자판 쓱쓱 쓸어라
-
-아하가카 나라다타 사자차 마바파
-
-​[후렴]
-자판은 시원시원 큼직하게!
-전체삭제는 삭제버튼 좌로 쓱 쓸어라
-쌍둥이판엔 알짜 URL 주소와 상용구,
-클립보드판엔 한자와 이모티콘이 한가득!
-
-아하가카 나라다타 사자차 마바파
-
-쓱쓱 쓸어라 쓱쓱 쓸어라
-
-​[2절]
-막히는 영어단어엔 영문판 길게 누르고 위로 쓱, 네이버 사전이 반기고
-내 맘대로 더하는 귀여운 이모티콘까지 품은
-세상에 없던 쓸기자판,
-스마트한 입력 쓸기자판! 쓱쓱 밀어라
-
-아하가카 나라다타 사자차 마바파
-
-<script>
-
-/* ==================================================
-   3곡 데이터
-   ================================================== */
-
-const tracks = [
-
-    {
-        title: "쓸기자판",
-        src: "쓸기자판.mp3",
-        lyrics: `
-
-아하가카 나라다타 사자차 마바파
-아하가카 나라다타 사자차 마바파
-
-​[1절]
-쓱쓱 쓸어서 입력하는 쓸기자판
-글을 쓰듯 쓸어서 입력하는 자판
-모음은 점에서 아 어 오 우 야 여 요 유 쓱쓱 쓱쓱  쓸어라
-이와 으도 점 위와 아래에서 밀어서 입력하네 쓱쓱 쓱쓱 쓸어라
-
-가획자음은 오른쪽으로 밀어 키옄 티긑 치읓 피읖  쓱쓱 쓱쓱 쓸어라
-
-쌍자음은 위로 쓱쓱 밀어 올리면 쌍자음이 입력되 쓱쓱 쓱쓱 쓸어라
-
-글을 쓰듯 물 흐르듯 쓰는 자판, 쓸기자판~ 쓸기자판 쓱쓱 쓸어라
-
-아하가카 나라다타 사자차 마바파
-
-​[후렴]
-자판은 시원시원 큼직하게!
-전체삭제는 삭제버튼 좌로 쓱 쓸어라
-쌍둥이판엔 알짜 URL 주소와 상용구,
-클립보드판엔 한자와 이모티콘이 한가득!
-
-아하가카 나라다타 사자차 마바파
-
-쓱쓱 쓸어라 쓱쓱 쓸어라
-
-​[2절]
-막히는 영어단어엔 영문판 길게 누르고 위로 쓱, 네이버 사전이 반기고
-내 맘대로 더하는 귀여운 이모티콘까지 품은
-세상에 없던 쓸기자판,
-스마트한 입력 쓸기자판! 쓱쓱 밀어라
-
-아하가카 나라다타 사자차 마바파
-`
-    },
-
-
-    {
-        title: "쓸기자판(남)",
-        src: "쓸기자판(남).mp3",
-        lyrics: `
-아하가카 나라다타 사자차 마바파
-아하가카 나라다타 사자차 마바파
-
-​[1절]
-쓱쓱 쓸어서 입력하는 쓸기자판
-글을 쓰듯 쓸어서 입력하는 자판
-모음은 점에서 아 어 오 우 야 여 요 유 쓱쓱 쓱쓱  쓸어라
-이와 으도 점 위와 아래에서 밀어서 입력하네 쓱쓱 쓱쓱 쓸어라
-
-가획자음은 오른쪽으로 밀어 키옄 티긑 치읓 피읖  쓱쓱 쓱쓱 쓸어라
-
-쌍자음은 위로 쓱쓱 밀어 올리면 쌍자음이 입력되 쓱쓱 쓱쓱 쓸어라
-
-글을 쓰듯 물 흐르듯 쓰는 자판, 쓸기자판~ 쓸기자판 쓱쓱 쓸어라
-
-아하가카 나라다타 사자차 마바파
-
-​[후렴]
-자판은 시원시원 큼직하게!
-전체삭제는 삭제버튼 좌로 쓱 쓸어라
-쌍둥이판엔 알짜 URL 주소와 상용구,
-클립보드판엔 한자와 이모티콘이 한가득!
-
-아하가카 나라다타 사자차 마바파
-
-쓱쓱 쓸어라 쓱쓱 쓸어라
-
-​[2절]
-막히는 영어단어엔 영문판 길게 누르고 위로 쓱, 네이버 사전이 반기고
-내 맘대로 더하는 귀여운 이모티콘까지 품은
-세상에 없던 쓸기자판,
-스마트한 입력 쓸기자판! 쓱쓱 밀어라
-
-아하가카 나라다타 사자차 마바파
-`
-    },
-
-
-    {
-        title: "쓸기자판(유아)",
-        src: "쓸기자판(유아).mp3",
-        lyrics: `
-아하가카 나라다타 사자차 마바파
-
-​[1절]
+[1절]
 쓱쓱 쓸어서 입력하는 쓸기자판
 글을 쓰듯 쓸어서 입력하는 자판
 모음은 점에서 아 어 오 우 야 여 요 유 쓱쓱 쓱쓱  쓸어라
@@ -288,9 +134,9 @@ const tracks = [
 
 아하가카 나라다타 사자차 마바파
 
-​[후렴]
+[후렴]
 자판은 시원시원 큼직하게!
-전체삭제는 삭제버튼 좌로 쓱 쓸어라
+전체삭제는 삭제버튼 좌로 쓸어라
 쌍둥이판엔 알짜 URL 주소와 상용구,
 클립보드판엔 한자와 이모티콘이 한가득!
 
@@ -298,146 +144,48 @@ const tracks = [
 
 쓱쓱 쓸어라 쓱쓱 쓸어라
 
-​[2절]
-막히는 영어단어엔 영문판 길게 누르고 위로 쓱, 네이버 사전이 반기고
+[2절]
+막히는 영어단어엔 영문판 위로 쓱, 네이버 사전이 반기고
 내 맘대로 더하는 귀여운 이모티콘까지 품은
 세상에 없던 쓸기자판,
 스마트한 입력 쓸기자판! 쓱쓱 밀어라
 
 아하가카 나라다타 사자차 마바파
-`
-    }
+    </div>
 
-];
+    <script>
+        const playBtn = document.getElementById('playBtn');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const statusText = document.getElementById('statusText');
 
-
-/* ==================================================
-   현재 곡 번호
-   ================================================== */
-
-let currentTrack = 0;
-
-
-/* ==================================================
-   곡 선택
-   ================================================== */
-
-function selectTrack(trackNumber, autoPlay = true) {
-
-    const index = trackNumber - 1;
-
-    if (index < 0 || index >= tracks.length) {
-        return;
-    }
-
-    currentTrack = index;
-
-    const track = tracks[index];
-
-    const audioPlayer =
-        document.getElementById("audio-player");
-
-    const audioSource =
-        document.getElementById("audio-source");
-
-    const currentTitle =
-        document.getElementById("current-title");
-
-    const lyricsDisplay =
-        document.getElementById("lyrics-display");
-
-
-    /* 제목 */
-
-    currentTitle.innerText =
-        track.title;
-
-
-    /* 음악 */
-
-    audioSource.src =
-        track.src;
-
-
-    /* 가사 */
-
-    lyricsDisplay.innerText =
-        track.lyrics;
-
-
-    /* 버튼 색상 */
-
-    document
-        .querySelectorAll(".track-btn")
-        .forEach(function(button, i) {
-
-            button.classList.toggle(
-                "active",
-                i === index
-            );
-
+        // 상단 파란 버튼 클릭 시 재생/일시정지 연동
+        playBtn.addEventListener('click', () => {
+            if (audioPlayer.paused) {
+                audioPlayer.play().then(() => {
+                    statusText.textContent = "현재 재생 중";
+                    playBtn.textContent = "🎵 쓸기자판";
+                }).catch(error => {
+                    console.error("재생 실패:", error);
+                    statusText.textContent = "오디오 파일을 확인해주세요.";
+                });
+            } else {
+                audioPlayer.pause();
+                statusText.textContent = "일시정지됨";
+                playBtn.textContent = "🎵 쓸기자판";
+            }
         });
 
-
-    /* 음악 다시 불러오기 */
-
-    audioPlayer.load();
-
-
-    /* 직접 선택했을 때 재생 */
-
-    if (autoPlay) {
-
-        audioPlayer.play().catch(function() {
-
-            /*
-            스마트폰 브라우저가
-            자동재생을 막는 경우입니다.
-            사용자가 재생 버튼을 누르면
-            정상적으로 시작됩니다.
-            */
-
+        // 오디오 자체 재생 바를 통해 재생 상태가 바뀔 때 버튼 텍스트 동기화
+        audioPlayer.addEventListener('play', () => {
+            statusText.textContent = "현재 재생 중 (자동 반복)";
+            playBtn.textContent = "🎵 쓸기자판";
         });
 
-    }
-
-}
-
-
-/* ==================================================
-   ★★★ 무한 반복 ★★★
-
-   1 → 2 → 3 → 1 → 2 → 3 → 계속
-   ================================================== */
-
-const audioPlayer =
-    document.getElementById("audio-player");
-
-
-audioPlayer.addEventListener(
-    "ended",
-    function() {
-
-        let nextTrack =
-            (currentTrack + 1) % tracks.length;
-
-        selectTrack(
-            nextTrack + 1,
-            true
-        );
-
-    }
-);
-
-
-/* ==================================================
-   페이지 처음 열었을 때
-   1번 곡과 가사 표시
-   ================================================== */
-
-selectTrack(1, false);
-
-</script>
+        audioPlayer.addEventListener('pause', () => {
+            statusText.textContent = "일시정지됨";
+            playBtn.textContent = "🎵 쓸기자판";
+        });
+    </script>
 
 </body>
 </html>
