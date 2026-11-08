@@ -787,6 +787,37 @@ class SsulKeyboardService : InputMethodService() {
                 val trustedQuery = beforeLength > 0
                 val deleteLength = if (trustedQuery) beforeLength else count
 
+                // 새 시도: 물어본 값을 못 믿는 화면에서는 입력기 경로를
+                // 거치지 않고, 키보드의 Ctrl+Shift+Home(문서 처음까지
+                // 선택) 키 조합 + 백스페이스 키를 보내 브라우저 에디터가
+                // 직접 선택·삭제하게 한다. 커서 뒤쪽 글은 선택되지 않는다.
+                if (!trustedQuery) {
+                    try {
+                        val t = android.os.SystemClock.uptimeMillis()
+                        val ctrlShift =
+                            KeyEvent.META_CTRL_ON or
+                                KeyEvent.META_SHIFT_ON
+
+                        fun key(action: Int, code: Int, meta: Int) {
+                            ic.sendKeyEvent(
+                                KeyEvent(t, t, action, code, 0, meta)
+                            )
+                        }
+
+                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.META_CTRL_ON)
+                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, ctrlShift)
+                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_HOME, ctrlShift)
+                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MOVE_HOME, ctrlShift)
+                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.META_CTRL_ON)
+                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT, 0)
+
+                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0)
+                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
                 if (deleteLength > 0) {
                     ic.beginBatchEdit()
                     try {
