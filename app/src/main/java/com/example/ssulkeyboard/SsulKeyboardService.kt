@@ -787,34 +787,53 @@ class SsulKeyboardService : InputMethodService() {
                 val trustedQuery = beforeLength > 0
                 val deleteLength = if (trustedQuery) beforeLength else count
 
-                // 새 시도: 물어본 값을 못 믿는 화면에서는 입력기 경로를
-                // 거치지 않고, 키보드의 Ctrl+Shift+Home(문서 처음까지
-                // 선택) 키 조합 + 백스페이스 키를 보내 브라우저 에디터가
-                // 직접 선택·삭제하게 한다. 커서 뒤쪽 글은 선택되지 않는다.
+                // 새 시도: getTextBeforeCursor가 0이어도 편집기가 직접
+                // 알려주는 "추출 텍스트"(전체 글 + 커서 위치)는 다를 수
+                // 있다. 그 커서 위치만큼 deleteSurroundingText로 지우고,
+                // 안 지워졌으면 범위선택 후 삭제도 시도한다. 결과는
+                // 화면에 짧게 표시해서 어느 단계가 통했는지 확인한다.
+                var diagBefore = ""
                 if (!trustedQuery) {
                     try {
-                        val t = android.os.SystemClock.uptimeMillis()
-                        val ctrlShift =
-                            KeyEvent.META_CTRL_ON or
-                                KeyEvent.META_SHIFT_ON
+                        val req = android.view.inputmethod.ExtractedTextRequest()
+                        req.hintMaxChars = 100000
+                        req.hintMaxLines = 10000
+                        req.flags = 0
 
-                        fun key(action: Int, code: Int, meta: Int) {
-                            ic.sendKeyEvent(
-                                KeyEvent(t, t, action, code, 0, meta)
-                            )
+                        val et1 = ic.getExtractedText(req, 0)
+
+                        if (et1 == null) {
+                            diagBefore = "추출실패"
+                        } else {
+                            val len1 = et1.text?.length ?: -1
+                            val abs1 = et1.startOffset + et1.selectionStart
+                            diagBefore = "추출 길이=$len1 커서=$abs1"
+
+                            if (abs1 > 0) {
+                                ic.beginBatchEdit()
+                                try {
+                                    ic.deleteSurroundingText(abs1, 0)
+                                } finally {
+                                    ic.endBatchEdit()
+                                }
+
+                                val et2 = ic.getExtractedText(req, 0)
+                                val abs2 =
+                                    if (et2 == null) -1
+                                    else et2.startOffset + et2.selectionStart
+
+                                if (abs2 > 0) {
+                                    try {
+                                        ic.setSelection(0, abs2)
+                                        ic.commitText("", 1)
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            }
                         }
-
-                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.META_CTRL_ON)
-                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, ctrlShift)
-                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MOVE_HOME, ctrlShift)
-                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MOVE_HOME, ctrlShift)
-                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.META_CTRL_ON)
-                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_CTRL_LEFT, 0)
-
-                        key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL, 0)
-                        key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        diagBefore = "추출오류"
                     }
                 }
 
@@ -832,6 +851,31 @@ class SsulKeyboardService : InputMethodService() {
                         }
                     } finally {
                         ic.endBatchEdit()
+                    }
+                }
+
+                if (diagBefore.isNotEmpty() && ::webView.isInitialized) {
+                    val afterInfo =
+                        try {
+                            val req2 = android.view.inputmethod.ExtractedTextRequest()
+                            req2.hintMaxChars = 100000
+                            req2.hintMaxLines = 10000
+                            val et3 = ic.getExtractedText(req2, 0)
+                            if (et3 == null) "없음"
+                            else "길이=" + (et3.text?.length ?: -1) +
+                                " 커서=" + (et3.startOffset + et3.selectionStart)
+                        } catch (_: Exception) {
+                            "오류"
+                        }
+                    val msg =
+                        org.json.JSONObject.quote(
+                            "삭제전: " + diagBefore + " / 삭제후: " + afterInfo
+                        )
+                    webView.post {
+                        webView.evaluateJavascript(
+                            "if(window.showToast || typeof showToast==='function'){showToast(" + msg + ");}",
+                            null
+                        )
                     }
                 }
 
