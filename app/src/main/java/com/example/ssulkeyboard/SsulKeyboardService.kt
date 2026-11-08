@@ -779,16 +779,26 @@ class SsulKeyboardService : InputMethodService() {
                         count
                     }
 
-                if (beforeLength > 0) {
+                // 네이버 카페 본문처럼 커서 이동 직후 "앞 글자 수"를 0으로
+                // 답하는 화면: 물어본 값이 0이면 믿지 않고, 자판이 알고
+                // 있는 글자 수(count)만큼 deleteSurroundingText를 그냥
+                // 실행한다. (뒤쪽 글은 건드리지 않고, 모자라면 있는
+                // 만큼만 지워진다.)
+                val trustedQuery = beforeLength > 0
+                val deleteLength = if (trustedQuery) beforeLength else count
+
+                if (deleteLength > 0) {
                     ic.beginBatchEdit()
                     try {
-                        ic.deleteSurroundingText(beforeLength, 0)
+                        ic.deleteSurroundingText(deleteLength, 0)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        try {
-                            ic.setSelection(0, beforeLength)
-                            ic.commitText("", 1)
-                        } catch (_: Exception) {}
+                        if (trustedQuery) {
+                            try {
+                                ic.setSelection(0, beforeLength)
+                                ic.commitText("", 1)
+                            } catch (_: Exception) {}
+                        }
                     } finally {
                         ic.endBatchEdit()
                     }
