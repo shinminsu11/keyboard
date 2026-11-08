@@ -71,18 +71,11 @@ class SsulKeyboardService : InputMethodService() {
 
                     if (text.trim().isNotEmpty()) {
 
-                        // 기존 기능
-                        // 최근 복사 내용과 시간을 기록
                         lastObservedClipboardText = text
 
                         lastObservedClipboardTime =
                             android.os.SystemClock.elapsedRealtime()
 
-                        // ------------------------------------------------
-                        // 추가 기능
-                        // 클립보드 창이 이미 열려 있으면
-                        // 복사한 내용을 즉시 현재 목록에 추가
-                        // ------------------------------------------------
                         if (::webView.isInitialized) {
 
                             val textJs =
@@ -1148,6 +1141,63 @@ class SsulKeyboardService : InputMethodService() {
                 rememberActualSelection()
 
                 syncHtmlWithNativeText()
+
+            } catch (e: Exception) {
+
+                e.printStackTrace()
+            }
+        }
+
+        // ----------------------------------------------------
+        // 한문 변환 전용: 커서 바로 앞 글자 1개를 지우고 한문으로 교체.
+        // 네이버 카페 본문처럼 setSelection(범위선택)이 안 먹히는
+        // 화면에서도 되도록, 범위선택 대신 deleteSurroundingText를
+        // 쓰고 한 번의 배치 편집으로 묶는다.
+        // ----------------------------------------------------
+        @JavascriptInterface
+        fun replaceLastChar(text: String) {
+
+            internalSelectionUntil =
+                android.os.SystemClock.uptimeMillis() + 250L
+
+            val ic =
+                currentInputConnection
+                    ?: return
+
+            try {
+
+                externalComposingActive = false
+                pendingExternalCursorUtf16 = null
+
+                try {
+                    ic.finishComposingText()
+                } catch (_: Exception) {
+                }
+
+                val tail =
+                    try {
+                        ic.getTextBeforeCursor(2, 0)?.toString() ?: ""
+                    } catch (_: Exception) {
+                        ""
+                    }
+
+                val deleteLen =
+                    if (
+                        tail.length >= 2 &&
+                        Character.isLowSurrogate(tail[tail.length - 1]) &&
+                        Character.isHighSurrogate(tail[tail.length - 2])
+                    ) 2 else 1
+
+                ic.beginBatchEdit()
+
+                try {
+                    ic.deleteSurroundingText(deleteLen, 0)
+                    ic.commitText(text, 1)
+                } finally {
+                    ic.endBatchEdit()
+                }
+
+                rememberActualSelection()
 
             } catch (e: Exception) {
 
