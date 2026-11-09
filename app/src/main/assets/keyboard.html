@@ -1171,8 +1171,8 @@ let aStartX = 0, aStartY = 0;
 let isALong = false;
 toAlphaBtn.addEventListener('touchstart', (e) => {
 if(e.touches.length > 0) {
-aStartX = e.touches[0].clientX;
-aStartY = e.touches[0].clientY;
+aStartX = e.changedTouches[0].clientX;
+aStartY = e.changedTouches[0].clientY;
 isALong = false;
 }
 }, { passive: true });
@@ -1753,8 +1753,8 @@ let bsHasSwiped = false;
 document.querySelectorAll('.bs-key-common, #backspaceBtn').forEach(bsKey => {
 bsKey.addEventListener('touchstart', (e) => {
 if (e.touches && e.touches.length > 0) {
-bsStartX = e.touches[0].clientX;
-bsStartY = e.touches[0].clientY;
+bsStartX = e.changedTouches[0].clientX;
+bsStartY = e.changedTouches[0].clientY;
 }
 bsHasSwiped = false;
 
@@ -2100,8 +2100,8 @@ isLongPressed = false;
 let iStartX = 0, iStartY = 0, iTouchTime = 0;
 iKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
-iStartX = e.touches[0].clientX;
-iStartY = e.touches[0].clientY;
+iStartX = e.changedTouches[0].clientX;
+iStartY = e.changedTouches[0].clientY;
 iTouchTime = Date.now();
 }
 }, { passive: true });
@@ -2121,8 +2121,8 @@ if (diffY > 12 && Math.abs(diffY) > Math.abs(diffX)) {
 let euStartX = 0, euStartY = 0;
 euKey.addEventListener('touchstart', (e) => {
 if (e.touches.length > 0) {
-euStartX = e.touches[0].clientX;
-euStartY = e.touches[0].clientY;
+euStartX = e.changedTouches[0].clientX;
+euStartY = e.changedTouches[0].clientY;
 }
 }, { passive: true });
 
@@ -2141,8 +2141,8 @@ if (Math.abs(diffX) > 12 && Math.abs(diffX) > Math.abs(diffY)) {
 document.querySelectorAll('.slide-con').forEach(key => {
 let startX = 0, startY = 0;
 key.addEventListener('touchstart', (e) => {
-startX = e.touches[0].clientX;
-startY = e.touches[0].clientY;
+startX = e.changedTouches[0].clientX;
+startY = e.changedTouches[0].clientY;
 }, { passive: true });
 setupLongPressKey(key, (e) => {
 let t = e.changedTouches ? e.changedTouches[0] : e;
@@ -2187,7 +2187,7 @@ appendHangul(base);
 });
 
 let touchStartX = 0, touchStartY = 0;
-slideKey.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
+slideKey.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].clientX; touchStartY = e.changedTouches[0].clientY; }, { passive: true });
 setupLongPressKey(slideKey, (e) => {
 let t = e.changedTouches[0], diffX = t.clientX - touchStartX, diffY = t.clientY - touchStartY;
 if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
@@ -2236,7 +2236,7 @@ localStorage.setItem('my_clip_history_v3', JSON.stringify(arr));
 }
 
 clipboardKey.addEventListener('touchstart', function(e) {
-const touch = e.touches[0];
+const touch = e.changedTouches[0];
 cbStartX = touch.clientX;
 cbStartY = touch.clientY;
 isSwiping = false;
@@ -3042,7 +3042,7 @@ addHanjaModal.addEventListener('click', (e) => { if (e.target === addHanjaModal)
 
 let topX = 0, topY = 0, topTimer = null, topLong = false;
 topSymbolKey.addEventListener('touchstart', (e) => {
-topX = e.touches[0].clientX; topY = e.touches[0].clientY; topLong = false;
+topX = e.changedTouches[0].clientX; topY = e.changedTouches[0].clientY; topLong = false;
 topTimer = setTimeout(() => { topLong = true; appendSpecial('•'); }, 500);
 }, { passive: true });
 topSymbolKey.addEventListener('touchend', (e) => {
@@ -3063,7 +3063,7 @@ else if (angle >= -67.5 && angle < -22.5) appendSpecial("'");
 
 let symX = 0, symY = 0, symTimer = null, symLong = false;
 symbolKey.addEventListener('touchstart', (e) => {
-symX = e.touches[0].clientX; symY = e.touches[0].clientY; symLong = false;
+symX = e.changedTouches[0].clientX; symY = e.changedTouches[0].clientY; symLong = false;
 symTimer = setTimeout(() => { symLong = true; appendSpecial('※'); }, 500);
 }, { passive: true });
 symbolKey.addEventListener('touchend', (e) => {
@@ -3077,8 +3077,8 @@ else switchToBoard('symbolBoard1');
 
 let sX = 0, sY = 0;
 settingBtn.addEventListener('touchstart', (e) => { 
-    sX = e.touches[0].clientX; 
-    sY = e.touches[0].clientY; 
+    sX = e.changedTouches[0].clientX; 
+    sY = e.changedTouches[0].clientY; 
 }, { passive: true });
 
 settingBtn.addEventListener('touchend', (e) => {
@@ -3125,7 +3125,7 @@ settingBtn.addEventListener('touchend', (e) => {
 });
 
 let twinStartX = 0, twinStartY = 0;
-twinBoard.addEventListener('touchstart', (e) => { twinStartX = e.touches[0].clientX; twinStartY = e.touches[0].clientY; }, { passive: true });
+twinBoard.addEventListener('touchstart', (e) => { twinStartX = e.changedTouches[0].clientX; twinStartY = e.changedTouches[0].clientY; }, { passive: true });
 twinBoard.addEventListener('touchend', (e) => {
 let t = e.changedTouches[0], dx = t.clientX - twinStartX, dy = t.clientY - twinStartY;
 if (dy > 25 && Math.abs(dy) > Math.abs(dx)) { twinBoard.classList.remove('active'); mainBoard.classList.add('active'); }
