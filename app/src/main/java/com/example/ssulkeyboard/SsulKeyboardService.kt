@@ -203,7 +203,40 @@ class SsulKeyboardService : InputMethodService() {
                 )
 
                 webViewClient =
-                    object : WebViewClient() {}
+                    object : WebViewClient() {
+
+                        // [추가] 웹뷰 프로세스가 죽으면 새로 만들어 교체
+                        override fun onRenderProcessGone(
+                            view: WebView?,
+                            detail: android.webkit.RenderProcessGoneDetail?
+                        ): Boolean {
+
+                            try {
+                                view?.let {
+                                    (it.parent as? ViewGroup)
+                                        ?.removeView(it)
+                                    it.destroy()
+                                }
+                            } catch (_: Exception) {
+                            }
+
+                            this@SsulKeyboardService
+                                .externalComposingActive = false
+
+                            this@SsulKeyboardService
+                                .pendingExternalCursorUtf16 = null
+
+                            try {
+                                this@SsulKeyboardService.setInputView(
+                                    this@SsulKeyboardService
+                                        .onCreateInputView()
+                                )
+                            } catch (_: Exception) {
+                            }
+
+                            return true
+                        }
+                    }
 
                 loadUrl(
                     "file:///android_asset/keyboard.html"
